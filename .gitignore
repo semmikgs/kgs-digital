@@ -12,3 +12,7 @@ desktop.ini
 .~lock.*
 *.swp
 *~
+
+# --- Nur lokal, nicht auf der Schulseite (Werkstatt) ---
+/mathematik/tools/einheiten.html
+# --- Ende ---

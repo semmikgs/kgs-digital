@@ -1,5 +1,16 @@
 {
   "fachbereich": "mathematik",
-  "erstellt": "2026-09-06T19:38:29+00:00",
-  "eintraege": []
+  "aktualisiert": "2026-09-07",
+  "eintraege": [
+    {
+      "pfad": "tools/ti34-multiview.html",
+      "datei": "ti34-multiview.html",
+      "typ": "html",
+      "titel": "TI-34 MultiView – ActiveBoard",
+      "beschreibung": "",
+      "kategorie": "tools",
+      "groesse": "33 KB",
+      "geaendert": "2026-09-04"
+    }
+  ]
 }

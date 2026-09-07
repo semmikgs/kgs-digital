@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nachteilsausgleich – Arbeitshilfe</title>
+<style>
+:root{
+  --ink:#16202B;
+  --paper:#EEF1F0;
+  --surface:#FFFFFF;
+  --accent:#2F6F6B;
+  --accent-soft:#E2EDEB;
+  --mark:#8A6D1F;
+  --mark-soft:#F5EEDA;
+  --line:#D3DAD8;
+  --muted:#5C6B72;
+  --radius:3px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:16px;line-height:1.5;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 140px}
+
+/* ---------- Kopf ---------- */
+header.app{padding:32px 0 20px;border-bottom:2px solid var(--ink)}
+.eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:700}
+h1{font-size:30px;line-height:1.1;margin:8px 0 6px;letter-spacing:-.02em;font-weight:800}
+.sub{color:var(--muted);font-size:14px;margin:0}
+.themenwahl{margin-top:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.themenwahl label{font-size:13px;color:var(--muted);font-weight:600}
+
+/* ---------- Schrittleiste ---------- */
+nav.steps{display:flex;gap:0;margin:24px 0 28px;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);overflow:hidden;flex-wrap:wrap}
+nav.steps button{
+  flex:1 1 140px;min-width:0;appearance:none;background:none;border:0;border-right:1px solid var(--line);
+  padding:12px 10px;text-align:left;cursor:pointer;font:inherit;color:var(--muted);
+}
+nav.steps button:last-child{border-right:0}
+nav.steps button .n{display:block;font-size:10px;letter-spacing:.16em;font-weight:700}
+nav.steps button .t{display:block;font-size:14px;font-weight:600;color:var(--ink)}
+nav.steps button[aria-current="true"]{background:var(--ink)}
+nav.steps button[aria-current="true"] .n{color:#8FB2AE}
+nav.steps button[aria-current="true"] .t{color:#fff}
+nav.steps button:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+
+/* ---------- Karten ---------- */
+section.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:18px}
+section.card > h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;margin:0 0 4px;font-weight:800}
+section.card > .lead{color:var(--muted);font-size:14px;margin:0 0 18px}
+
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media(max-width:620px){.grid{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:5px}
+.field.full{grid-column:1/-1}
+.field label{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--muted)}
+input[type=text],input[type=date],select,textarea{
+  font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:var(--radius);
+  background:#fff;color:var(--ink);width:100%;
+}
+textarea{min-height:64px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:0;border-color:var(--accent)}
+
+/* ---------- Kriterien ---------- */
+.krit{border-top:1px solid var(--line);padding:14px 0}
+.krit:first-of-type{border-top:0}
+.krit .k-kopf{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+.krit .k-name{font-weight:650;font-size:15px}
+.krit .k-hint{font-size:13px;color:var(--muted);margin:2px 0 10px;max-width:60ch}
+.skala{display:flex;gap:8px;flex-wrap:wrap}
+.skala label{
+  border:1px solid var(--line);border-radius:var(--radius);padding:7px 12px;font-size:13px;
+  cursor:pointer;background:#fff;line-height:1.2;
+}
+.skala input{position:absolute;opacity:0;width:0;height:0}
+.skala label:has(input:checked){background:var(--ink);color:#fff;border-color:var(--ink)}
+.skala label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- Maßnahmen ---------- */
+.modusleiste{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.seg{display:inline-flex;border:1px solid var(--ink);border-radius:var(--radius);overflow:hidden}
+.seg button{appearance:none;border:0;background:#fff;font:inherit;font-size:13px;padding:8px 14px;cursor:pointer;color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.linkbtn{appearance:none;background:none;border:0;font:inherit;font-size:13px;color:var(--accent);text-decoration:underline;cursor:pointer;padding:6px 2px}
+
+.kat{margin:0 0 22px}
+.kat h3{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 2px;font-weight:800}
+.kat .kat-note{font-size:12px;color:var(--muted);margin:0 0 10px}
+
+.m{display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
+.m:first-of-type{border-top:1px solid var(--line)}
+.m-text{flex:1;min-width:0;font-size:15px}
+.m-badge{display:inline-block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;
+  background:var(--mark-soft);color:var(--mark);padding:2px 6px;border-radius:2px;margin-left:8px;white-space:nowrap}
+.m-fix{font-size:12px;color:var(--muted);white-space:nowrap;align-self:center}
+
+/* Signatur: Doppel-Stempel Unterricht / Prüfung */
+.stempel{display:flex;gap:6px;flex-shrink:0}
+.stempel label{
+  width:52px;height:44px;border:1px solid var(--line);border-radius:var(--radius);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  cursor:pointer;background:#fff;user-select:none;
+}
+.stempel label span{font-size:9px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:var(--muted)}
+.stempel label .box{width:14px;height:14px;border:1.5px solid var(--muted);border-radius:1px}
+.stempel input{position:absolute;opacity:0;width:0;height:0}
+.stempel label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.stempel label:has(input:checked) span{color:var(--accent)}
+.stempel label:has(input:checked) .box{background:var(--accent);border-color:var(--accent);
+  box-shadow:inset 0 0 0 2px var(--accent-soft)}
+.stempel label:has(input:disabled){opacity:.32;cursor:not-allowed}
+.stempel label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.stempel .leer{width:52px}
+
+/* ---------- Statusleiste ---------- */
+.bar{
+  position:fixed;left:0;right:0;bottom:0;background:var(--ink);color:#fff;
+  padding:12px 20px;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;z-index:10;
+}
+.bar .zahlen{font-size:13px;display:flex;gap:18px;flex-wrap:wrap}
+.bar .zahlen b{font-size:18px;font-weight:800;margin-right:5px}
+.bar .zahlen span{color:#A9BFBC}
+.bar .aktionen{display:flex;gap:8px;flex-wrap:wrap}
+.btn{appearance:none;border:1px solid #fff;background:none;color:#fff;font:inherit;font-size:14px;
+  padding:9px 16px;border-radius:var(--radius);cursor:pointer;font-weight:600}
+.btn.primary{background:#fff;color:var(--ink);border-color:#fff}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:focus-visible{outline:3px solid #8FB2AE;outline-offset:2px}
+
+.hinweis{background:var(--accent-soft);border-left:3px solid var(--accent);padding:12px 14px;font-size:13px;margin:0 0 18px}
+.fehler{background:var(--mark-soft);border-left:3px solid var(--mark);padding:12px 14px;font-size:13px;margin:0 0 18px}
+
+/* ---------- Druckvorlage ---------- */
+#vorschau{background:#fff;border:1px solid var(--line);padding:0}
+.blatt{padding:42px 46px;border-bottom:1px dashed var(--line)}
+.blatt:last-child{border-bottom:0}
+.blatt .schule{font-size:19px;font-weight:800;letter-spacing:-.01em}
+.blatt .schule small{display:block;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+.blatt .doktitel{margin:18px 0 4px;font-size:16px;font-weight:800;letter-spacing:.02em;
+  border-top:2px solid var(--ink);border-bottom:1px solid var(--ink);padding:8px 0}
+.blatt .zeile{display:flex;gap:8px;font-size:14px;padding:5px 0;border-bottom:1px dotted var(--line)}
+.blatt .zeile .lbl{width:190px;color:var(--muted);flex-shrink:0}
+.blatt .zeile .val{font-weight:600}
+.blatt h4{font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin:22px 0 6px;color:var(--muted)}
+.blatt ul{margin:0;padding-left:18px;font-size:14px}
+.blatt li{margin:3px 0}
+.blatt .geltung{font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:800;color:var(--accent);margin-left:6px}
+.blatt .fuss{margin-top:26px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+.blatt .unter{margin-top:34px;font-size:13px;display:flex;gap:40px;flex-wrap:wrap}
+.blatt .unter div{flex:1;min-width:200px;border-top:1px solid var(--ink);padding-top:5px;color:var(--muted)}
+
+@media print{
+  body{background:#fff}
+  header.app,nav.steps,.bar,.nichtdrucken{display:none !important}
+  .wrap{max-width:none;padding:0}
+  #vorschau{border:0}
+  .blatt{padding:0;border:0;page-break-after:always}
+  .blatt:last-child{page-break-after:auto}
+}
+@media(prefers-reduced-motion:no-preference){
+  section.card{animation:auf .18s ease-out}
+  @keyframes auf{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="app nichtdrucken">
+  <p class="eyebrow">Arbeitshilfe Inklusion</p>
+  <h1>Nachteilsausgleich erstellen</h1>
+  <p class="sub">Kriterien erfassen, Maßnahmen festlegen, Beschlussvorlage ausgeben. Es werden keine Daten gespeichert oder übertragen — alles bleibt im Browser und ist nach dem Schließen weg.</p>
+  <div class="themenwahl">
+    <label for="thema">Förderschwerpunkt</label>
+    <select id="thema" style="max-width:280px"></select>
+  </div>
+</header>
+
+<nav class="steps nichtdrucken" id="schrittnav"></nav>
+
+<main id="inhalt"></main>
+
+</div>
+
+<div class="bar nichtdrucken">
+  <div class="zahlen">
+    <div><b id="z-unterricht">0</b><span>Unterricht</span></div>
+    <div><b id="z-pruefung">0</b><span>Prüfung</span></div>
+  </div>
+  <div class="aktionen">
+    <button class="btn" id="btn-zurueck">Zurück</button>
+    <button class="btn primary" id="btn-weiter">Weiter</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================================
+   1. KATALOGE — pro Förderschwerpunkt eine Datenstruktur.
+      Ein neues Thema (Legasthenie, Mutismus, AVWS …) ergänzt man hier;
+      am Code darunter muss nichts geändert werden.
+
+      massnahme.fest  = gilt ohne Konferenzbeschluss (Grundsätzliches/Methodik)
+      massnahme.lern / .pruefung = in welcher Situation die Maßnahme wählbar ist
+      massnahme.trigger = Kriterien, die diese Maßnahme im Regelmodus vorschlagen
+   ========================================================================= */
+
+var SKALA = [
+  {wert:"unauffaellig", label:"unauffällig"},
+  {wert:"eingeschraenkt", label:"eingeschränkt"},
+  {wert:"stark", label:"stark eingeschränkt"}
+];
+var EIN = ["eingeschraenkt","stark"];
+
+var KATALOGE = {
+  dyskalkulie: {
+    id:"dyskalkulie",
+    titel:"Dyskalkulie",
+    langtitel:"Rechenstörung (Dyskalkulie)",
+    fachhinweis:"Dieser Nachteilsausgleich im Fach Mathematik gilt auch für fachbezogene Anforderungen in allen anderen Fächern (insbesondere Physik, Chemie, …), wenn es z. B. um Zahlen oder andere mathematische Zusammenhänge geht.",
+    kategorien:[
+      {id:"grund",  label:"Grundsätzliches",              note:"Gilt generell — kein Beschluss notwendig."},
+      {id:"method", label:"Methodik",                     note:"Gilt generell — kein Beschluss notwendig."},
+      {id:"ab",     label:"Arbeitsblätter",               note:"Beschlusspflichtig."},
+      {id:"hilfen", label:"Zusätzliche Hilfen",           note:"Beschlusspflichtig."},
+      {id:"meth2",  label:"Zusätzliche methodische Hilfen", note:"Beschlusspflichtig."}
+    ],
+    kriterien:[
+      {id:"diagnose", label:"Diagnose / Gutachten liegt vor",
+       hinweis:"Grundlage für die Konferenzentscheidung.",
+       optionen:[{wert:"ja",label:"ja"},{wert:"klaerung",label:"in Klärung"},{wert:"nein",label:"nein"}]},
+      {id:"zahl", label:"Zahl- und Stellenwertverständnis",
+       hinweis:"Zahlen zerlegen, bündeln, ordnen; Stellenwerte sicher unterscheiden.", optionen:SKALA},
+      {id:"auto", label:"Automatisierung der Grundrechenarten",
+       hinweis:"Einmaleins, Kopfrechnen, Abruf gesicherter Ergebnisse ohne Zählen.", optionen:SKALA},
+      {id:"tempo", label:"Arbeitstempo / Zeitbedarf",
+       hinweis:"Benötigt deutlich mehr Zeit für Aufgaben gleicher Art.", optionen:SKALA},
+      {id:"text", label:"Textaufgaben und Sachzusammenhänge",
+       hinweis:"Rechenoperation aus einem Text ableiten, Größen zuordnen.", optionen:SKALA},
+      {id:"geo", label:"Geometrie und Raumvorstellung",
+       hinweis:"Körper, Ansichten, Konstruktionen, Umgang mit Zeichengerät.", optionen:SKALA},
+      {id:"merk", label:"Merkfähigkeit für Regeln und Verfahren",
+       hinweis:"Rechenwege und Regeln über längere Zeit sicher abrufen.", optionen:SKALA},
+      {id:"pruef", label:"Belastung in Prüfungssituationen",
+       hinweis:"Leistungsabfall unter Zeitdruck oder Bewertungsdruck.", optionen:SKALA},
+      {id:"therapie", label:"Außerschulische Therapie / Förderung",
+       hinweis:"Eigene Materialien aus der Therapie können einbezogen werden.",
+       optionen:[{wert:"ja",label:"ja"},{wert:"nein",label:"nein"}]}
+    ],
+    massnahmen:[
+      /* --- Grundsätzliches (fest) --- */
+      {id:"g1", kat:"grund", fest:true, lern:true, pruefung:false,
+       text:"lernförderliche Atmosphäre schaffen, Anstrengung anerkennen"},
+      {id:"g2", kat:"grund", fest:true, lern:true, pruefung:false,
+       text:"Hervorhebung individueller Erfolge durch individualisierte Aufgaben"},
+
+      /* --- Methodik (fest) --- */
+      {id:"m1", kat:"method", fest:true, lern:true, pruefung:false,
+       text:"veranschaulichende Anfangsphase, um den Zugang zu erleichtern"},
+      {id:"m2", kat:"method", fest:true, lern:true, pruefung:false,
+       text:"Einführung mit praktischen Handlungsanteilen"},
+      {id:"m3", kat:"method", fest:true, lern:true, pruefung:false,
+       text:"kleinschrittige Einführung"},
+      {id:"m4", kat:"method", fest:true, lern:true, pruefung:false,
+       text:"möglichst viele Visualisierungen (farbig)"},
+      {id:"m5", kat:"method", fest:true, lern:true, pruefung:false,
+       text:"Verzicht auf komplexe Sachverhalte und Aufgaben"},
+      {id:"m6", kat:"method", fest:true, lern:true, pruefung:false,
+       text:"klare Trennung von Lernschwerpunkten (auch zeitlich)"},
+      {id:"m7", kat:"method", fest:true, lern:true, pruefung:false,
+       text:"klare Aufgabenstellung, präzise Arbeitsanweisungen"},
+      {id:"m8", kat:"method", fest:true, lern:true, pruefung:false,
+       text:"feste, mechanische Rechenwege schaffen (Strukturierung, Sicherheit)"},
+      {id:"m9", kat:"method", fest:true, lern:true, pruefung:false,
+       text:"auf die Qualität der Arbeitsmittel achten (Zirkel, Lineal, Geodreieck)"},
+
+      /* --- Arbeitsblätter --- */
+      {id:"a1", kat:"ab", lern:true, pruefung:true, text:"deutliche Zahlen, größere Schrift, größerer Zeilenabstand",
+       trigger:[{k:"zahl",w:EIN}]},
+      {id:"a2", kat:"ab", lern:true, pruefung:true, text:"größeres Kästchenformat",
+       trigger:[{k:"zahl",w:EIN}]},
+      {id:"a3", kat:"ab", lern:true, pruefung:true, text:"grafische (Vor-)Strukturierung der Aufgaben",
+       trigger:[{k:"text",w:EIN},{k:"zahl",w:["stark"]}]},
+      {id:"a4", kat:"ab", lern:true, pruefung:true, text:"vergrößerte Kopien",
+       trigger:[{k:"geo",w:EIN}]},
+      {id:"a5", kat:"ab", lern:true, pruefung:true, text:"vorstrukturierte Arbeitswege (komplexe Aufgaben in Teiloperationen zerlegen)",
+       trigger:[{k:"text",w:EIN},{k:"merk",w:EIN}]},
+      {id:"a6", kat:"ab", lern:true, pruefung:true, text:"Platz für Notizen und Zwischenrechnungen",
+       trigger:[{k:"auto",w:EIN},{k:"pruef",w:EIN}]},
+      {id:"a7", kat:"ab", lern:true, pruefung:true, text:"Übersichtlichkeit bei hohen Stellenwerten, farbige Stellenwerttabelle",
+       trigger:[{k:"zahl",w:EIN}]},
+
+      /* --- Zusätzliche Hilfen --- */
+      {id:"h1", kat:"hilfen", lern:true, pruefung:true, text:"Blanko-Notizblatt für Notizen und Zwischenrechnungen",
+       trigger:[{k:"pruef",w:EIN},{k:"auto",w:EIN}]},
+      {id:"h2", kat:"hilfen", lern:true, pruefung:true, text:"Abzählhilfen und vergleichbare Anschauungsmittel",
+       trigger:[{k:"zahl",w:EIN}]},
+      {id:"h3", kat:"hilfen", lern:true, pruefung:true, text:"Material aus der außerschulischen Therapie",
+       trigger:[{k:"therapie",w:["ja"]}]},
+      {id:"h4", kat:"hilfen", lern:true, pruefung:true, text:"Hundertertafel / Hundertertabelle",
+       trigger:[{k:"zahl",w:EIN}]},
+      {id:"h5", kat:"hilfen", lern:true, pruefung:true, text:"Umrechnungstabellen für Größen und Einheiten",
+       trigger:[{k:"merk",w:EIN}]},
+      {id:"h6", kat:"hilfen", lern:true, pruefung:true, text:"Geometrie: Modelle und Anschauungskörper",
+       trigger:[{k:"geo",w:EIN}]},
+      {id:"h7", kat:"hilfen", lern:true, pruefung:true, text:"Einmaleins-Tabelle",
+       trigger:[{k:"auto",w:EIN}]},
+      {id:"h8", kat:"hilfen", lern:true, pruefung:true, text:"Taschenrechner",
+       trigger:[{k:"auto",w:["stark"]}]},
+      {id:"h9", kat:"hilfen", lern:true, pruefung:true, text:"persönliches Regelheft oder Regelheft der Verlage",
+       trigger:[{k:"merk",w:EIN}]},
+
+      /* --- Zusätzliche methodische Hilfen --- */
+      {id:"n1", kat:"meth2", lern:true, pruefung:false,
+       text:"schriftliche Rechenverfahren durch Kopfrechnen oder halbschriftliche Verfahren ersetzen",
+       trigger:[{k:"auto",w:["stark"]},{k:"zahl",w:["stark"]}]},
+      {id:"n2", kat:"meth2", lern:true, pruefung:false,
+       text:"individuelle Lernentwicklung auf das Basiswissen reduzieren",
+       trigger:[{k:"zahl",w:["stark"]},{k:"auto",w:["stark"]}]},
+      {id:"n3", kat:"meth2", lern:true, pruefung:true, text:"längere Arbeitszeit für Aufgaben",
+       trigger:[{k:"tempo",w:EIN},{k:"pruef",w:EIN}]},
+      {id:"n4", kat:"meth2", lern:true, pruefung:true, text:"geringerer Aufgabenumfang",
+       trigger:[{k:"tempo",w:EIN}]},
+      {id:"n5", kat:"meth2", lern:true, pruefung:true, text:"Rechenbeispiel vor der Aufgabenstellung",
+       trigger:[{k:"merk",w:EIN},{k:"auto",w:EIN}]},
+      {id:"n6", kat:"meth2", lern:true, pruefung:true, text:"dem individuellen Lernstand angepasste Aufgabenstellung (zielgleich)",
+       trigger:[{k:"text",w:EIN},{k:"zahl",w:EIN}]},
+      {id:"n7", kat:"meth2", lern:false, pruefung:true,
+       text:"Einordnung der schriftlichen und mündlichen Leistungen unter dem Aspekt des erreichten Lernstandes mit pädagogischer Würdigung (Lernzuwachs, Anstrengung)",
+       trigger:[{k:"pruef",w:EIN}]}
+    ]
+  }
+
+  /* Platzhalter für weitere Schwerpunkte:
+     legasthenie: { id:"legasthenie", titel:"Lese-Rechtschreib-Störung", ... }
+     mutismus:    { id:"mutismus",    titel:"Mutismus", ... }
+  */
+};
+
+/* =========================================================================
+   2. Zustand
+   ========================================================================= */
+
+var S = {
+  thema: "dyskalkulie",
+  schritt: 0,
+  modus: "regel",            // "regel" | "liste"
+  regelAngewendet: false,
+  stamm: {
+    name:"", vorname:"", klasse:"", klassenlehrkraft:"",
+    dauer:"schuljahr", schuljahr:"", beschlussdatum:"",
+    lehrkraefte:"", eltern:"", abstimmung:"einstimmig", ja:"", nein:""
+  },
+  krit: {},                  // kriteriumId -> wert
+  wahl: {}                   // massnahmeId -> {lern:bool, pruefung:bool}
+};
+
+var SCHRITTE = [
+  {n:"Schritt 1", t:"Schülerdaten"},
+  {n:"Schritt 2", t:"Kriterien"},
+  {n:"Schritt 3", t:"Maßnahmen"},
+  {n:"Schritt 4", t:"Beschlussvorlage"}
+];
+
+function kat(){ return KATALOGE[S.thema]; }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function el(id){ return document.getElementById(id); }
+
+/* =========================================================================
+   3. Regelwerk
+   ========================================================================= */
+
+function istVorgeschlagen(m){
+  if(!m.trigger) return false;
+  for(var i=0;i<m.trigger.length;i++){
+    var t=m.trigger[i];
+    if(t.w.indexOf(S.krit[t.k])>-1) return true;
+  }
+  return false;
+}
+
+function regelnAnwenden(){
+  var ms=kat().massnahmen;
+  for(var i=0;i<ms.length;i++){
+    var m=ms[i];
+    if(m.fest) continue;
+    var v=istVorgeschlagen(m);
+    S.wahl[m.id]={lern: v && !!m.lern, pruefung: v && !!m.pruefung};
+  }
+}
+
+function alleAbwaehlen(){
+  var ms=kat().massnahmen;
+  for(var i=0;i<ms.length;i++){
+    if(!ms[i].fest) S.wahl[ms[i].id]={lern:false,pruefung:false};
+  }
+}
+
+function gewaehlt(m){
+  if(m.fest) return {lern:!!m.lern, pruefung:!!m.pruefung};
+  return S.wahl[m.id] || {lern:false,pruefung:false};
+}
+
+function zaehlen(){
+  var u=0,p=0, ms=kat().massnahmen;
+  for(var i=0;i<ms.length;i++){
+    var g=gewaehlt(ms[i]);
+    if(g.lern) u++;
+    if(g.pruefung) p++;
+  }
+  return {u:u,p:p};
+}
+
+/* =========================================================================
+   4. Rendering
+   ========================================================================= */
+
+function renderThemen(){
+  var s=el("thema"), h="";
+  for(var k in KATALOGE){ h+='<option value="'+k+'">'+esc(KATALOGE[k].titel)+"</option>"; }
+  s.innerHTML=h; s.value=S.thema;
+}
+
+function renderNav(){
+  var h="";
+  for(var i=0;i<SCHRITTE.length;i++){
+    h+='<button type="button" data-s="'+i+'" aria-current="'+(i===S.schritt)+'">'+
+       '<span class="n">'+SCHRITTE[i].n+'</span><span class="t">'+SCHRITTE[i].t+"</span></button>";
+  }
+  el("schrittnav").innerHTML=h;
+}
+
+function renderStatus(){
+  var z=zaehlen();
+  el("z-unterricht").textContent=z.u;
+  el("z-pruefung").textContent=z.p;
+  el("btn-zurueck").disabled = S.schritt===0;
+  el("btn-weiter").textContent = S.schritt===3 ? "Nach oben" : "Weiter";
+}
+
+function render(){
+  renderNav();
+  var h="";
+  if(S.schritt===0) h=viewStamm();
+  if(S.schritt===1) h=viewKriterien();
+  if(S.schritt===2) h=viewMassnahmen();
+  if(S.schritt===3) h=viewVorschau();
+  el("inhalt").innerHTML=h;
+  renderStatus();
+}
+
+/* --- Schritt 1 --- */
+function viewStamm(){
+  var d=S.stamm;
+  return '<section class="card">'+
+    '<h2>Schülerdaten und Geltungsdauer</h2>'+
+    '<p class="lead">Diese Angaben erscheinen auf beiden Blättern der Beschlussvorlage.</p>'+
+    '<div class="grid">'+
+      fInput("vorname","Vorname",d.vorname)+
+      fInput("name","Name",d.name)+
+      fInput("klasse","Klasse",d.klasse)+
+      fInput("klassenlehrkraft","Klassenlehrkraft",d.klassenlehrkraft)+
+      '<div class="field"><label for="f-dauer">Geltungsdauer</label><select id="f-dauer" data-f="dauer">'+
+        opt("hj1","1. Halbjahr",d.dauer)+opt("hj2","2. Halbjahr",d.dauer)+opt("schuljahr","gesamtes Schuljahr",d.dauer)+
+      "</select></div>"+
+      fInput("schuljahr","Schuljahr (z. B. 2026/27)",d.schuljahr)+
+      '<div class="field"><label for="f-beschlussdatum">Datum des Konferenzbeschlusses</label>'+
+        '<input type="date" id="f-beschlussdatum" data-f="beschlussdatum" value="'+esc(d.beschlussdatum)+'"></div>'+
+      '<div class="field"><label for="f-abstimmung">Abstimmungsergebnis</label><select id="f-abstimmung" data-f="abstimmung">'+
+        opt("einstimmig","einstimmig",d.abstimmung)+opt("mehrheitlich","mehrheitlich",d.abstimmung)+
+      "</select></div>"+
+      (d.abstimmung==="mehrheitlich" ?
+        fInput("ja","Ja-Stimmen",d.ja)+fInput("nein","Nein-Stimmen",d.nein) : "")+
+      '<div class="field full"><label for="f-lehrkraefte">Anwesende Lehrkräfte</label>'+
+        '<textarea id="f-lehrkraefte" data-f="lehrkraefte">'+esc(d.lehrkraefte)+"</textarea></div>"+
+      '<div class="field full"><label for="f-eltern">Anwesende Elternvertreterinnen und Elternvertreter</label>'+
+        '<textarea id="f-eltern" data-f="eltern">'+esc(d.eltern)+"</textarea></div>"+
+    "</div></section>";
+}
+function fInput(id,label,val){
+  return '<div class="field"><label for="f-'+id+'">'+esc(label)+'</label>'+
+    '<input type="text" id="f-'+id+'" data-f="'+id+'" value="'+esc(val)+'"></div>';
+}
+function opt(v,l,cur){ return '<option value="'+v+'"'+(cur===v?" selected":"")+">"+esc(l)+"</option>"; }
+
+/* --- Schritt 2 --- */
+function viewKriterien(){
+  var ks=kat().kriterien, h="";
+  h+='<section class="card"><h2>Kriterien — '+esc(kat().titel)+"</h2>"+
+     '<p class="lead">Grundlage für den Maßnahmenvorschlag im nächsten Schritt. Beobachtungen aus dem Unterricht genügen; die Einschätzung ersetzt keine Diagnostik.</p>';
+  for(var i=0;i<ks.length;i++){
+    var k=ks[i], o="";
+    for(var j=0;j<k.optionen.length;j++){
+      var op=k.optionen[j], sel=S.krit[k.id]===op.wert;
+      o+='<label><input type="radio" name="k-'+k.id+'" data-k="'+k.id+'" value="'+op.wert+'"'+
+         (sel?" checked":"")+">"+esc(op.label)+"</label>";
+    }
+    h+='<div class="krit"><div class="k-kopf"><span class="k-name">'+esc(k.label)+"</span></div>"+
+       '<p class="k-hint">'+esc(k.hinweis)+'</p><div class="skala">'+o+"</div></div>";
+  }
+  h+="</section>";
+  return h;
+}
+
+/* --- Schritt 3 --- */
+function viewMassnahmen(){
+  var k=kat(), h="";
+  h+='<section class="card">'+
+     '<h2>Maßnahmen festlegen</h2>'+
+     '<p class="lead">Pro Maßnahme entscheiden Sie getrennt, ob sie im Unterricht, in Leistungssituationen oder in beidem gilt.</p>'+
+     '<div class="modusleiste">'+
+       '<div class="seg" role="group" aria-label="Auswahlmodus">'+
+         '<button type="button" data-modus="regel" aria-pressed="'+(S.modus==="regel")+'">Vorschlag aus Kriterien</button>'+
+         '<button type="button" data-modus="liste" aria-pressed="'+(S.modus==="liste")+'">Freie Checkliste</button>'+
+       "</div>"+
+       '<button type="button" class="linkbtn" id="btn-neu">Vorschlag neu berechnen</button>'+
+       '<button type="button" class="linkbtn" id="btn-leer">Alles abwählen</button>'+
+     "</div>";
+
+  if(S.modus==="regel"){
+    h+='<p class="hinweis">Vorausgewählt sind die Maßnahmen, die zu den erfassten Kriterien passen. Alles bleibt frei änderbar — die Konferenz entscheidet, nicht die Regel.</p>';
+  }
+
+  for(var c=0;c<k.kategorien.length;c++){
+    var kg=k.kategorien[c], rows="";
+    for(var i=0;i<k.massnahmen.length;i++){
+      var m=k.massnahmen[i];
+      if(m.kat!==kg.id) continue;
+      rows+=zeileMassnahme(m);
+    }
+    if(!rows) continue;
+    h+='<div class="kat"><h3>'+esc(kg.label)+'</h3><p class="kat-note">'+esc(kg.note)+"</p>"+rows+"</div>";
+  }
+  h+="</section>";
+  return h;
+}
+
+function zeileMassnahme(m){
+  var g=gewaehlt(m);
+  var badge = (S.modus==="regel" && !m.fest && istVorgeschlagen(m)) ? '<span class="m-badge">vorgeschlagen</span>' : "";
+  if(m.fest){
+    return '<div class="m"><div class="m-text">'+esc(m.text)+"</div>"+
+           '<div class="m-fix">gilt generell</div></div>';
+  }
+  var s='<div class="stempel">';
+  s+= m.lern ? stempel(m.id,"lern","Unterricht",g.lern) : '<span class="leer"></span>';
+  s+= m.pruefung ? stempel(m.id,"pruefung","Prüfung",g.pruefung) : '<span class="leer"></span>';
+  s+="</div>";
+  return '<div class="m"><div class="m-text">'+esc(m.text)+badge+"</div>"+s+"</div>";
+}
+function stempel(id,feld,label,an){
+  return '<label><input type="checkbox" data-m="'+id+'" data-feld="'+feld+'"'+(an?" checked":"")+
+         '><span class="box"></span><span>'+esc(label)+"</span></label>";
+}
+
+/* --- Schritt 4 --- */
+function dauerText(){
+  var d=S.stamm, j=d.schuljahr||"20…/…";
+  if(d.dauer==="hj1") return "für die Dauer des 1. Halbjahres "+j;
+  if(d.dauer==="hj2") return "für die Dauer des 2. Halbjahres "+j;
+  return "für das gesamte Schuljahr "+j;
+}
+function datumText(s){
+  if(!s) return "____________";
+  var p=s.split("-"); return p[2]+"."+p[1]+"."+p[0];
+}
+function schuelerText(){
+  var d=S.stamm, n=[d.vorname,d.name].filter(Boolean).join(" ");
+  return n || "____________________";
+}
+function abstimmungText(){
+  var d=S.stamm;
+  return d.abstimmung==="einstimmig" ? "einstimmig"
+       : "mehrheitlich ("+(d.ja||"__")+" Ja / "+(d.nein||"__")+" Nein)";
+}
+
+function gewaehlteNachKategorie(){
+  var k=kat(), out=[];
+  for(var c=0;c<k.kategorien.length;c++){
+    var kg=k.kategorien[c], items=[];
+    for(var i=0;i<k.massnahmen.length;i++){
+      var m=k.massnahmen[i]; if(m.kat!==kg.id) continue;
+      var g=gewaehlt(m);
+      if(!g.lern && !g.pruefung) continue;
+      var bereich = g.lern && g.pruefung ? "Unterricht + Prüfung" : (g.lern ? "Unterricht" : "Prüfung");
+      items.push({text:m.text, bereich:bereich, fest:!!m.fest});
+    }
+    if(items.length) out.push({label:kg.label, items:items});
+  }
+  return out;
+}
+
+function viewVorschau(){
+  var d=S.stamm, k=kat(), gruppen=gewaehlteNachKategorie();
+  var warn = (!d.name && !d.vorname) ? '<p class="fehler nichtdrucken">Es sind noch keine Schülerdaten erfasst. Die Vorlage enthält an diesen Stellen Platzhalter.</p>' : "";
+
+  var liste="";
+  for(var i=0;i<gruppen.length;i++){
+    liste+="<h4>"+esc(gruppen[i].label)+"</h4><ul>";
+    for(var j=0;j<gruppen[i].items.length;j++){
+      var it=gruppen[i].items[j];
+      liste+="<li>"+esc(it.text)+
+        (it.fest ? "" : '<span class="geltung">'+esc(it.bereich)+"</span>")+"</li>";
+    }
+    liste+="</ul>";
+  }
+  if(!liste) liste='<p style="font-size:14px;color:#5C6B72">Es wurden noch keine Maßnahmen ausgewählt.</p>';
+
+  return warn+
+  '<section class="card nichtdrucken">'+
+    "<h2>Beschlussvorlage</h2>"+
+    '<p class="lead">Zwei Blätter: Konferenzbeschluss und Art und Umfang der Hilfen. Über „Drucken / PDF" erhalten Sie die Kopiervorlage, über „ODT" eine bearbeitbare Datei für LibreOffice oder Word.</p>'+
+    '<div class="aktionen" style="display:flex;gap:8px;flex-wrap:wrap">'+
+      '<button type="button" class="btn" style="border-color:#16202B;color:#16202B" id="btn-print">Drucken / PDF</button>'+
+      '<button type="button" class="btn" style="border-color:#16202B;color:#16202B" id="btn-odt">ODT herunterladen</button>'+
+    "</div>"+
+  "</section>"+
+
+  '<div id="vorschau">'+
+    '<div class="blatt">'+
+      '<div class="schule">Wilhelm-Röpke-Schule<small>Kooperative Gesamtschule Schwarmstedt</small></div>'+
+      '<div class="doktitel">Nachteilsausgleich — Konferenzbeschluss</div>'+
+      zeile("Beschluss vom", datumText(d.beschlussdatum))+
+      zeile("Förderschwerpunkt", k.langtitel)+
+      zeile("Schülerin / Schüler", schuelerText())+
+      zeile("Klasse", d.klasse||"________")+
+      zeile("Klassenlehrkraft", d.klassenlehrkraft||"________________________")+
+      zeile("Geltungsdauer", dauerText())+
+      zeile("Abstimmungsergebnis", abstimmungText())+
+      "<h4>Anwesende Lehrkräfte</h4><p style=\"font-size:14px;margin:0\">"+(esc(d.lehrkraefte)||"____________________________________________")+"</p>"+
+      "<h4>Anwesende Elternvertretung</h4><p style=\"font-size:14px;margin:0\">"+(esc(d.eltern)||"____________________________________________")+"</p>"+
+      '<p class="fuss">Der Nachteilsausgleich findet keine Erwähnung in den Zeugnissen. Je ein Exemplar verbleibt in der Schülerakte sowie bei den Erziehungsberechtigten.</p>'+
+      '<div class="unter"><div>Ort, Datum</div><div>Unterschrift Klassenlehrkraft</div></div>'+
+    "</div>"+
+
+    '<div class="blatt">'+
+      '<div class="schule">Wilhelm-Röpke-Schule<small>Kooperative Gesamtschule Schwarmstedt</small></div>'+
+      '<div class="doktitel">Art und Umfang der Hilfen — '+esc(k.titel)+"</div>"+
+      zeile("Beschluss vom", datumText(d.beschlussdatum))+
+      zeile("Schülerin / Schüler", schuelerText()+(d.klasse?", Klasse "+esc(d.klasse):""))+
+      liste+
+      (k.fachhinweis?'<p class="fuss">'+esc(k.fachhinweis)+"</p>":"")+
+      '<div class="unter"><div>Ort, Datum</div><div>Unterschrift Klassenlehrkraft</div></div>'+
+    "</div>"+
+  "</div>";
+}
+function zeile(l,v){ return '<div class="zeile"><span class="lbl">'+esc(l)+'</span><span class="val">'+esc(v)+"</span></div>"; }
+
+/* =========================================================================
+   5. ODT-Export — ZIP (unkomprimiert) + ODF-XML, ohne externe Bibliothek
+   ========================================================================= */
+
+var CRC_TAB=(function(){
+  var t=new Uint32Array(256);
+  for(var n=0;n<256;n++){ var c=n;
+    for(var k=0;k<8;k++){ c = (c&1) ? (0xEDB88320 ^ (c>>>1)) : (c>>>1); }
+    t[n]=c>>>0;
+  }
+  return t;
+})();
+function crc32(buf){
+  var c=0xFFFFFFFF;
+  for(var i=0;i<buf.length;i++){ c = CRC_TAB[(c ^ buf[i]) & 0xFF] ^ (c>>>8); }
+  return (c ^ 0xFFFFFFFF)>>>0;
+}
+function enc(s){ return new TextEncoder().encode(s); }
+
+function zipBauen(dateien){
+  var chunks=[], central=[], offset=0, i;
+  for(i=0;i<dateien.length;i++){
+    var f=dateien[i], nb=enc(f.name), crc=crc32(f.bytes), len=f.bytes.length;
+    var lh=new Uint8Array(30+nb.length), dv=new DataView(lh.buffer);
+    dv.setUint32(0,0x04034b50,true); dv.setUint16(4,20,true);
+    dv.setUint32(14,crc,true); dv.setUint32(18,len,true); dv.setUint32(22,len,true);
+    dv.setUint16(26,nb.length,true);
+    lh.set(nb,30);
+    chunks.push(lh,f.bytes);
+
+    var cd=new Uint8Array(46+nb.length), cv=new DataView(cd.buffer);
+    cv.setUint32(0,0x02014b50,true); cv.setUint16(4,20,true); cv.setUint16(6,20,true);
+    cv.setUint32(16,crc,true); cv.setUint32(20,len,true); cv.setUint32(24,len,true);
+    cv.setUint16(28,nb.length,true); cv.setUint32(42,offset,true);
+    cd.set(nb,46);
+    central.push(cd);
+    offset += lh.length + len;
+  }
+  var cdSize=0;
+  for(i=0;i<central.length;i++) cdSize+=central[i].length;
+  var eo=new Uint8Array(22), ev=new DataView(eo.buffer);
+  ev.setUint32(0,0x06054b50,true);
+  ev.setUint16(8,central.length,true); ev.setUint16(10,central.length,true);
+  ev.setUint32(12,cdSize,true); ev.setUint32(16,offset,true);
+
+  var alle=chunks.concat(central,[eo]), gesamt=0;
+  for(i=0;i<alle.length;i++) gesamt+=alle[i].length;
+  var out=new Uint8Array(gesamt), pos=0;
+  for(i=0;i<alle.length;i++){ out.set(alle[i],pos); pos+=alle[i].length; }
+  return out;
+}
+
+var ODT_STYLES =
+'<?xml version="1.0" encoding="UTF-8"?>'+
+'<office:document-styles xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"'+
+' xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0"'+
+' xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0" office:version="1.2">'+
+'<office:automatic-styles><style:page-layout style:name="pm1"><style:page-layout-properties'+
+' fo:page-width="21cm" fo:page-height="29.7cm" style:print-orientation="portrait"'+
+' fo:margin-top="2cm" fo:margin-bottom="2cm" fo:margin-left="2.2cm" fo:margin-right="2.2cm"/>'+
+'</style:page-layout></office:automatic-styles>'+
+'<office:master-styles><style:master-page style:name="Standard" style:page-layout-name="pm1"/>'+
+'</office:master-styles></office:document-styles>';
+
+function pStyle(name,attrsP,attrsT){
+  return '<style:style style:name="'+name+'" style:family="paragraph">'+
+    '<style:paragraph-properties '+attrsP+'/>'+
+    '<style:text-properties '+attrsT+'/></style:style>';
+}
+function p(style,text){ return '<text:p text:style-name="'+style+'">'+esc(text)+"</text:p>"; }
+
+function odtBauen(){
+  var d=S.stamm, k=kat(), gruppen=gewaehlteNachKategorie(), b="";
+
+  var styles=
+    pStyle("Schule",'fo:margin-bottom="0.05cm"','fo:font-size="16pt" fo:font-weight="bold"')+
+    pStyle("Schule2",'fo:margin-bottom="0.5cm"','fo:font-size="10pt" fo:color="#5C6B72"')+
+    pStyle("Titel",'fo:margin-top="0.3cm" fo:margin-bottom="0.5cm" fo:border-top="0.06cm solid #16202B" fo:border-bottom="0.02cm solid #16202B" fo:padding-top="0.2cm" fo:padding-bottom="0.2cm"','fo:font-size="13pt" fo:font-weight="bold"')+
+    pStyle("Zeile",'fo:margin-bottom="0.12cm" fo:border-bottom="0.002cm dotted #B0B8B6" fo:padding-bottom="0.08cm" style:join-border="false"','fo:font-size="11pt"')+
+    pStyle("H4",'fo:margin-top="0.55cm" fo:margin-bottom="0.15cm"','fo:font-size="9pt" fo:font-weight="bold" fo:color="#5C6B72"')+
+    pStyle("Item",'fo:margin-left="0.6cm" fo:text-indent="-0.4cm" fo:margin-bottom="0.1cm"','fo:font-size="11pt"')+
+    pStyle("Std",'fo:margin-bottom="0.15cm"','fo:font-size="11pt"')+
+    pStyle("Fuss",'fo:margin-top="0.6cm" fo:border-top="0.002cm solid #B0B8B6" fo:padding-top="0.2cm"','fo:font-size="9pt" fo:color="#5C6B72"')+
+    pStyle("Unter",'fo:margin-top="1.4cm"','fo:font-size="10pt" fo:color="#5C6B72"')+
+    pStyle("Umbruch",'fo:break-before="page"','fo:font-size="16pt" fo:font-weight="bold"');
+
+  /* Blatt 1 */
+  b+=p("Schule","Wilhelm-Röpke-Schule");
+  b+=p("Schule2","Kooperative Gesamtschule Schwarmstedt");
+  b+=p("Titel","Nachteilsausgleich — Konferenzbeschluss");
+  b+=p("Zeile","Beschluss vom:  "+datumText(d.beschlussdatum));
+  b+=p("Zeile","Förderschwerpunkt:  "+k.langtitel);
+  b+=p("Zeile","Schülerin / Schüler:  "+schuelerText());
+  b+=p("Zeile","Klasse:  "+(d.klasse||"________"));
+  b+=p("Zeile","Klassenlehrkraft:  "+(d.klassenlehrkraft||"________________________"));
+  b+=p("Zeile","Geltungsdauer:  "+dauerText());
+  b+=p("Zeile","Abstimmungsergebnis:  "+abstimmungText());
+  b+=p("H4","ANWESENDE LEHRKRÄFTE");
+  b+=p("Std",d.lehrkraefte||"____________________________________________");
+  b+=p("H4","ANWESENDE ELTERNVERTRETUNG");
+  b+=p("Std",d.eltern||"____________________________________________");
+  b+=p("Fuss","Der Nachteilsausgleich findet keine Erwähnung in den Zeugnissen. Je ein Exemplar verbleibt in der Schülerakte sowie bei den Erziehungsberechtigten.");
+  b+=p("Unter","Ort, Datum: ____________________     Unterschrift Klassenlehrkraft: ____________________");
+
+  /* Blatt 2 */
+  b+=p("Umbruch","Wilhelm-Röpke-Schule");
+  b+=p("Schule2","Kooperative Gesamtschule Schwarmstedt");
+  b+=p("Titel","Art und Umfang der Hilfen — "+k.titel);
+  b+=p("Zeile","Beschluss vom:  "+datumText(d.beschlussdatum));
+  b+=p("Zeile","Schülerin / Schüler:  "+schuelerText()+(d.klasse?", Klasse "+d.klasse:""));
+  for(var i=0;i<gruppen.length;i++){
+    b+=p("H4",gruppen[i].label.toUpperCase());
+    for(var j=0;j<gruppen[i].items.length;j++){
+      var it=gruppen[i].items[j];
+      b+=p("Item","•  "+it.text+(it.fest?"":"   ["+it.bereich+"]"));
+    }
+  }
+  if(!gruppen.length) b+=p("Std","Es wurden keine Maßnahmen ausgewählt.");
+  if(k.fachhinweis) b+=p("Fuss",k.fachhinweis);
+  b+=p("Unter","Ort, Datum: ____________________     Unterschrift Klassenlehrkraft: ____________________");
+
+  var content=
+  '<?xml version="1.0" encoding="UTF-8"?>'+
+  '<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"'+
+  ' xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0"'+
+  ' xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"'+
+  ' xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0" office:version="1.2">'+
+  "<office:automatic-styles>"+styles+"</office:automatic-styles>"+
+  "<office:body><office:text>"+b+"</office:text></office:body></office:document-content>";
+
+  var manifest=
+  '<?xml version="1.0" encoding="UTF-8"?>'+
+  '<manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0" manifest:version="1.2">'+
+  '<manifest:file-entry manifest:full-path="/" manifest:media-type="application/vnd.oasis.opendocument.text"/>'+
+  '<manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/>'+
+  '<manifest:file-entry manifest:full-path="styles.xml" manifest:media-type="text/xml"/>'+
+  "</manifest:manifest>";
+
+  return zipBauen([
+    {name:"mimetype", bytes:enc("application/vnd.oasis.opendocument.text")},
+    {name:"META-INF/manifest.xml", bytes:enc(manifest)},
+    {name:"styles.xml", bytes:enc(ODT_STYLES)},
+    {name:"content.xml", bytes:enc(content)}
+  ]);
+}
+
+function odtLaden(){
+  var bytes=odtBauen();
+  var blob=new Blob([bytes],{type:"application/vnd.oasis.opendocument.text"});
+  var name="NTA_"+kat().titel+"_"+(S.stamm.name||"Vorlage")+".odt";
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=name.replace(/[^A-Za-z0-9_.\-äöüÄÖÜß]/g,"_");
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1500);
+}
+
+/* =========================================================================
+   6. Ereignisse
+   ========================================================================= */
+
+document.addEventListener("input", function(e){
+  var t=e.target;
+  if(t.dataset.f!==undefined){ S.stamm[t.dataset.f]=t.value;
+    if(t.dataset.f==="abstimmung") render(); return; }
+});
+document.addEventListener("change", function(e){
+  var t=e.target;
+  if(t.dataset.f!==undefined && t.tagName==="SELECT"){ S.stamm[t.dataset.f]=t.value;
+    if(t.dataset.f==="abstimmung") render(); return; }
+  if(t.dataset.k!==undefined){ S.krit[t.dataset.k]=t.value; S.regelAngewendet=false; return; }
+  if(t.dataset.m!==undefined){
+    var id=t.dataset.m;
+    if(!S.wahl[id]) S.wahl[id]={lern:false,pruefung:false};
+    S.wahl[id][t.dataset.feld]=t.checked;
+    renderStatus(); return;
+  }
+  if(t.id==="thema"){ S.thema=t.value; S.krit={}; S.wahl={}; S.regelAngewendet=false; S.schritt=0; render(); }
+});
+
+document.addEventListener("click", function(e){
+  var t=e.target.closest("button"); if(!t) return;
+
+  if(t.dataset.s!==undefined){ zuSchritt(parseInt(t.dataset.s,10)); return; }
+  if(t.dataset.modus){
+    S.modus=t.dataset.modus;
+    if(S.modus==="regel"){ regelnAnwenden(); } else { alleAbwaehlen(); }
+    render(); return;
+  }
+  if(t.id==="btn-neu"){ regelnAnwenden(); S.modus="regel"; render(); return; }
+  if(t.id==="btn-leer"){ alleAbwaehlen(); render(); return; }
+  if(t.id==="btn-print"){ window.print(); return; }
+  if(t.id==="btn-odt"){ odtLaden(); return; }
+  if(t.id==="btn-zurueck"){ zuSchritt(S.schritt-1); return; }
+  if(t.id==="btn-weiter"){
+    if(S.schritt===3){ window.scrollTo({top:0,behavior:"smooth"}); return; }
+    zuSchritt(S.schritt+1); return;
+  }
+});
+
+function zuSchritt(i){
+  if(i<0||i>3) return;
+  if(i===2 && S.modus==="regel" && !S.regelAngewendet){ regelnAnwenden(); S.regelAngewendet=true; }
+  S.schritt=i;
+  render();
+  window.scrollTo({top:0,behavior:"instant"});
+}
+
+renderThemen();
+render();
+</script>
+</body>
+</html>

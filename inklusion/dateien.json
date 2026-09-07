@@ -1,5 +1,16 @@
 {
   "fachbereich": "inklusion",
-  "erstellt": "2026-09-06T19:38:29+00:00",
-  "eintraege": []
+  "aktualisiert": "2026-09-07",
+  "eintraege": [
+    {
+      "pfad": "nta/Nachteilsausgleich Mathematik.html",
+      "datei": "Nachteilsausgleich Mathematik.html",
+      "typ": "html",
+      "titel": "Nachteilsausgleich – Arbeitshilfe",
+      "beschreibung": "",
+      "kategorie": "nta",
+      "groesse": "41 KB",
+      "geaendert": "2026-08-31"
+    }
+  ]
 }

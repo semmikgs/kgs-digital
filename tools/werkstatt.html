@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Werkstatt · KGS - Digital</title>
+<link rel="stylesheet" href="/assets/kgs.css">
+<style>
+  .zeile { display:flex; flex-wrap:wrap; gap:22px; margin-top:18px; }
+  .feld dt { margin:0 0 3px; font-size:12.5px; font-weight:700; color:var(--tinte-leise); }
+  .feld dd { margin:0; font-size:15px; font-weight:600; color:var(--tinte); }
+  .feld dd a { color:var(--indigo); }
+
+  .gruppe-titel { margin:26px 0 12px; color:#c9cbe8; font-size:14px; font-weight:600; }
+
+  .datei {
+    display:flex; align-items:center; gap:14px;
+    padding:13px 20px; margin-bottom:9px;
+    background:var(--karte); border-radius:10px; box-shadow:var(--schatten);
+    border-left:4px solid var(--linie);
+  }
+  .datei.neu       { border-left-color:#16a34a; }
+  .datei.geaendert { border-left-color:#d97706; }
+  .datei.geloescht { border-left-color:#dc2626; }
+  .datei .pfad {
+    flex:1; min-width:0; font-size:14.5px; color:var(--tinte);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .datei .art { flex:none; padding:3px 11px; border-radius:999px; font-size:12px; font-weight:700; }
+  .neu .art       { background:#dcfce7; color:#15803d; }
+  .geaendert .art { background:#fef3c7; color:#b45309; }
+  .geloescht .art { background:#fee2e2; color:#b91c1c; }
+  .verschoben .art, .kopiert .art { background:var(--badge-bg); color:var(--indigo); }
+
+  .beschriftung { display:block; margin:0 0 7px; font-size:13.5px; font-weight:700; color:var(--tinte-leise); }
+
+  input[type=text].eingabe, input[type=password].eingabe {
+    width:100%; padding:13px 16px; font-family:inherit; font-size:15px;
+    color:var(--tinte); background:#fff;
+    border:1.5px solid var(--linie); border-radius:var(--radius-klein);
+  }
+  input.eingabe:focus { outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(30,42,120,.12); }
+
+  .knopf.gross { padding:14px 26px; font-size:15.5px; }
+  .knopf[disabled] { opacity:.45; pointer-events:none; }
+  .knopf.gefahrlos { background:#0f766e; }
+  .knopf.gefahrlos:hover { background:#0c5f59; }
+
+  .meldung { padding:15px 18px; border-radius:10px; font-size:14.5px; margin-top:18px; }
+  .meldung.gut      { background:#dcfce7; color:#14532d; }
+  .meldung.schlecht { background:#fee2e2; color:#7f1d1d; }
+  .meldung.info     { background:#eef0f5; color:#374151; }
+  .meldung.warnung  { background:#fef3c7; color:#78350f; }
+  .meldung a { color:inherit; font-weight:700; }
+
+  .protokoll { margin-top:16px; padding:0; font-size:14px; }
+  .protokoll li { margin-bottom:7px; list-style:none; }
+  .protokoll .haken { font-weight:700; margin-right:8px; }
+  .protokoll .ok { color:#15803d; } .protokoll .bad { color:#b91c1c; }
+  .protokoll pre {
+    margin:5px 0 0 26px; padding:9px 12px; background:#f5f6f9; border-radius:7px;
+    font-size:12.5px; color:#4b5563; white-space:pre-wrap; overflow-x:auto;
+  }
+
+  .lade { color:#c9cbe8; font-size:14.5px; }
+
+  /* Bestand */
+  .bereich-kopf {
+    display:flex; align-items:baseline; gap:12px;
+    margin:22px 0 10px; color:var(--indigo);
+    font-size:17px; font-weight:700; text-transform:capitalize;
+  }
+  .bereich-kopf .anzahl { font-size:13px; font-weight:600; color:var(--tinte-leise); text-transform:none; }
+
+  .bestandzeile {
+    display:flex; align-items:center; gap:12px;
+    padding:11px 18px; margin-bottom:7px;
+    background:var(--karte); border-radius:10px; box-shadow:var(--schatten);
+  }
+  .bestandzeile.aus { opacity:.62; }
+  .bestandzeile .name { flex:1; min-width:0; font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .bestandzeile .kat { flex:none; padding:3px 11px; border-radius:999px; background:var(--badge-bg); color:var(--indigo); font-size:12px; font-weight:700; }
+  .bestandzeile .datum { flex:none; font-size:12.5px; color:var(--tinte-leise); }
+  .bestandzeile .zustand { flex:none; font-size:12.5px; font-weight:700; min-width:78px; text-align:right; }
+  .bestandzeile .zustand.an  { color:#15803d; }
+  .bestandzeile .zustand.aus { color:#b45309; }
+
+  .schalter {
+    flex:none; padding:7px 14px; border-radius:7px; border:1.5px solid var(--linie);
+    background:#fff; font-family:inherit; font-size:13px; font-weight:600;
+    color:var(--navy); cursor:pointer;
+  }
+  .schalter:hover { background:var(--chip); }
+  .schalter[disabled] { opacity:.45; pointer-events:none; }
+
+  .suchfeld.klein input { padding:11px 42px 11px 15px; font-size:14.5px; }
+
+  @media (max-width:640px) {
+    .bestandzeile .datum, .bestandzeile .kat { display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="huelle">
+
+  <div class="karte">
+    <h1 class="kopf-titel"><span class="symbol">🛠️</span> Werkstatt</h1>
+    <p class="kopf-untertitel">Material prüfen und auf die Schulseite veröffentlichen</p>
+
+    <div class="buttonreihe">
+      <button class="knopf" type="button" id="knopf-neu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/>
+        </svg>
+        Erneut prüfen
+      </button>
+      <a class="knopf gefahrlos" href="/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+        Vorschau ansehen
+      </a>
+      <button class="knopf" type="button" id="knopf-bestand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+        </svg>
+        Bestand anzeigen
+      </button>
+      <button class="knopf zurueck" type="button" id="knopf-anmeldung">Verbindung</button>
+      <button class="knopf zurueck" type="button" id="knopf-ende">Beenden</button>
+    </div>
+
+    <hr class="trenner">
+    <dl class="zeile" id="kennzahlen" style="margin:0;"></dl>
+  </div>
+
+  <div id="anmeldung" hidden></div>
+  <div id="bestand" hidden></div>
+  <div id="inhalt"><p class="lade">Projektordner wird geprüft …</p></div>
+
+  <p class="fusszeile">Läuft nur auf diesem Rechner</p>
+</div>
+
+<script>
+const TOKEN = "__TOKEN__";
+const api = (weg) => weg + (weg.includes("?") ? "&" : "?") + "t=" + TOKEN;
+
+const el = (tag, klasse, text) => {
+  const k = document.createElement(tag);
+  if (klasse) k.className = klasse;
+  if (text != null) k.textContent = text;
+  return k;
+};
+
+async function hole(weg, daten) {
+  const einstellungen = daten
+    ? { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(daten) }
+    : {};
+  const r = await fetch(api(weg), einstellungen);
+  return r.json();
+}
+
+function meldung(art, text) {
+  const d = el("div", "meldung " + art);
+  d.innerHTML = text;
+  return d;
+}
+
+const kennzahlen  = document.getElementById("kennzahlen");
+const inhalt      = document.getElementById("inhalt");
+const feldBestand = document.getElementById("bestand");
+const feldAnmeld  = document.getElementById("anmeldung");
+
+/* ================= Verbindung ================= */
+
+function reihe(titel, wert) {
+  const d = el("div", "feld");
+  d.appendChild(el("dt", null, titel));
+  d.appendChild(el("dd", null, wert || "—"));
+  return d;
+}
+
+async function verbindungZeigen(hinweis) {
+  feldAnmeld.hidden = false;
+  feldAnmeld.innerHTML = '<p class="lade">Verbindung wird gelesen …</p>';
+
+  const v = await hole("/api/verbindung");
+  feldAnmeld.innerHTML = "";
+
+  const karte = el("div", "karte");
+  const h = el("h2", "kopf-titel", "🔗 Verbindung zu GitHub");
+  h.style.fontSize = "21px";
+  karte.appendChild(h);
+
+  const kopf = el("dl", "zeile");
+  kopf.appendChild(reihe("Zweig", v.zweig));
+  kopf.appendChild(reihe("Benutzer", v.benutzer));
+  kopf.appendChild(reihe("Anmeldung", v.angemeldet ? "gespeichert" : "fehlt"));
+  karte.appendChild(kopf);
+
+  if (hinweis) karte.appendChild(meldung("warnung", hinweis));
+
+  karte.appendChild(el("hr", "trenner"));
+
+  /* --- Repository --- */
+  const bez0 = el("label", "beschriftung", "Adresse des Repositories");
+  bez0.setAttribute("for", "repo");
+  karte.appendChild(bez0);
+  const f0 = el("input", "eingabe");
+  f0.type = "text"; f0.id = "repo"; f0.value = v.repository || "";
+  f0.placeholder = "https://github.com/benutzername/kgs-digital.git";
+  karte.appendChild(f0);
+
+  /* --- Benutzer --- */
+  const bez1 = el("label", "beschriftung", "Benutzername bei GitHub");
+  bez1.setAttribute("for", "benutzer");
+  bez1.style.marginTop = "16px";
+  karte.appendChild(bez1);
+  const f1 = el("input", "eingabe");
+  f1.type = "text"; f1.id = "benutzer"; f1.value = v.benutzer || "";
+  f1.autocomplete = "username";
+  karte.appendChild(f1);
+
+  /* --- Token --- */
+  const bez2 = el("label", "beschriftung",
+    v.angemeldet ? "Neues Token (leer lassen, um das gespeicherte zu behalten)"
+                 : "Token");
+  bez2.setAttribute("for", "token");
+  bez2.style.marginTop = "16px";
+  karte.appendChild(bez2);
+  const f2 = el("input", "eingabe");
+  f2.type = "password"; f2.id = "token";
+  f2.autocomplete = "new-password";
+  f2.placeholder = "ghp_… oder github_pat_…";
+  karte.appendChild(f2);
+
+  karte.appendChild(meldung("info",
+    "Das Token wird in Gits eigenem Speicher unter " +
+    "<strong>~/.git-credentials</strong> abgelegt — außerhalb des " +
+    "Projektordners, damit es nie mit hochgeladen wird."));
+
+  const r = el("div", "buttonreihe");
+  const speichern  = el("button", "knopf gross", "Speichern");
+  const testen     = el("button", "knopf gefahrlos", "Verbindung testen");
+  const loeschen   = el("button", "knopf zurueck", "Zugangsdaten löschen");
+  const schliessen = el("button", "knopf zurueck", "Schließen");
+  [speichern, testen, loeschen, schliessen].forEach(b => {
+    b.type = "button"; r.appendChild(b);
+  });
+  karte.appendChild(r);
+
+  const ausgabe = el("div");
+  karte.appendChild(ausgabe);
+  feldAnmeld.appendChild(karte);
+
+  schliessen.onclick = () => { feldAnmeld.hidden = true; };
+
+  function zeige(e) {
+    ausgabe.innerHTML = "";
+    let text = e.meldung || "";
+    if (e.erfolg && e.adresse)
+      text += ' <a href="' + e.adresse + '" target="_blank" rel="noopener">Seite öffnen</a>';
+    ausgabe.appendChild(meldung(e.erfolg ? "gut" : "schlecht", text));
+    if (e.schritte) {
+      const ul = el("ul", "protokoll");
+      e.schritte.forEach(s => {
+        const li = el("li");
+        li.appendChild(el("span", "haken " + (s.erfolg ? "ok" : "bad"),
+                          s.erfolg ? "✓" : "✕"));
+        li.appendChild(document.createTextNode(s.titel));
+        if (s.hinweis) li.appendChild(el("pre", null, s.hinweis));
+        ul.appendChild(li);
+      });
+      ausgabe.appendChild(ul);
+    } else if (e.ausgabe) {
+      ausgabe.appendChild(el("pre", null, e.ausgabe));
+    }
+  }
+
+  async function mitWarten(knopf, text, arbeit) {
+    const alt = knopf.textContent;
+    knopf.disabled = true; knopf.textContent = text;
+    ausgabe.innerHTML = "";
+    try { await arbeit(); }
+    finally { knopf.disabled = false; knopf.textContent = alt; }
+  }
+
+  speichern.onclick = () => mitWarten(speichern, "Wird gespeichert …", async () => {
+    if (f0.value.trim() && f0.value.trim() !== (v.repository || "")) {
+      const e0 = await hole("/api/repository", { adresse: f0.value.trim() });
+      if (!e0.erfolg) { zeige(e0); return; }
+    }
+    if (f2.value.trim()) {
+      const e = await hole("/api/zugangsdaten",
+                           { benutzer: f1.value.trim(), token: f2.value.trim() });
+      zeige(e);
+      if (e.erfolg) { f2.value = ""; pruefen(); }
+      return;
+    }
+    zeige({ erfolg: true, meldung: "Gespeichert." });
+    pruefen();
+  });
+
+  testen.onclick = () => mitWarten(testen, "Wird geprüft …", async () => {
+    zeige(await hole("/api/test"));
+    pruefen();
+  });
+
+  loeschen.onclick = () => mitWarten(loeschen, "Wird entfernt …", async () => {
+    zeige(await hole("/api/zugangsdaten", { loeschen: true }));
+    f2.value = "";
+    pruefen();
+  });
+
+  (v.repository ? f1 : f0).focus();
+}
+
+document.getElementById("knopf-anmeldung").onclick = () => {
+  if (feldAnmeld.hidden) verbindungZeigen();
+  else feldAnmeld.hidden = true;
+};
+
+/* ================= Bestand ================= */
+
+let bestandOffen = false;
+
+async function bestandZeichnen() {
+  feldBestand.innerHTML = '<p class="lade">Bestand wird gelesen …</p>';
+
+  const b = await hole("/api/bestand");
+  feldBestand.innerHTML = "";
+
+  const kopf = el("div", "karte");
+  kopf.appendChild(el("h2", "kopf-titel", "📋 Bestand"));
+  kopf.querySelector("h2").style.fontSize = "21px";
+  kopf.appendChild(el("p", "kopf-untertitel",
+    b.gesamt + (b.gesamt === 1 ? " Material insgesamt" : " Materialien insgesamt")));
+
+  const suchfeld = el("div", "suchfeld klein");
+  suchfeld.style.marginTop = "18px";
+  const suche = el("input");
+  suche.type = "search"; suche.placeholder = "Im Bestand suchen …";
+  suche.setAttribute("aria-label", "Bestand durchsuchen");
+  suchfeld.appendChild(suche);
+  kopf.appendChild(suchfeld);
+
+  kopf.appendChild(meldung("info",
+    "<strong>Von der Schulseite nehmen</strong> entfernt ein Material beim " +
+    "nächsten Veröffentlichen von der Website. Auf deinem Rechner bleibt die " +
+    "Datei erhalten und lässt sich jederzeit wieder freigeben."));
+
+  feldBestand.appendChild(kopf);
+
+  if (!b.gesamt) {
+    feldBestand.appendChild(meldung("info",
+      "Noch keine Materialien abgelegt. Lege eine Datei in einen " +
+      "Fachbereichsordner und drücke auf „Erneut prüfen“."));
+    return;
+  }
+
+  b.bereiche.forEach(bereich => {
+    if (!bereich.dateien.length) return;
+
+    const h = el("div", "bereich-kopf");
+    h.appendChild(el("span", null, bereich.name));
+    const zusatz = bereich.versteckt
+      ? bereich.oeffentlich + " auf der Seite, " + bereich.versteckt + " nur lokal"
+      : bereich.oeffentlich + " auf der Seite";
+    h.appendChild(el("span", "anzahl", zusatz));
+    h.dataset.bereich = "1";
+    feldBestand.appendChild(h);
+
+    bereich.dateien.forEach(d => {
+      const z = el("div", "bestandzeile" + (d.oeffentlich ? "" : " aus"));
+      z.dataset.suchtext = (d.pfad + " " + d.kategorie).toLowerCase();
+
+      z.appendChild(el("span", "name", d.name));
+      if (d.kategorie) z.appendChild(el("span", "kat", d.kategorie));
+      z.appendChild(el("span", "datum", d.geaendert));
+      z.appendChild(el("span", "zustand " + (d.oeffentlich ? "an" : "aus"),
+                       d.oeffentlich ? "auf der Seite" : "nur lokal"));
+
+      const knopf = el("button", "schalter",
+                       d.oeffentlich ? "Von der Seite nehmen" : "Freigeben");
+      knopf.type = "button";
+      knopf.onclick = async () => {
+        knopf.disabled = true;
+        knopf.textContent = "…";
+        const e = await hole("/api/sichtbarkeit",
+                             { pfad: d.pfad, oeffentlich: !d.oeffentlich });
+        if (e.erfolg) { await bestandZeichnen(); pruefen(); }
+        else {
+          knopf.disabled = false;
+          knopf.textContent = d.oeffentlich ? "Von der Seite nehmen" : "Freigeben";
+          alert(e.meldung);
+        }
+      };
+      z.appendChild(knopf);
+      feldBestand.appendChild(z);
+    });
+  });
+
+  suche.addEventListener("input", () => {
+    const w = suche.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    [...feldBestand.querySelectorAll(".bestandzeile")].forEach(z => {
+      z.hidden = w.length && !w.every(x => z.dataset.suchtext.includes(x));
+    });
+    // Überschriften ohne sichtbare Zeilen ausblenden
+    let kopfZeile = null, sichtbar = 0;
+    [...feldBestand.children].forEach(k => {
+      if (k.dataset && k.dataset.bereich) {
+        if (kopfZeile) kopfZeile.hidden = sichtbar === 0;
+        kopfZeile = k; sichtbar = 0;
+      } else if (k.classList.contains("bestandzeile") && !k.hidden) {
+        sichtbar++;
+      }
+    });
+    if (kopfZeile) kopfZeile.hidden = sichtbar === 0;
+  });
+}
+
+document.getElementById("knopf-bestand").onclick = async (t) => {
+  bestandOffen = !bestandOffen;
+  feldBestand.hidden = !bestandOffen;
+  t.currentTarget.lastChild.textContent =
+    bestandOffen ? " Bestand ausblenden" : " Bestand anzeigen";
+  if (bestandOffen) await bestandZeichnen();
+};
+
+/* ================= Änderungen und Upload ================= */
+
+function kennzahl(titel, wert, alsLink) {
+  const d = el("div", "feld");
+  d.appendChild(el("dt", null, titel));
+  const dd = el("dd");
+  if (alsLink && wert) {
+    const a = el("a", null, wert);
+    a.href = wert; a.target = "_blank"; a.rel = "noopener";
+    dd.appendChild(a);
+  } else dd.textContent = wert || "—";
+  d.appendChild(dd);
+  kennzahlen.appendChild(d);
+}
+
+let laeuft = false;
+
+async function pruefen() {
+  inhalt.innerHTML = '<p class="lade">Projektordner wird geprüft …</p>';
+  kennzahlen.innerHTML = "";
+
+  let z;
+  try { z = await hole("/api/zustand"); }
+  catch (f) {
+    inhalt.innerHTML = "";
+    inhalt.appendChild(meldung("schlecht",
+      "Die Werkstatt antwortet nicht mehr. Bitte das Terminal-Fenster prüfen."));
+    return;
+  }
+
+  if (!z.bereit) {
+    inhalt.innerHTML = "";
+    inhalt.appendChild(meldung("schlecht", z.meldung));
+    return;
+  }
+
+  kennzahl("Zweig", z.branch);
+  kennzahl("Zuletzt veröffentlicht", z.letzte_veroeffentlichung);
+  kennzahl("Anmeldung", z.angemeldet ? "gespeichert" : "fehlt");
+  kennzahl("Adresse der Schulseite", z.adresse, true);
+
+  inhalt.innerHTML = "";
+
+  if (!z.angemeldet && z.anmeldegrund === "anmeldung") {
+    const w = meldung("warnung",
+      "<strong>Die Anmeldung bei GitHub fehlt.</strong> Ohne sie schlägt das " +
+      "Veröffentlichen fehl. Oben auf „Verbindung“ drücken und Benutzername " +
+      "samt Token eintragen.");
+    inhalt.appendChild(w);
+  } else if (!z.angemeldet && z.anmeldegrund === "verbindung") {
+    inhalt.appendChild(meldung("warnung",
+      "GitHub ist gerade nicht erreichbar. Veröffentlichen wird erst wieder " +
+      "funktionieren, wenn die Verbindung steht."));
+  }
+
+  const aenderungen = z.aenderungen || [];
+
+  if (!aenderungen.length) {
+    inhalt.appendChild(meldung("info",
+      "<strong>Alles veröffentlicht.</strong> Es gibt keine neuen oder " +
+      "geänderten Dateien. Lege neues Material in einen Fachbereichsordner " +
+      "und drücke auf „Erneut prüfen“."));
+    return;
+  }
+
+  const eigene = aenderungen.filter(a => !a.automatisch);
+  const auto   = aenderungen.filter(a =>  a.automatisch);
+
+  const liste = (titel, gruppe) => {
+    if (!gruppe.length) return;
+    inhalt.appendChild(el("p", "gruppe-titel", titel));
+    gruppe.forEach(a => {
+      const klasse = a.art.replace("ä","ae").replace("ö","oe").replace("ü","ue");
+      const d = el("div", "datei " + klasse);
+      d.appendChild(el("span", "pfad", a.pfad));
+      d.appendChild(el("span", "art", a.art));
+      inhalt.appendChild(d);
+    });
+  };
+
+  liste(eigene.length + (eigene.length === 1 ? " Datei von dir" : " Dateien von dir"), eigene);
+  liste("Automatisch aktualisierte Übersicht", auto);
+
+  const karte = el("div", "karte");
+  karte.style.marginTop = "26px";
+
+  const bez = el("label", "beschriftung", "Notiz zu dieser Veröffentlichung");
+  bez.setAttribute("for", "nachricht");
+  karte.appendChild(bez);
+
+  const feld = el("input", "eingabe");
+  feld.type = "text"; feld.id = "nachricht";
+  const bereiche = [...new Set(eigene.map(a => a.bereich))];
+  feld.value = bereiche.length && bereiche.length <= 3
+    ? "Material aktualisiert: " + bereiche.join(", ")
+    : "Material aktualisiert am " + new Date().toLocaleDateString("de-DE");
+  karte.appendChild(feld);
+
+  const reihe = el("div", "buttonreihe");
+  const senden = el("button", "knopf gross", "Jetzt veröffentlichen");
+  senden.type = "button";
+  reihe.appendChild(senden);
+  karte.appendChild(reihe);
+
+  const ausgabe = el("div");
+  karte.appendChild(ausgabe);
+  inhalt.appendChild(karte);
+
+  senden.onclick = async () => {
+    if (laeuft) return;
+    laeuft = true;
+    senden.disabled = true;
+    senden.textContent = "Wird veröffentlicht …";
+    ausgabe.innerHTML = "";
+
+    let e;
+    try { e = await hole("/api/hochladen", { nachricht: feld.value }); }
+    catch (f) { e = { erfolg:false, protokoll:[], meldung:"Keine Verbindung zur Werkstatt." }; }
+
+    let text = e.meldung || "";
+    if (e.erfolg && e.adresse)
+      text += ' <a href="' + e.adresse + '" target="_blank" rel="noopener">Seite öffnen</a>';
+    ausgabe.appendChild(meldung(e.erfolg ? "gut" : "schlecht", text));
+
+    if (e.anmeldung_noetig) verbindungZeigen(
+      "GitHub hat die Anmeldung abgelehnt. Bitte Benutzername und Token prüfen.");
+
+    if (e.protokoll && e.protokoll.length) {
+      const ul = el("ul", "protokoll");
+      e.protokoll.forEach(s => {
+        const li = el("li");
+        li.appendChild(el("span", "haken " + (s.erfolg ? "ok" : "bad"), s.erfolg ? "✓" : "✕"));
+        li.appendChild(document.createTextNode(s.titel));
+        if (s.ausgabe) li.appendChild(el("pre", null, s.ausgabe));
+        ul.appendChild(li);
+      });
+      ausgabe.appendChild(ul);
+    }
+
+    laeuft = false;
+    senden.textContent = "Erneut prüfen";
+    senden.disabled = false;
+    senden.onclick = pruefen;
+    if (bestandOffen) bestandZeichnen();
+  };
+}
+
+document.getElementById("knopf-neu").onclick = pruefen;
+
+document.getElementById("knopf-ende").onclick = async () => {
+  try { await fetch(api("/api/beenden")); } catch (f) { /* egal */ }
+  document.body.innerHTML =
+    '<div class="huelle"><div class="karte">' +
+    '<h1 class="kopf-titel"><span class="symbol">👋</span> Werkstatt beendet</h1>' +
+    '<p class="kopf-untertitel">Dieses Fenster kann geschlossen werden.</p>' +
+    '</div></div>';
+};
+
+pruefen();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# Vom System erzeugte Dateien, die nicht auf die Schulseite gehören
+
+__pycache__/
+*.pyc
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Zwischenspeicher von Office und Editoren
+~$*
+.~lock.*
+*.swp
+*~

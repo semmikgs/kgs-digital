@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KGS - Digital · Fachbereiche</title>
+<meta name="description" content="Digitale Werkzeuge der KGS Schwarmstedt, nach Fachbereichen sortiert.">
+<link rel="stylesheet" href="assets/kgs.css">
+</head>
+<body>
+<div class="huelle">
+
+  <div class="karte">
+    <h1 class="kopf-titel"><span class="symbol">💻</span> KGS - Digital</h1>
+    <p class="kopf-untertitel">Digitale Werkzeuge und Materialien der Fachbereiche</p>
+
+    <hr class="trenner">
+
+    <p style="margin:0;color:var(--tinte-leise);font-size:15px;">
+      Wähle einen Fachbereich. Jeder Bereich listet seine Materialien automatisch auf
+      und hat eine eigene Suche.
+    </p>
+  </div>
+
+  <div class="kachelraster" id="kacheln"></div>
+
+  <p class="fusszeile">KGS Schwarmstedt</p>
+
+</div>
+
+<!-- =========================================================
+     FACHBEREICHE PFLEGEN
+
+     Neuen Fachbereich anlegen:
+       1. Zeile unten kopieren, Ordnername/Titel/Symbol anpassen
+       2. Im Repository einen gleichnamigen Ordner anlegen
+       3. index.html und extern.html aus einem bestehenden
+          Fachbereich hineinkopieren und dort oben den Namen ändern
+
+     "ordner" muss exakt dem Ordnernamen entsprechen
+     (klein, ohne Leer- und Sonderzeichen).
+     ========================================================= -->
+<script>
+const FACHBEREICHE = [
+  { ordner: "mathematik", symbol: "📐", titel: "Mathematik",  beschreibung: "Rechnen, Geometrie, Funktionen" },
+  { ordner: "physik",     symbol: "🔭", titel: "Physik",      beschreibung: "Versuche, Simulationen, Messreihen" },
+  { ordner: "chemie",     symbol: "⚗️", titel: "Chemie",      beschreibung: "Stoffe, Reaktionen, Laborarbeit" },
+  { ordner: "biologie",   symbol: "🌿", titel: "Biologie",    beschreibung: "Körper, Ökologie, Genetik" },
+  { ordner: "informatik", symbol: "⌨️", titel: "Informatik",  beschreibung: "Programmieren, Daten, Technik" },
+  { ordner: "inklusion",  symbol: "🤝", titel: "Inklusion",   beschreibung: "Förderung, Nachteilsausgleich, Differenzierung" }
+];
+</script>
+<script src="assets/kgs.js"></script>
+</body>
+</html>

@@ -1,0 +1,297 @@
+/* =========================================================
+   KGS - Digital – gemeinsames Stylesheet
+   Wird von allen Seiten genutzt. Änderungen hier wirken überall.
+   ========================================================= */
+
+:root {
+  --bg:            #2a2c8e;   /* Seitenhintergrund (Indigo) */
+  --karte:         #ffffff;   /* Kartenflächen */
+  --tinte:         #1f2430;   /* Fließtext */
+  --tinte-leise:   #6b7280;   /* Nebentext */
+  --indigo:        #312e91;   /* Überschriften */
+  --navy:          #1e2a78;   /* Buttons */
+  --navy-hover:    #16205c;
+  --linie:         #e3e6ee;   /* Trennlinien, Rahmen */
+  --chip:          #eef0f5;   /* inaktive Filter */
+  --badge-bg:      #e6e8fb;   /* Kategorie-Badge */
+  --radius-karte:  16px;
+  --radius-klein:  8px;
+  --schatten:      0 1px 3px rgba(15, 20, 60, .12);
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  padding: 20px 16px 56px;
+  background: var(--bg);
+  color: var(--tinte);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.huelle { max-width: 1180px; margin: 0 auto; }
+
+/* ---------- Karten ---------- */
+
+.karte {
+  background: var(--karte);
+  border-radius: var(--radius-karte);
+  padding: 26px 28px;
+  margin-bottom: 22px;
+  box-shadow: var(--schatten);
+}
+
+/* ---------- Kopfbereich ---------- */
+
+.kopf-titel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--indigo);
+  letter-spacing: -.01em;
+}
+
+.kopf-titel .symbol { font-size: 28px; line-height: 1; }
+
+.kopf-untertitel {
+  margin: 6px 0 0;
+  color: var(--tinte-leise);
+  font-size: 15px;
+}
+
+/* ---------- Buttonreihe ---------- */
+
+.buttonreihe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.knopf {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  background: var(--navy);
+  color: #fff;
+  border-radius: var(--radius-klein);
+  font-size: 14.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background .15s ease;
+}
+
+.knopf:hover { background: var(--navy-hover); }
+.knopf svg { width: 15px; height: 15px; flex: none; }
+
+.knopf.zurueck {
+  background: transparent;
+  color: var(--navy);
+  border: 1.5px solid var(--linie);
+}
+.knopf.zurueck:hover { background: var(--chip); }
+
+/* ---------- Trennlinie ---------- */
+
+.trenner {
+  height: 1px;
+  background: var(--linie);
+  border: 0;
+  margin: 24px 0;
+}
+
+/* ---------- Suche ---------- */
+
+.suchfeld { position: relative; }
+
+.suchfeld input {
+  width: 100%;
+  padding: 14px 46px 14px 18px;
+  font-size: 15.5px;
+  font-family: inherit;
+  color: var(--tinte);
+  background: #fff;
+  border: 1.5px solid var(--linie);
+  border-radius: var(--radius-klein);
+}
+
+.suchfeld input::placeholder { color: #9aa1ae; }
+
+.suchfeld input:focus {
+  outline: none;
+  border-color: var(--navy);
+  box-shadow: 0 0 0 3px rgba(30, 42, 120, .12);
+}
+
+.suchfeld .lupe {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 19px;
+  height: 19px;
+  color: #9aa1ae;
+  pointer-events: none;
+}
+
+/* ---------- Filter-Chips ---------- */
+
+.filterreihe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 16px;
+}
+
+.filter {
+  padding: 9px 19px;
+  background: var(--chip);
+  color: #4b5563;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+
+.filter:hover { background: #e2e6ee; }
+
+.filter[aria-pressed="true"] {
+  background: #fff;
+  color: var(--indigo);
+  border-color: var(--indigo);
+}
+
+.filter:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+
+/* ---------- Kachelraster (Startseite) ---------- */
+
+.kachelraster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+  gap: 18px;
+}
+
+.kachel {
+  display: block;
+  padding: 22px 24px;
+  background: var(--karte);
+  border: 1.5px solid var(--linie);
+  border-radius: var(--radius-karte);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color .15s ease, transform .15s ease;
+}
+
+.kachel:hover {
+  border-color: var(--indigo);
+  transform: translateY(-2px);
+}
+
+.kachel .symbol { font-size: 30px; display: block; margin-bottom: 10px; }
+
+.kachel h2 {
+  margin: 0 0 5px;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--indigo);
+}
+
+.kachel p { margin: 0; font-size: 14.5px; color: var(--tinte-leise); }
+
+/* ---------- Eintragsliste ---------- */
+
+.eintrag {
+  display: block;
+  padding: 20px 24px;
+  margin-bottom: 14px;
+  background: var(--karte);
+  border-radius: var(--radius-karte);
+  box-shadow: var(--schatten);
+  text-decoration: none;
+  color: inherit;
+  border-left: 4px solid transparent;
+  transition: border-left-color .15s ease;
+}
+
+.eintrag:hover { border-left-color: var(--indigo); }
+
+.eintrag h3 {
+  margin: 0;
+  font-size: 17.5px;
+  font-weight: 700;
+  color: var(--indigo);
+}
+
+.eintrag p { margin: 7px 0 0; font-size: 15px; color: #4b5563; }
+
+.badge {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 4px 12px;
+  background: var(--badge-bg);
+  color: var(--indigo);
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.meta {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--tinte-leise);
+}
+
+/* ---------- Zustände ---------- */
+
+.hinweis {
+  padding: 26px 28px;
+  background: var(--karte);
+  border-radius: var(--radius-karte);
+  color: var(--tinte-leise);
+  font-size: 15px;
+}
+
+.hinweis strong { color: var(--tinte); }
+
+.zaehler {
+  margin: 4px 0 16px;
+  color: #c9cbe8;
+  font-size: 14px;
+}
+
+.fusszeile {
+  margin-top: 10px;
+  color: #b9bce0;
+  font-size: 13.5px;
+  text-align: center;
+}
+
+.fusszeile a { color: #dcdef5; }
+
+/* ---------- Mobil ---------- */
+
+@media (max-width: 560px) {
+  body { padding: 14px 12px 40px; }
+  .karte { padding: 20px 18px; }
+  .kopf-titel { font-size: 24px; }
+  .knopf { flex: 1 1 auto; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

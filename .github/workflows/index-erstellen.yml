@@ -1,0 +1,33 @@
+name: Dateiübersicht aktualisieren
+
+# Läuft bei jedem Hochladen und lässt sich zusätzlich von Hand starten
+# (Reiter "Actions" -> diesen Workflow wählen -> "Run workflow").
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  indizieren:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository holen
+        uses: actions/checkout@v4
+
+      - name: Übersicht erzeugen
+        run: python3 tools/index_erstellen.py
+
+      - name: Änderungen zurückschreiben
+        run: |
+          git config user.name  "KGS-Digital Bot"
+          git config user.email "actions@github.com"
+          git add "*/dateien.json"
+          if git diff --staged --quiet; then
+            echo "Keine Änderungen an der Übersicht."
+          else
+            git commit -m "Dateiübersicht automatisch aktualisiert"
+            git push
+          fi

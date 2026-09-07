@@ -13,6 +13,16 @@
       "geaendert": "2026-09-07"
     },
     {
+      "pfad": "tools/einheiten-umrechner.html",
+      "datei": "einheiten-umrechner.html",
+      "typ": "html",
+      "titel": "Einheiten-Umrechner",
+      "beschreibung": "Längen, Flächen, Volumen, Massen, Zeiten und Winkel umrechnen. Mit Zehnerpotenzen und SI-Präfixen.",
+      "kategorie": "tools",
+      "groesse": "19 KB",
+      "geaendert": "2026-09-07"
+    },
+    {
       "pfad": "tools/einheiten.html",
       "datei": "einheiten.html",
       "typ": "html",

@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Einheiten-Umrechner</title>
+<meta name="description" content="Längen, Flächen, Volumen, Massen, Zeiten und Winkel umrechnen. Mit Zehnerpotenzen und SI-Präfixen.">
+
+<!-- =========================================================
+     EINHEITEN-UMRECHNER (Mathematik) · KGS - Digital
+     Eigenständige Datei: kein CDN, kein Framework, offline lauffähig.
+     Stylesheet oben = gemeinsame KGS-Basis, darunter die
+     Ergänzungen für dieses Werkzeug.
+
+     NEUE EINHEIT AUFNEHMEN
+     Im Block GROESSEN unten eine Zeile ergänzen:
+       { zeichen: "hm", name: "Hektometer", faktor: 100 }
+     "faktor" ist immer der Wert in der Grundeinheit der Größe
+     (bei Länge: Meter, bei Zeit: Sekunde, bei Winkel: Grad).
+     ========================================================= -->
+
+<style>
+/* ---------- KGS-Basis ---------- */
+:root {
+  --bg:            #2a2c8e;
+  --karte:         #ffffff;
+  --tinte:         #1f2430;
+  --tinte-leise:   #6b7280;
+  --indigo:        #312e91;
+  --navy:          #1e2a78;
+  --navy-hover:    #16205c;
+  --linie:         #e3e6ee;
+  --chip:          #eef0f5;
+  --badge-bg:      #e6e8fb;
+  --radius-karte:  16px;
+  --radius-klein:  8px;
+  --schatten:      0 1px 3px rgba(15, 20, 60, .12);
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  padding: 16px 16px 48px;
+  background: var(--bg);
+  color: var(--tinte);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.huelle { max-width: 1180px; margin: 0 auto; }
+
+.karte {
+  background: var(--karte);
+  border-radius: var(--radius-karte);
+  padding: 18px 22px;
+  margin-bottom: 14px;
+  box-shadow: var(--schatten);
+}
+
+.kopf-titel {
+  display: flex; align-items: center; gap: 10px;
+  margin: 0; font-size: 24px; font-weight: 700;
+  color: var(--indigo); letter-spacing: -.01em;
+}
+.kopf-titel .symbol { font-size: 23px; line-height: 1; }
+
+.kopf-untertitel { margin: 3px 0 0; color: var(--tinte-leise); font-size: 14.5px; }
+
+.buttonreihe { display: flex; flex-wrap: wrap; gap: 9px; }
+
+.knopf {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: var(--navy); color: #fff;
+  border: 0; border-radius: var(--radius-klein);
+  font-family: inherit; font-size: 14.5px; font-weight: 600;
+  text-decoration: none; cursor: pointer;
+  transition: background .15s ease;
+}
+.knopf:hover { background: var(--navy-hover); }
+.knopf:focus-visible { outline: 2px solid var(--indigo); outline-offset: 2px; }
+
+.knopf.zurueck {
+  background: transparent; color: var(--navy);
+  border: 1.5px solid var(--linie);
+}
+.knopf.zurueck:hover { background: var(--chip); }
+
+.trenner { height: 1px; background: var(--linie); border: 0; margin: 18px 0; }
+
+.filter {
+  padding: 9px 19px;
+  background: var(--chip); color: #4b5563;
+  border: 1.5px solid transparent; border-radius: 999px;
+  font-family: inherit; font-size: 14.5px; font-weight: 600;
+  cursor: pointer; transition: background .15s ease;
+}
+.filter:hover { background: #e2e6ee; }
+.filter[aria-pressed="true"] { background: #fff; color: var(--indigo); border-color: var(--indigo); }
+.filter:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+
+.fusszeile { margin-top: 8px; color: #b9bce0; font-size: 13.5px; text-align: center; }
+
+/* ---------- Kopfzeile ---------- */
+
+.kopfleiste {
+  display: flex; flex-wrap: wrap; gap: 14px;
+  align-items: center; justify-content: space-between;
+}
+
+.artwahl {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 9px;
+  margin-top: 14px; padding-top: 14px;
+  border-top: 1px solid var(--linie);
+}
+.artwahl .aufschrift {
+  font-size: 13px; font-weight: 700; color: var(--tinte-leise);
+  margin-right: 4px;
+}
+
+/* ---------- Umrechnung ---------- */
+
+.rechenreihe {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) 52px minmax(150px, 1fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.feldgruppe label, .aufschrift-block {
+  display: block; margin-bottom: 5px;
+  font-size: 13px; font-weight: 700; color: var(--tinte-leise);
+}
+
+.feld {
+  width: 100%;
+  padding: 11px 12px;
+  font-family: inherit; font-size: 16px; color: var(--tinte);
+  background: #fff;
+  border: 1.5px solid var(--linie); border-radius: var(--radius-klein);
+}
+.feld:focus {
+  outline: none; border-color: var(--navy);
+  box-shadow: 0 0 0 3px rgba(30, 42, 120, .12);
+}
+select.feld { appearance: none; background-image: none; }
+
+.tausch {
+  height: 46px;
+  background: var(--chip); color: var(--navy);
+  border: 0; border-radius: var(--radius-klein);
+  font-size: 19px; cursor: pointer;
+}
+.tausch:hover { background: #e2e6ee; }
+
+.ergebnis {
+  margin-top: 18px; padding: 18px 20px;
+  background: var(--badge-bg); border-radius: var(--radius-klein);
+}
+.ergebnis .zahl {
+  font-size: 30px; font-weight: 700; color: var(--indigo);
+  letter-spacing: -.01em; word-break: break-word;
+}
+.ergebnis .satz { margin-top: 4px; font-size: 14.5px; color: #4b5563; }
+
+/* ---------- Einklappbare Fächer ---------- */
+
+.faecher {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+  align-items: start;
+}
+
+.fach {
+  background: var(--karte);
+  border-radius: var(--radius-karte);
+  box-shadow: var(--schatten);
+  overflow: hidden;
+}
+
+.fach > summary {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 22px;
+  font-size: 17px; font-weight: 700; color: var(--indigo);
+  cursor: pointer; list-style: none;
+}
+.fach > summary::-webkit-details-marker { display: none; }
+.fach > summary::before {
+  content: "";
+  width: 8px; height: 8px; flex: none;
+  border-right: 2px solid var(--indigo);
+  border-bottom: 2px solid var(--indigo);
+  transform: rotate(-45deg);
+  transition: transform .15s ease;
+}
+.fach[open] > summary::before { transform: rotate(45deg); }
+.fach > summary:hover { background: #f7f8fc; }
+.fach > summary:focus-visible { outline: 2px solid var(--navy); outline-offset: -2px; }
+
+.fachinhalt { padding: 4px 22px 20px; }
+
+/* ---------- Tabellen ---------- */
+
+.liste { width: 100%; border-collapse: collapse; font-size: 15px; }
+.liste th {
+  text-align: left; padding: 0 10px 8px 0;
+  font-size: 13px; font-weight: 700; color: var(--tinte-leise);
+}
+.liste td { padding: 7px 10px 7px 0; border-top: 1px solid var(--linie); }
+.liste td:first-child { font-weight: 700; color: var(--indigo); white-space: nowrap; }
+.liste td.wert { text-align: right; white-space: nowrap; }
+.liste tr.aktiv td { background: #f4f5fb; }
+
+/* ---------- Mobil ---------- */
+
+@media (max-width: 700px) {
+  .rechenreihe { grid-template-columns: 1fr 1fr; }
+  .rechenreihe .weitfeld { grid-column: 1 / -1; }
+  .tausch { height: 46px; }
+}
+
+@media (max-width: 560px) {
+  body { padding: 12px 12px 36px; }
+  .karte { padding: 16px 16px; }
+  .fach > summary { padding: 13px 16px; }
+  .fachinhalt { padding: 4px 16px 18px; }
+  .kopf-titel { font-size: 21px; }
+  .knopf { flex: 1 1 auto; justify-content: center; }
+  .ergebnis .zahl { font-size: 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+
+<body>
+<div class="huelle">
+
+  <div class="karte">
+    <div class="kopfleiste">
+      <div>
+        <h1 class="kopf-titel"><span class="symbol">📏</span> Einheiten-Umrechner</h1>
+        <p class="kopf-untertitel">Länge, Fläche, Volumen, Masse, Zeit und Winkel.</p>
+      </div>
+      <div class="buttonreihe">
+        <a class="knopf zurueck" href="index.html">Zurück</a>
+      </div>
+    </div>
+
+    <div class="artwahl" id="groessenreihe">
+      <span class="aufschrift">Größe</span>
+    </div>
+  </div>
+
+  <div class="karte">
+    <div class="rechenreihe">
+      <div class="feldgruppe weitfeld">
+        <label for="fWert">Wert</label>
+        <input class="feld" id="fWert" type="text" inputmode="decimal" value="1" autocomplete="off">
+      </div>
+      <div class="feldgruppe">
+        <label for="fVon">von</label>
+        <select class="feld" id="fVon"></select>
+      </div>
+      <div>
+        <button class="tausch" id="btnTausch" title="Einheiten tauschen" aria-label="Einheiten tauschen">⇄</button>
+      </div>
+      <div class="feldgruppe">
+        <label for="fNach">nach</label>
+        <select class="feld" id="fNach"></select>
+      </div>
+    </div>
+
+    <div class="ergebnis">
+      <div class="zahl" id="ergebnisZahl">–</div>
+      <div class="satz" id="ergebnisSatz"></div>
+    </div>
+  </div>
+
+  <div class="faecher">
+
+    <details class="fach">
+      <summary>Alle Einheiten dieser Größe</summary>
+      <div class="fachinhalt">
+        <table class="liste">
+          <thead>
+            <tr><th>Einheit</th><th>Name</th><th style="text-align:right">Wert</th></tr>
+          </thead>
+          <tbody id="alleEinheiten"></tbody>
+        </table>
+      </div>
+    </details>
+
+    <details class="fach">
+      <summary>Zehnerpotenzen und SI-Präfixe</summary>
+      <div class="fachinhalt">
+        <div class="feldgruppe">
+          <label for="fPotenz">Zahl</label>
+          <input class="feld" id="fPotenz" type="text" inputmode="decimal" value="0,00042" autocomplete="off">
+        </div>
+        <div class="ergebnis" style="margin-top:12px">
+          <div class="zahl" id="potenzZahl" style="font-size:24px">–</div>
+          <div class="satz" id="potenzSatz">Wissenschaftliche Schreibweise</div>
+        </div>
+
+        <table class="liste" style="margin-top:18px">
+          <thead>
+            <tr><th>Zeichen</th><th>Name</th><th style="text-align:right">Faktor</th></tr>
+          </thead>
+          <tbody id="praefixe"></tbody>
+        </table>
+      </div>
+    </details>
+
+  </div>
+
+  <p class="fusszeile">KGS Schwarmstedt</p>
+</div>
+
+<script>
+/* =========================================================
+   1 · Einheiten
+   "faktor" = Wert in der Grundeinheit der jeweiligen Größe
+   ========================================================= */
+
+const GROESSEN = [
+  {
+    id: "laenge", name: "Länge", grundeinheit: "m",
+    einheiten: [
+      { zeichen: "km",  name: "Kilometer",   faktor: 1000 },
+      { zeichen: "m",   name: "Meter",       faktor: 1 },
+      { zeichen: "dm",  name: "Dezimeter",   faktor: 0.1 },
+      { zeichen: "cm",  name: "Zentimeter",  faktor: 0.01 },
+      { zeichen: "mm",  name: "Millimeter",  faktor: 0.001 },
+      { zeichen: "µm",  name: "Mikrometer",  faktor: 1e-6 },
+      { zeichen: "nm",  name: "Nanometer",   faktor: 1e-9 }
+    ]
+  },
+  {
+    id: "flaeche", name: "Fläche", grundeinheit: "m²",
+    einheiten: [
+      { zeichen: "km²", name: "Quadratkilometer", faktor: 1e6 },
+      { zeichen: "ha",  name: "Hektar",           faktor: 10000 },
+      { zeichen: "a",   name: "Ar",               faktor: 100 },
+      { zeichen: "m²",  name: "Quadratmeter",     faktor: 1 },
+      { zeichen: "dm²", name: "Quadratdezimeter", faktor: 0.01 },
+      { zeichen: "cm²", name: "Quadratzentimeter",faktor: 0.0001 },
+      { zeichen: "mm²", name: "Quadratmillimeter",faktor: 1e-6 }
+    ]
+  },
+  {
+    id: "volumen", name: "Volumen", grundeinheit: "m³",
+    einheiten: [
+      { zeichen: "m³",  name: "Kubikmeter",       faktor: 1 },
+      { zeichen: "hl",  name: "Hektoliter",       faktor: 0.1 },
+      { zeichen: "l",   name: "Liter",            faktor: 0.001 },
+      { zeichen: "dm³", name: "Kubikdezimeter",   faktor: 0.001 },
+      { zeichen: "ml",  name: "Milliliter",       faktor: 1e-6 },
+      { zeichen: "cm³", name: "Kubikzentimeter",  faktor: 1e-6 },
+      { zeichen: "mm³", name: "Kubikmillimeter",  faktor: 1e-9 }
+    ]
+  },
+  {
+    id: "masse", name: "Masse", grundeinheit: "kg",
+    einheiten: [
+      { zeichen: "t",   name: "Tonne",       faktor: 1000 },
+      { zeichen: "kg",  name: "Kilogramm",   faktor: 1 },
+      { zeichen: "g",   name: "Gramm",       faktor: 0.001 },
+      { zeichen: "mg",  name: "Milligramm",  faktor: 1e-6 },
+      { zeichen: "µg",  name: "Mikrogramm",  faktor: 1e-9 }
+    ]
+  },
+  {
+    id: "zeit", name: "Zeit", grundeinheit: "s",
+    einheiten: [
+      { zeichen: "a",   name: "Jahr (365 d)", faktor: 31536000 },
+      { zeichen: "d",   name: "Tag",          faktor: 86400 },
+      { zeichen: "h",   name: "Stunde",       faktor: 3600 },
+      { zeichen: "min", name: "Minute",       faktor: 60 },
+      { zeichen: "s",   name: "Sekunde",      faktor: 1 },
+      { zeichen: "ms",  name: "Millisekunde", faktor: 0.001 },
+      { zeichen: "µs",  name: "Mikrosekunde", faktor: 1e-6 }
+    ]
+  },
+  {
+    id: "winkel", name: "Winkel", grundeinheit: "°",
+    einheiten: [
+      { zeichen: "Vollwinkel", name: "voller Kreis", faktor: 360 },
+      { zeichen: "°",   name: "Grad",        faktor: 1 },
+      { zeichen: "′",   name: "Winkelminute",faktor: 1 / 60 },
+      { zeichen: "″",   name: "Winkelsekunde",faktor: 1 / 3600 },
+      { zeichen: "rad", name: "Bogenmaß",    faktor: 180 / Math.PI },
+      { zeichen: "gon", name: "Gon",         faktor: 0.9 }
+    ]
+  }
+];
+
+const PRAEFIXE = [
+  { zeichen: "T", name: "Tera",  potenz: 12 },
+  { zeichen: "G", name: "Giga",  potenz: 9 },
+  { zeichen: "M", name: "Mega",  potenz: 6 },
+  { zeichen: "k", name: "Kilo",  potenz: 3 },
+  { zeichen: "h", name: "Hekto", potenz: 2 },
+  { zeichen: "d", name: "Dezi",  potenz: -1 },
+  { zeichen: "c", name: "Zenti", potenz: -2 },
+  { zeichen: "m", name: "Milli", potenz: -3 },
+  { zeichen: "µ", name: "Mikro", potenz: -6 },
+  { zeichen: "n", name: "Nano",  potenz: -9 },
+  { zeichen: "p", name: "Piko",  potenz: -12 }
+];
+
+/* =========================================================
+   2 · Hilfsfunktionen
+   ========================================================= */
+
+const $ = (id) => document.getElementById(id);
+
+let aktuelleGroesse = GROESSEN[0];
+
+/* Komma und Punkt sind beide erlaubt. */
+function zahl(text) {
+  if (typeof text !== "string") return NaN;
+  const bereinigt = text.trim().replace(/\s/g, "").replace(",", ".");
+  if (bereinigt === "") return NaN;
+  return Number(bereinigt);
+}
+
+const HOCH = { "0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹","-":"⁻" };
+const hochgestellt = (n) => String(n).split("").map((z) => HOCH[z] || z).join("");
+
+/* Ausgabe: normale Schreibweise, bei sehr großen oder kleinen Zahlen Zehnerpotenz. */
+function ausgabe(wert) {
+  if (!isFinite(wert)) return "–";
+  if (wert === 0) return "0";
+  const betrag = Math.abs(wert);
+
+  if (betrag >= 1e9 || betrag < 1e-5) {
+    const potenz = Math.floor(Math.log10(betrag));
+    const mantisse = wert / Math.pow(10, potenz);
+    return mantisse.toLocaleString("de-DE", { maximumFractionDigits: 4 }) +
+           " · 10" + hochgestellt(potenz);
+  }
+
+  /* auf sechs bedeutsame Stellen runden */
+  const stellen = Math.max(0, Math.min(10, 6 - Math.floor(Math.log10(betrag)) - 1));
+  return Number(wert.toFixed(stellen)).toLocaleString("de-DE", { maximumFractionDigits: 10 });
+}
+
+/* =========================================================
+   3 · Aufbau der Bedienelemente
+   ========================================================= */
+
+const groessenreihe = $("groessenreihe");
+GROESSEN.forEach((groesse, i) => {
+  const knopf = document.createElement("button");
+  knopf.type = "button";
+  knopf.className = "filter";
+  knopf.textContent = groesse.name;
+  knopf.setAttribute("aria-pressed", String(i === 0));
+  knopf.addEventListener("click", () => {
+    aktuelleGroesse = groesse;
+    groessenreihe.querySelectorAll(".filter").forEach((f) => {
+      f.setAttribute("aria-pressed", String(f === knopf));
+    });
+    einheitenFuellen();
+    rechnen();
+  });
+  groessenreihe.appendChild(knopf);
+});
+
+function einheitenFuellen() {
+  const von = $("fVon"), nach = $("fNach");
+  von.innerHTML = "";
+  nach.innerHTML = "";
+
+  aktuelleGroesse.einheiten.forEach((e, i) => {
+    [von, nach].forEach((auswahl) => {
+      const eintrag = document.createElement("option");
+      eintrag.value = String(i);
+      eintrag.textContent = e.zeichen + " · " + e.name;
+      auswahl.appendChild(eintrag);
+    });
+  });
+
+  /* Sinnvolle Voreinstellung: Grundeinheit nach der nächstkleineren Einheit. */
+  const grund = aktuelleGroesse.einheiten.findIndex((e) => e.zeichen === aktuelleGroesse.grundeinheit);
+  von.value = String(grund >= 0 ? grund : 0);
+  nach.value = String(Math.min(aktuelleGroesse.einheiten.length - 1, (grund >= 0 ? grund : 0) + 1));
+}
+
+/* =========================================================
+   4 · Rechnen und Anzeigen
+   ========================================================= */
+
+function rechnen() {
+  const wert = zahl($("fWert").value);
+  const von = aktuelleGroesse.einheiten[Number($("fVon").value)];
+  const nach = aktuelleGroesse.einheiten[Number($("fNach").value)];
+  if (!von || !nach) return;
+
+  const grundwert = isNaN(wert) ? NaN : wert * von.faktor;
+  const ergebnis = grundwert / nach.faktor;
+
+  if (isNaN(wert)) {
+    $("ergebnisZahl").textContent = "–";
+    $("ergebnisSatz").textContent = "Bitte eine Zahl eingeben.";
+  } else {
+    $("ergebnisZahl").textContent = ausgabe(ergebnis) + " " + nach.zeichen;
+    $("ergebnisSatz").textContent =
+      ausgabe(wert) + " " + von.zeichen + " = " + ausgabe(ergebnis) + " " + nach.zeichen;
+  }
+
+  /* Fach: alle Einheiten */
+  const koerper = $("alleEinheiten");
+  koerper.innerHTML = "";
+  aktuelleGroesse.einheiten.forEach((e) => {
+    const zeile = document.createElement("tr");
+    if (e === von) zeile.className = "aktiv";
+    const wertText = isNaN(grundwert) ? "–" : ausgabe(grundwert / e.faktor);
+    zeile.innerHTML =
+      "<td>" + e.zeichen + "</td><td>" + e.name + "</td><td class='wert'>" + wertText + "</td>";
+    koerper.appendChild(zeile);
+  });
+}
+
+$("fWert").addEventListener("input", rechnen);
+$("fVon").addEventListener("change", rechnen);
+$("fNach").addEventListener("change", rechnen);
+
+$("btnTausch").addEventListener("click", () => {
+  const von = $("fVon"), nach = $("fNach");
+  const merken = von.value;
+  von.value = nach.value;
+  nach.value = merken;
+  rechnen();
+});
+
+/* =========================================================
+   5 · Zehnerpotenzen und Präfixe
+   ========================================================= */
+
+function potenzZeigen() {
+  const wert = zahl($("fPotenz").value);
+  const anzeige = $("potenzZahl");
+  const satz = $("potenzSatz");
+
+  if (isNaN(wert) || wert === 0) {
+    anzeige.textContent = isNaN(wert) ? "–" : "0";
+    satz.textContent = isNaN(wert) ? "Bitte eine Zahl eingeben." : "Null hat keine Zehnerpotenz.";
+    return;
+  }
+
+  const potenz = Math.floor(Math.log10(Math.abs(wert)));
+  const mantisse = wert / Math.pow(10, potenz);
+  anzeige.textContent =
+    mantisse.toLocaleString("de-DE", { maximumFractionDigits: 6 }) + " · 10" + hochgestellt(potenz);
+
+  const passend = PRAEFIXE.find((p) => p.potenz === potenz);
+  satz.textContent = passend
+    ? "Zehnerpotenz " + potenz + " · Präfix " + passend.name + " (" + passend.zeichen + ")"
+    : "Zehnerpotenz " + potenz;
+}
+
+$("fPotenz").addEventListener("input", potenzZeigen);
+
+const praefixliste = $("praefixe");
+PRAEFIXE.forEach((p) => {
+  const zeile = document.createElement("tr");
+  const faktor = Math.pow(10, p.potenz);
+  const faktorText = (p.potenz > 0 ? faktor.toLocaleString("de-DE") : ausgabe(faktor)) +
+                     "  (10" + hochgestellt(p.potenz) + ")";
+  zeile.innerHTML =
+    "<td>" + p.zeichen + "</td><td>" + p.name + "</td><td class='wert'>" + faktorText + "</td>";
+  praefixliste.appendChild(zeile);
+});
+
+/* Start */
+einheitenFuellen();
+rechnen();
+potenzZeigen();
+</script>
+</body>
+</html>

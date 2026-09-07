@@ -3,6 +3,26 @@
   "aktualisiert": "2026-09-07",
   "eintraege": [
     {
+      "pfad": "tools/diagramm-baukasten.html",
+      "datei": "diagramm-baukasten.html",
+      "typ": "html",
+      "titel": "Diagramm-Baukasten",
+      "beschreibung": "Wertetabelle eingeben und daraus ein Balken-, Linien- oder Streudiagramm erzeugen. Speichern als Bild.",
+      "kategorie": "tools",
+      "groesse": "29 KB",
+      "geaendert": "2026-09-07"
+    },
+    {
+      "pfad": "tools/einheiten.html",
+      "datei": "einheiten.html",
+      "typ": "html",
+      "titel": "Einheitenwandler · Tafelwerk",
+      "beschreibung": "",
+      "kategorie": "tools",
+      "groesse": "7 KB",
+      "geaendert": "2026-09-07"
+    },
+    {
       "pfad": "tools/ti34-multiview.html",
       "datei": "ti34-multiview.html",
       "typ": "html",

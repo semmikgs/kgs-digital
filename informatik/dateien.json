@@ -1,5 +1,16 @@
 {
   "fachbereich": "informatik",
-  "erstellt": "2026-09-06T19:38:29+00:00",
-  "eintraege": []
+  "aktualisiert": "2026-09-07",
+  "eintraege": [
+    {
+      "pfad": "tools/binaer.html",
+      "datei": "binaer.html",
+      "typ": "html",
+      "titel": "Binärwerkstatt · Tafelwerk",
+      "beschreibung": "",
+      "kategorie": "tools",
+      "groesse": "5 KB",
+      "geaendert": "2026-09-07"
+    }
+  ]
 }

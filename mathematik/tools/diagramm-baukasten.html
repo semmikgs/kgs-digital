@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagramm-Baukasten</title>
+<meta name="description" content="Wertetabelle eingeben und daraus ein Balken-, Linien- oder Streudiagramm erzeugen. Speichern als Bild.">
+
+<!-- =========================================================
+     DIAGRAMM-BAUKASTEN · KGS - Digital
+     Eigenständige Datei: kein CDN, kein Framework, offline lauffähig.
+     Der obere Teil des Stylesheets ist die gemeinsame KGS-Basis
+     (identisch zu assets/kgs.css), darunter stehen nur die
+     Ergänzungen für dieses Werkzeug.
+     ========================================================= -->
+
+<style>
+/* ---------- KGS-Basis ---------- */
+:root {
+  --bg:            #2a2c8e;
+  --karte:         #ffffff;
+  --tinte:         #1f2430;
+  --tinte-leise:   #6b7280;
+  --indigo:        #312e91;
+  --navy:          #1e2a78;
+  --navy-hover:    #16205c;
+  --linie:         #e3e6ee;
+  --chip:          #eef0f5;
+  --badge-bg:      #e6e8fb;
+  --radius-karte:  16px;
+  --radius-klein:  8px;
+  --schatten:      0 1px 3px rgba(15, 20, 60, .12);
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  padding: 16px 16px 48px;
+  background: var(--bg);
+  color: var(--tinte);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.huelle { max-width: 1180px; margin: 0 auto; }
+
+.karte {
+  background: var(--karte);
+  border-radius: var(--radius-karte);
+  padding: 18px 22px;
+  margin-bottom: 14px;
+  box-shadow: var(--schatten);
+}
+
+.kopf-titel {
+  display: flex; align-items: center; gap: 10px;
+  margin: 0; font-size: 24px; font-weight: 700;
+  color: var(--indigo); letter-spacing: -.01em;
+}
+.kopf-titel .symbol { font-size: 23px; line-height: 1; }
+
+.kopf-untertitel { margin: 3px 0 0; color: var(--tinte-leise); font-size: 14.5px; }
+
+.buttonreihe { display: flex; flex-wrap: wrap; gap: 9px; }
+
+.knopf {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: var(--navy); color: #fff;
+  border: 0; border-radius: var(--radius-klein);
+  font-family: inherit; font-size: 14.5px; font-weight: 600;
+  text-decoration: none; cursor: pointer;
+  transition: background .15s ease;
+}
+.knopf:hover { background: var(--navy-hover); }
+.knopf:focus-visible { outline: 2px solid var(--indigo); outline-offset: 2px; }
+
+.knopf.zurueck {
+  background: transparent; color: var(--navy);
+  border: 1.5px solid var(--linie);
+}
+.knopf.zurueck:hover { background: var(--chip); }
+
+.trenner { height: 1px; background: var(--linie); border: 0; margin: 18px 0; }
+
+.filterreihe { display: flex; flex-wrap: wrap; gap: 9px; }
+
+.filter {
+  padding: 9px 19px;
+  background: var(--chip); color: #4b5563;
+  border: 1.5px solid transparent; border-radius: 999px;
+  font-family: inherit; font-size: 14.5px; font-weight: 600;
+  cursor: pointer; transition: background .15s ease;
+}
+.filter:hover { background: #e2e6ee; }
+.filter[aria-pressed="true"] { background: #fff; color: var(--indigo); border-color: var(--indigo); }
+.filter:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+
+.fusszeile { margin-top: 8px; color: #b9bce0; font-size: 13.5px; text-align: center; }
+
+/* ---------- Kopfzeile: Titel links, Aktionen rechts ---------- */
+
+.kopfleiste {
+  display: flex; flex-wrap: wrap; gap: 14px;
+  align-items: center; justify-content: space-between;
+}
+
+.artwahl {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 9px;
+  margin-top: 14px; padding-top: 14px;
+  border-top: 1px solid var(--linie);
+}
+.artwahl .aufschrift {
+  font-size: 13px; font-weight: 700; color: var(--tinte-leise);
+  margin-right: 4px;
+}
+
+/* ---------- Einklappbare Bedienfelder ---------- */
+
+.faecher {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+  align-items: start;
+}
+
+.fach {
+  background: var(--karte);
+  border-radius: var(--radius-karte);
+  box-shadow: var(--schatten);
+  overflow: hidden;
+}
+
+.fach > summary {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 22px;
+  font-size: 17px; font-weight: 700; color: var(--indigo);
+  cursor: pointer; list-style: none;
+}
+.fach > summary::-webkit-details-marker { display: none; }
+.fach > summary::before {
+  content: "";
+  width: 8px; height: 8px; flex: none;
+  border-right: 2px solid var(--indigo);
+  border-bottom: 2px solid var(--indigo);
+  transform: rotate(-45deg);
+  transition: transform .15s ease;
+}
+.fach[open] > summary::before { transform: rotate(45deg); }
+.fach > summary:hover { background: #f7f8fc; }
+.fach > summary:focus-visible { outline: 2px solid var(--navy); outline-offset: -2px; }
+
+.fach .zusatz { margin-left: auto; font-size: 13.5px; font-weight: 600; color: var(--tinte-leise); }
+
+.fachinhalt { padding: 4px 22px 20px; }
+
+.spalten {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 20px;
+}
+
+/* ---------- Wertetabelle ---------- */
+
+.tabelle { width: 100%; border-collapse: collapse; }
+.tabelle th {
+  text-align: left; padding: 0 8px 6px 0;
+  font-size: 13px; font-weight: 700; color: var(--tinte-leise);
+}
+.tabelle td { padding: 0 8px 8px 0; }
+.tabelle td:last-child, .tabelle th:last-child { padding-right: 0; width: 38px; }
+
+.feld {
+  width: 100%;
+  padding: 9px 12px;
+  font-family: inherit; font-size: 15px; color: var(--tinte);
+  background: #fff;
+  border: 1.5px solid var(--linie); border-radius: var(--radius-klein);
+}
+.feld:focus {
+  outline: none; border-color: var(--navy);
+  box-shadow: 0 0 0 3px rgba(30, 42, 120, .12);
+}
+
+.weg {
+  width: 36px; height: 38px;
+  background: var(--chip); color: #4b5563;
+  border: 0; border-radius: var(--radius-klein);
+  font-size: 18px; line-height: 1; cursor: pointer;
+}
+.weg:hover { background: #e2e6ee; color: #b3261e; }
+
+/* ---------- Einstellungen ---------- */
+
+.feldgruppe { margin-bottom: 12px; }
+.feldgruppe label, .aufschrift-block {
+  display: block; margin-bottom: 5px;
+  font-size: 13px; font-weight: 700; color: var(--tinte-leise);
+}
+
+.schalter {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px; font-size: 15px; cursor: pointer;
+}
+.schalter input { width: 19px; height: 19px; accent-color: var(--navy); margin: 0; }
+
+.bereichsfelder { display: flex; gap: 10px; margin-top: 8px; }
+.bereichsfelder > div { flex: 1; }
+
+.farbreihe { display: flex; flex-wrap: wrap; gap: 9px; }
+.farbknopf {
+  width: 32px; height: 32px;
+  border: 2.5px solid transparent; border-radius: 999px;
+  cursor: pointer; padding: 0;
+}
+.farbknopf[aria-pressed="true"] { border-color: var(--tinte); }
+.farbknopf:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+
+textarea.feld {
+  min-height: 132px; resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 14px;
+}
+
+/* ---------- Diagrammfläche ---------- */
+
+canvas { display: block; width: 100%; border-radius: var(--radius-klein); }
+.status { margin: 12px 0 0; font-size: 14px; color: var(--tinte-leise); }
+
+/* ---------- Mobil ---------- */
+
+@media (max-width: 560px) {
+  body { padding: 12px 12px 36px; }
+  .karte { padding: 16px 16px; }
+  .fach > summary { padding: 13px 16px; }
+  .fachinhalt { padding: 4px 16px 18px; }
+  .kopf-titel { font-size: 21px; }
+  .knopf { flex: 1 1 auto; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+
+<body>
+<div class="huelle">
+
+  <!-- Kopf: Titel, Aktionen, Diagrammart -->
+  <div class="karte">
+    <div class="kopfleiste">
+      <div>
+        <h1 class="kopf-titel"><span class="symbol">📊</span> Diagramm-Baukasten</h1>
+        <p class="kopf-untertitel">Werte eintragen, Diagrammart wählen, Bild speichern.</p>
+      </div>
+      <div class="buttonreihe">
+        <a class="knopf zurueck" href="index.html">Zurück</a>
+        <button class="knopf zurueck" id="btnBeispiel">Beispiel</button>
+        <button class="knopf zurueck" id="btnLeeren">Leeren</button>
+        <button class="knopf" id="btnBild">Als Bild speichern</button>
+      </div>
+    </div>
+
+    <div class="artwahl" id="typenreihe">
+      <span class="aufschrift">Diagrammart</span>
+      <button class="filter" data-typ="balken"   aria-pressed="true">Balken</button>
+      <button class="filter" data-typ="linie"    aria-pressed="false">Linie</button>
+      <button class="filter" data-typ="streuung" aria-pressed="false">Streuung</button>
+    </div>
+  </div>
+
+  <!-- Einklappbare Bedienfelder -->
+  <div class="faecher">
+
+    <details class="fach" id="fachWerte" open>
+      <summary>Wertetabelle <span class="zusatz" id="anzahlAnzeige"></span></summary>
+      <div class="fachinhalt">
+        <div class="spalten">
+
+          <div>
+            <table class="tabelle">
+              <thead>
+                <tr>
+                  <th id="kopfX">Beschriftung</th>
+                  <th>y</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="zeilen"></tbody>
+            </table>
+            <div class="buttonreihe" style="margin-top:4px">
+              <button class="knopf zurueck" id="btnZeile">Zeile hinzufügen</button>
+            </div>
+          </div>
+
+          <div>
+            <span class="aufschrift-block">Werte aus einer Tabelle einfügen</span>
+            <textarea class="feld" id="einfuegefeld" placeholder="Zeit&#9;Temperatur&#10;0&#9;92&#10;2&#9;78&#10;4&#9;67"></textarea>
+            <div class="buttonreihe" style="margin-top:10px">
+              <button class="knopf" id="btnUebernehmen">Werte übernehmen</button>
+            </div>
+            <p class="kopf-untertitel" style="margin-top:10px">
+              Aus LibreOffice oder Excel kopierte Spalten passen direkt.
+              Eine Textzeile am Anfang wird als Achsenbeschriftung übernommen.
+              Komma und Punkt sind beide als Dezimalzeichen erlaubt.
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </details>
+
+    <details class="fach" id="fachOptionen">
+      <summary>Beschriftung und Optionen</summary>
+      <div class="fachinhalt">
+        <div class="spalten">
+
+          <div>
+            <div class="feldgruppe">
+              <label for="fTitel">Überschrift</label>
+              <input class="feld" id="fTitel" type="text" placeholder="z. B. Abkühlung von Wasser">
+            </div>
+            <div class="feldgruppe">
+              <label for="fAchseX">Beschriftung x-Achse</label>
+              <input class="feld" id="fAchseX" type="text" placeholder="z. B. Zeit in min">
+            </div>
+            <div class="feldgruppe">
+              <label for="fAchseY">Beschriftung y-Achse</label>
+              <input class="feld" id="fAchseY" type="text" placeholder="z. B. Temperatur in °C">
+            </div>
+          </div>
+
+          <div>
+            <span class="aufschrift-block">Anzeige</span>
+            <label class="schalter"><input type="checkbox" id="cbGitter" checked> Gitternetz</label>
+            <label class="schalter"><input type="checkbox" id="cbWerte"> Zahlenwerte im Diagramm</label>
+            <label class="schalter" id="zeilePunkte" hidden><input type="checkbox" id="cbPunkte" checked> Messpunkte markieren</label>
+            <label class="schalter" id="zeileLinie" hidden><input type="checkbox" id="cbLinie"> Punkte verbinden</label>
+
+            <span class="aufschrift-block" style="margin-top:16px">Farbe</span>
+            <div class="farbreihe" id="farbreihe"></div>
+          </div>
+
+          <div>
+            <span class="aufschrift-block">y-Achse</span>
+            <label class="schalter"><input type="checkbox" id="cbBereich"> Bereich selbst festlegen</label>
+            <div class="bereichsfelder" id="bereichsfelder" hidden>
+              <div>
+                <label for="fMin">von</label>
+                <input class="feld" id="fMin" type="text" inputmode="decimal" placeholder="0">
+              </div>
+              <div>
+                <label for="fMax">bis</label>
+                <input class="feld" id="fMax" type="text" inputmode="decimal" placeholder="100">
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </details>
+
+  </div>
+
+  <!-- Diagramm über die volle Breite -->
+  <div class="karte">
+    <canvas id="leinwand"></canvas>
+    <p class="status" id="status"></p>
+  </div>
+
+  <p class="fusszeile">KGS Schwarmstedt</p>
+</div>
+
+<script>
+/* =========================================================
+   1 · Zustand
+   ========================================================= */
+
+const FARBEN = ["#1e2a78", "#b3261e", "#1b7a4b", "#c2670c", "#6d28d9"];
+
+const BEISPIEL = [
+  ["0",  "92"], ["2",  "78"], ["4",  "67"], ["6",  "59"],
+  ["8",  "52"], ["10", "47"], ["12", "43"], ["14", "40"]
+];
+
+const zustand = {
+  typ: "balken",
+  daten: [["", ""], ["", ""], ["", ""], ["", ""], ["", ""]],
+  titel: "", achseX: "", achseY: "",
+  gitter: true, werte: false, punkte: true, verbinden: false,
+  eigenerBereich: false, min: "", max: "",
+  farbe: FARBEN[0]
+};
+
+const $ = (id) => document.getElementById(id);
+const leinwand = $("leinwand");
+const ctx = leinwand.getContext("2d");
+
+/* Deutsche Zahleneingabe: Komma wird zu Punkt. */
+function zahl(text) {
+  if (typeof text !== "string") return NaN;
+  const bereinigt = text.trim().replace(/\s/g, "").replace(",", ".");
+  if (bereinigt === "") return NaN;
+  return Number(bereinigt);
+}
+
+function ausgabe(wert, nachkommastellen) {
+  return wert.toLocaleString("de-DE", {
+    minimumFractionDigits: nachkommastellen,
+    maximumFractionDigits: nachkommastellen === undefined ? 4 : nachkommastellen
+  });
+}
+
+/* =========================================================
+   2 · Tabelle
+   ========================================================= */
+
+function tabelleZeichnen() {
+  const koerper = $("zeilen");
+  koerper.innerHTML = "";
+
+  zustand.daten.forEach((paar, i) => {
+    const zeile = document.createElement("tr");
+
+    [0, 1].forEach((spalte) => {
+      const zelle = document.createElement("td");
+      const feld = document.createElement("input");
+      feld.className = "feld";
+      feld.type = "text";
+      feld.value = paar[spalte];
+      feld.setAttribute("aria-label", (spalte === 0 ? "x" : "y") + "-Wert, Zeile " + (i + 1));
+      if (spalte === 1) feld.inputMode = "decimal";
+      feld.addEventListener("input", () => {
+        zustand.daten[i][spalte] = feld.value;
+        zeichnen();
+      });
+      feld.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && i === zustand.daten.length - 1) {
+          zeileAnhaengen();
+          const felder = koerper.querySelectorAll("input");
+          if (felder[felder.length - 2]) felder[felder.length - 2].focus();
+        }
+      });
+      zelle.appendChild(feld);
+      zeile.appendChild(zelle);
+    });
+
+    const zelleWeg = document.createElement("td");
+    const weg = document.createElement("button");
+    weg.className = "weg";
+    weg.type = "button";
+    weg.textContent = "×";
+    weg.title = "Zeile löschen";
+    weg.setAttribute("aria-label", "Zeile " + (i + 1) + " löschen");
+    weg.addEventListener("click", () => {
+      zustand.daten.splice(i, 1);
+      if (zustand.daten.length === 0) zustand.daten.push(["", ""]);
+      tabelleZeichnen();
+      zeichnen();
+    });
+    zelleWeg.appendChild(weg);
+    zeile.appendChild(zelleWeg);
+
+    koerper.appendChild(zeile);
+  });
+}
+
+function zeileAnhaengen() {
+  zustand.daten.push(["", ""]);
+  tabelleZeichnen();
+}
+
+/* =========================================================
+   3 · Einfügen aus einer Tabellenkalkulation
+   ========================================================= */
+
+function textUebernehmen(text) {
+  const zeilen = text.split(/\r?\n/).map((z) => z.trim()).filter((z) => z !== "");
+  if (zeilen.length === 0) return;
+
+  const zerlegt = zeilen.map((zeile) => {
+    let teile;
+    if (zeile.includes("\t"))      teile = zeile.split("\t");
+    else if (zeile.includes(";"))  teile = zeile.split(";");
+    else                           teile = zeile.split(/\s+/);
+    if (teile.length === 1 && zeile.includes(",")) teile = zeile.split(",");
+    return teile.map((t) => t.trim());
+  });
+
+  /* Erste Zeile als Überschrift erkennen, wenn die zweite Spalte keine Zahl ist. */
+  if (zerlegt.length > 1 && isNaN(zahl(zerlegt[0][1] || ""))) {
+    const kopf = zerlegt.shift();
+    if (kopf[0]) { zustand.achseX = kopf[0]; $("fAchseX").value = kopf[0]; }
+    if (kopf[1]) { zustand.achseY = kopf[1]; $("fAchseY").value = kopf[1]; }
+  }
+
+  zustand.daten = zerlegt.map((teile) => [teile[0] || "", teile[1] || ""]);
+  if (zustand.daten.length === 0) zustand.daten = [["", ""]];
+
+  tabelleZeichnen();
+  zeichnen();
+}
+
+/* =========================================================
+   4 · Skalierung
+   ========================================================= */
+
+function gueltigePaare() {
+  return zustand.daten
+    .map((paar) => ({ beschriftung: paar[0].trim(), y: zahl(paar[1]) }))
+    .filter((p) => !isNaN(p.y));
+}
+
+/* Runde Achsenschritte: 1, 2, 2.5, 5, 10 · Zehnerpotenz */
+function skala(min, max, ziel) {
+  if (min === max) { min -= 1; max += 1; }
+  const roh = (max - min) / (ziel || 6);
+  const groesse = Math.pow(10, Math.floor(Math.log10(roh)));
+  const norm = roh / groesse;
+  let schritt;
+  if (norm <= 1)        schritt = 1;
+  else if (norm <= 2)   schritt = 2;
+  else if (norm <= 2.5) schritt = 2.5;
+  else if (norm <= 5)   schritt = 5;
+  else                  schritt = 10;
+  schritt *= groesse;
+  return {
+    min: Math.floor(min / schritt) * schritt,
+    max: Math.ceil(max / schritt) * schritt,
+    schritt: schritt
+  };
+}
+
+function stellen(schritt) {
+  const s = Math.ceil(-Math.log10(schritt));
+  return Math.max(0, Math.min(6, s));
+}
+
+/* =========================================================
+   5 · Diagramm zeichnen
+   ========================================================= */
+
+function flaecheVorbereiten() {
+  const breite = leinwand.clientWidth || 700;
+  const hoehe = Math.max(320, Math.min(620, Math.round(breite * 0.46)));
+  const dichte = window.devicePixelRatio || 1;
+  leinwand.style.height = hoehe + "px";
+  leinwand.width = Math.round(breite * dichte);
+  leinwand.height = Math.round(hoehe * dichte);
+  ctx.setTransform(dichte, 0, 0, dichte, 0, 0);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, breite, hoehe);
+  return { breite: breite, hoehe: hoehe };
+}
+
+function zeichnen() {
+  const flaeche = flaecheVorbereiten();
+  const punkte = gueltigePaare();
+  const status = $("status");
+
+  $("anzahlAnzeige").textContent =
+    punkte.length === 0 ? "" : punkte.length + (punkte.length === 1 ? " Wert" : " Werte");
+
+  if (punkte.length === 0) {
+    ctx.fillStyle = "#9aa1ae";
+    ctx.font = "15px -apple-system, Segoe UI, Roboto, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Noch keine Werte eingetragen.", flaeche.breite / 2, flaeche.hoehe / 2);
+    status.textContent = "Trage Werte ein oder lade das Beispiel.";
+    return;
+  }
+
+  status.textContent = punkte.length + (punkte.length === 1 ? " Wertepaar" : " Wertepaare");
+
+  /* x-Achse: Zahlen nur bei Linie und Streuung, Balken bleiben Kategorien. */
+  const xZahlen = punkte.map((p) => zahl(p.beschriftung));
+  const xIstZahl = zustand.typ !== "balken" && xZahlen.every((w) => !isNaN(w));
+
+  /* Reihenfolge nach x, damit Linien nicht springen. */
+  let reihe = punkte.map((p, i) => ({ beschriftung: p.beschriftung, x: xZahlen[i], y: p.y }));
+  if (xIstZahl) reihe.sort((a, b) => a.x - b.x);
+
+  /* --- y-Skala --- */
+  const ys = reihe.map((p) => p.y);
+  let yMin = Math.min.apply(null, ys);
+  let yMax = Math.max.apply(null, ys);
+  if (zustand.typ === "balken") { yMin = Math.min(0, yMin); yMax = Math.max(0, yMax); }
+  else { const puffer = (yMax - yMin) * 0.08 || 1; yMin -= puffer; yMax += puffer; }
+
+  let yS = skala(yMin, yMax, 6);
+  if (zustand.eigenerBereich) {
+    const eMin = zahl(zustand.min), eMax = zahl(zustand.max);
+    if (!isNaN(eMin) && !isNaN(eMax) && eMax > eMin) yS = skala(eMin, eMax, 6);
+  }
+  const yStellen = stellen(yS.schritt);
+
+  /* --- Ränder --- */
+  ctx.font = "13px -apple-system, Segoe UI, Roboto, sans-serif";
+  let breitesteZahl = 0;
+  for (let w = yS.min; w <= yS.max + yS.schritt / 2; w += yS.schritt) {
+    breitesteZahl = Math.max(breitesteZahl, ctx.measureText(ausgabe(w, yStellen)).width);
+  }
+
+  const rand = {
+    oben: zustand.titel.trim() ? 52 : 26,
+    rechts: 26,
+    unten: zustand.achseX.trim() ? 74 : 52,
+    links: breitesteZahl + (zustand.achseY.trim() ? 40 : 20) + 12
+  };
+
+  /* x-Beschriftungen: schräg stellen, wenn es eng wird. */
+  const beschriftungen = xIstZahl ? [] : reihe.map((p) => p.beschriftung || "–");
+  let schraeg = false;
+  if (!xIstZahl) {
+    const platz = (flaeche.breite - rand.links - rand.rechts) / reihe.length;
+    const breiteste = beschriftungen.reduce((m, t) => Math.max(m, ctx.measureText(t).width), 0);
+    schraeg = breiteste + 8 > platz;
+    if (schraeg) rand.unten += 22;
+  }
+
+  const feld = {
+    x: rand.links,
+    y: rand.oben,
+    b: flaeche.breite - rand.links - rand.rechts,
+    h: flaeche.hoehe - rand.oben - rand.unten
+  };
+  if (feld.b < 60 || feld.h < 60) return;
+
+  const nachY = (wert) => feld.y + feld.h - ((wert - yS.min) / (yS.max - yS.min)) * feld.h;
+
+  /* --- x-Positionen --- */
+  let xS = null, nachX;
+  if (xIstZahl) {
+    const xs = reihe.map((p) => p.x);
+    xS = skala(Math.min.apply(null, xs), Math.max.apply(null, xs), 6);
+    nachX = (wert) => feld.x + ((wert - xS.min) / (xS.max - xS.min)) * feld.b;
+  } else {
+    const band = feld.b / reihe.length;
+    nachX = (index) => feld.x + band * index + band / 2;
+  }
+
+  /* --- Gitternetz --- */
+  if (zustand.gitter) {
+    ctx.strokeStyle = "#e9ecf3";
+    ctx.lineWidth = 1;
+    for (let w = yS.min; w <= yS.max + yS.schritt / 2; w += yS.schritt) {
+      const y = Math.round(nachY(w)) + 0.5;
+      ctx.beginPath(); ctx.moveTo(feld.x, y); ctx.lineTo(feld.x + feld.b, y); ctx.stroke();
+    }
+    if (xIstZahl) {
+      for (let w = xS.min; w <= xS.max + xS.schritt / 2; w += xS.schritt) {
+        const x = Math.round(nachX(w)) + 0.5;
+        ctx.beginPath(); ctx.moveTo(x, feld.y); ctx.lineTo(x, feld.y + feld.h); ctx.stroke();
+      }
+    }
+  }
+
+  /* --- Achsenzahlen --- */
+  ctx.fillStyle = "#6b7280";
+  ctx.font = "13px -apple-system, Segoe UI, Roboto, sans-serif";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  for (let w = yS.min; w <= yS.max + yS.schritt / 2; w += yS.schritt) {
+    ctx.fillText(ausgabe(w, yStellen), feld.x - 10, nachY(w));
+  }
+
+  ctx.textBaseline = "top";
+  if (xIstZahl) {
+    ctx.textAlign = "center";
+    const xStellen = stellen(xS.schritt);
+    for (let w = xS.min; w <= xS.max + xS.schritt / 2; w += xS.schritt) {
+      ctx.fillText(ausgabe(w, xStellen), nachX(w), feld.y + feld.h + 10);
+    }
+  } else {
+    reihe.forEach((p, i) => {
+      const text = p.beschriftung || "–";
+      const x = nachX(i);
+      if (schraeg) {
+        ctx.save();
+        ctx.translate(x, feld.y + feld.h + 10);
+        ctx.rotate(-Math.PI / 4);
+        ctx.textAlign = "right";
+        ctx.fillText(text, 0, 0);
+        ctx.restore();
+      } else {
+        ctx.textAlign = "center";
+        ctx.fillText(text, x, feld.y + feld.h + 10);
+      }
+    });
+  }
+
+  /* --- Achsenlinien --- */
+  ctx.strokeStyle = "#9aa1ae";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(Math.round(feld.x) + 0.5, feld.y);
+  ctx.lineTo(Math.round(feld.x) + 0.5, feld.y + feld.h);
+  ctx.stroke();
+
+  const nulllinie = (yS.min < 0 && yS.max > 0) ? nachY(0) : feld.y + feld.h;
+  ctx.beginPath();
+  ctx.moveTo(feld.x, Math.round(nulllinie) + 0.5);
+  ctx.lineTo(feld.x + feld.b, Math.round(nulllinie) + 0.5);
+  ctx.stroke();
+
+  /* --- Daten --- */
+  ctx.fillStyle = zustand.farbe;
+  ctx.strokeStyle = zustand.farbe;
+
+  if (zustand.typ === "balken") {
+    const band = feld.b / reihe.length;
+    const breite = Math.min(band * 0.62, 76);
+    reihe.forEach((p, i) => {
+      const x = nachX(i) - breite / 2;
+      const yWert = nachY(p.y);
+      const y = Math.min(yWert, nulllinie);
+      const h = Math.max(1, Math.abs(nulllinie - yWert));
+      ctx.fillRect(x, y, breite, h);
+    });
+  }
+
+  if (zustand.typ === "linie" || (zustand.typ === "streuung" && zustand.verbinden)) {
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    reihe.forEach((p, i) => {
+      const x = xIstZahl ? nachX(p.x) : nachX(i);
+      const y = nachY(p.y);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
+
+  const punkteZeigen = (zustand.typ === "streuung") || (zustand.typ === "linie" && zustand.punkte);
+  if (punkteZeigen) {
+    reihe.forEach((p, i) => {
+      const x = xIstZahl ? nachX(p.x) : nachX(i);
+      const y = nachY(p.y);
+      ctx.beginPath();
+      ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  /* --- Zahlenwerte am Datenpunkt --- */
+  if (zustand.werte) {
+    ctx.fillStyle = "#1f2430";
+    ctx.font = "600 12.5px -apple-system, Segoe UI, Roboto, sans-serif";
+    ctx.textAlign = "center";
+    reihe.forEach((p, i) => {
+      const x = xIstZahl ? nachX(p.x) : nachX(i);
+      const y = nachY(p.y);
+      const oberhalb = p.y >= 0;
+      ctx.textBaseline = oberhalb ? "bottom" : "top";
+      ctx.fillText(ausgabe(p.y), x, oberhalb ? y - 8 : y + 8);
+    });
+  }
+
+  /* --- Beschriftungen --- */
+  if (zustand.titel.trim()) {
+    ctx.fillStyle = "#312e91";
+    ctx.font = "700 18px -apple-system, Segoe UI, Roboto, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(zustand.titel, flaeche.breite / 2, 28);
+  }
+
+  ctx.fillStyle = "#4b5563";
+  ctx.font = "600 14px -apple-system, Segoe UI, Roboto, sans-serif";
+
+  if (zustand.achseX.trim()) {
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    ctx.fillText(zustand.achseX, feld.x + feld.b / 2, flaeche.hoehe - 12);
+  }
+
+  if (zustand.achseY.trim()) {
+    ctx.save();
+    ctx.translate(18, feld.y + feld.h / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(zustand.achseY, 0, 0);
+    ctx.restore();
+  }
+}
+
+/* =========================================================
+   6 · Bedienung
+   ========================================================= */
+
+$("typenreihe").addEventListener("click", (e) => {
+  const knopf = e.target.closest(".filter");
+  if (!knopf) return;
+  zustand.typ = knopf.dataset.typ;
+  $("typenreihe").querySelectorAll(".filter").forEach((f) => {
+    f.setAttribute("aria-pressed", String(f === knopf));
+  });
+  $("zeilePunkte").hidden = zustand.typ !== "linie";
+  $("zeileLinie").hidden = zustand.typ !== "streuung";
+  $("kopfX").textContent = zustand.typ === "balken" ? "Beschriftung" : "x";
+  zeichnen();
+});
+
+function textfeld(id, schluessel) {
+  $(id).addEventListener("input", (e) => { zustand[schluessel] = e.target.value; zeichnen(); });
+}
+textfeld("fTitel", "titel");
+textfeld("fAchseX", "achseX");
+textfeld("fAchseY", "achseY");
+textfeld("fMin", "min");
+textfeld("fMax", "max");
+
+function schalter(id, schluessel) {
+  $(id).addEventListener("change", (e) => { zustand[schluessel] = e.target.checked; zeichnen(); });
+}
+schalter("cbGitter", "gitter");
+schalter("cbWerte", "werte");
+schalter("cbPunkte", "punkte");
+schalter("cbLinie", "verbinden");
+
+$("cbBereich").addEventListener("change", (e) => {
+  zustand.eigenerBereich = e.target.checked;
+  $("bereichsfelder").hidden = !e.target.checked;
+  zeichnen();
+});
+
+/* Farbwahl */
+const farbreihe = $("farbreihe");
+FARBEN.forEach((farbe, i) => {
+  const knopf = document.createElement("button");
+  knopf.type = "button";
+  knopf.className = "farbknopf";
+  knopf.style.background = farbe;
+  knopf.setAttribute("aria-pressed", String(i === 0));
+  knopf.setAttribute("aria-label", "Diagrammfarbe " + (i + 1));
+  knopf.addEventListener("click", () => {
+    zustand.farbe = farbe;
+    farbreihe.querySelectorAll(".farbknopf").forEach((k) => {
+      k.setAttribute("aria-pressed", String(k === knopf));
+    });
+    zeichnen();
+  });
+  farbreihe.appendChild(knopf);
+});
+
+$("btnZeile").addEventListener("click", zeileAnhaengen);
+
+$("btnUebernehmen").addEventListener("click", () => {
+  textUebernehmen($("einfuegefeld").value);
+});
+
+$("btnBeispiel").addEventListener("click", () => {
+  zustand.daten = BEISPIEL.map((p) => p.slice());
+  zustand.titel = "Abkühlung von Wasser";
+  zustand.achseX = "Zeit in min";
+  zustand.achseY = "Temperatur in °C";
+  $("fTitel").value = zustand.titel;
+  $("fAchseX").value = zustand.achseX;
+  $("fAchseY").value = zustand.achseY;
+  tabelleZeichnen();
+  zeichnen();
+});
+
+$("btnLeeren").addEventListener("click", () => {
+  zustand.daten = [["", ""], ["", ""], ["", ""], ["", ""], ["", ""]];
+  tabelleZeichnen();
+  zeichnen();
+});
+
+$("btnBild").addEventListener("click", () => {
+  const name = (zustand.titel.trim() || "diagramm")
+    .toLowerCase()
+    .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const verweis = document.createElement("a");
+  verweis.download = name + ".png";
+  verweis.href = leinwand.toDataURL("image/png");
+  verweis.click();
+});
+
+/* Beim Auf- und Zuklappen ändert sich die Breite der Zeichenfläche nicht,
+   die Höhe der Seite aber schon – neu zeichnen hält alles scharf. */
+document.querySelectorAll(".fach").forEach((fach) => {
+  fach.addEventListener("toggle", () => zeichnen());
+});
+
+let bremse;
+window.addEventListener("resize", () => {
+  clearTimeout(bremse);
+  bremse = setTimeout(zeichnen, 120);
+});
+
+/* Start */
+tabelleZeichnen();
+zeichnen();
+</script>
+</body>
+</html>

@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Funktionsplotter</title>
+<meta name="description" content="Funktionsterme zeichnen, zoomen, mit Parametern verändern und Punkte auf dem Graphen prüfen.">
+
+<!-- =========================================================
+     FUNKTIONSPLOTTER (Mathematik) · KGS - Digital
+     Eigenständige Datei: kein CDN, kein Framework, offline lauffähig.
+     Der Termrechner ist selbst gebaut, es wird kein eval verwendet.
+
+     ERLAUBTE SCHREIBWEISEN
+       + - * / ^ ( )   2x  3sin(x)   Komma oder Punkt
+       sin cos tan asin acos atan
+       sqrt abs ln log exp
+       pi  e   sowie die Parameter a, b, c
+     ========================================================= -->
+
+<style>
+/* ---------- KGS-Basis ---------- */
+:root {
+  --bg:            #2a2c8e;
+  --karte:         #ffffff;
+  --tinte:         #1f2430;
+  --tinte-leise:   #6b7280;
+  --indigo:        #312e91;
+  --navy:          #1e2a78;
+  --navy-hover:    #16205c;
+  --linie:         #e3e6ee;
+  --chip:          #eef0f5;
+  --badge-bg:      #e6e8fb;
+  --radius-karte:  16px;
+  --radius-klein:  8px;
+  --schatten:      0 1px 3px rgba(15, 20, 60, .12);
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  padding: 16px 16px 48px;
+  background: var(--bg);
+  color: var(--tinte);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.huelle { max-width: 1180px; margin: 0 auto; }
+
+.karte {
+  background: var(--karte);
+  border-radius: var(--radius-karte);
+  padding: 18px 22px;
+  margin-bottom: 14px;
+  box-shadow: var(--schatten);
+}
+
+.kopf-titel {
+  display: flex; align-items: center; gap: 10px;
+  margin: 0; font-size: 24px; font-weight: 700;
+  color: var(--indigo); letter-spacing: -.01em;
+}
+.kopf-titel .symbol { font-size: 23px; line-height: 1; }
+
+.kopf-untertitel { margin: 3px 0 0; color: var(--tinte-leise); font-size: 14.5px; }
+
+.buttonreihe { display: flex; flex-wrap: wrap; gap: 9px; }
+
+.knopf {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: var(--navy); color: #fff;
+  border: 0; border-radius: var(--radius-klein);
+  font-family: inherit; font-size: 14.5px; font-weight: 600;
+  text-decoration: none; cursor: pointer;
+  transition: background .15s ease;
+}
+.knopf:hover { background: var(--navy-hover); }
+.knopf:focus-visible { outline: 2px solid var(--indigo); outline-offset: 2px; }
+
+.knopf.zurueck {
+  background: transparent; color: var(--navy);
+  border: 1.5px solid var(--linie);
+}
+.knopf.zurueck:hover { background: var(--chip); }
+
+.trenner { height: 1px; background: var(--linie); border: 0; margin: 18px 0; }
+
+.fusszeile { margin-top: 8px; color: #b9bce0; font-size: 13.5px; text-align: center; }
+
+/* ---------- Kopfzeile ---------- */
+
+.kopfleiste {
+  display: flex; flex-wrap: wrap; gap: 14px;
+  align-items: center; justify-content: space-between;
+}
+
+/* ---------- Termzeilen ---------- */
+
+.termzeile {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
+}
+.termzeile:last-child { margin-bottom: 0; }
+
+.marke {
+  width: 46px; flex: none;
+  font-weight: 700; font-size: 15.5px;
+  white-space: nowrap;
+}
+
+.feld {
+  width: 100%;
+  padding: 11px 12px;
+  font-family: inherit; font-size: 16px; color: var(--tinte);
+  background: #fff;
+  border: 1.5px solid var(--linie); border-radius: var(--radius-klein);
+}
+.feld:focus {
+  outline: none; border-color: var(--navy);
+  box-shadow: 0 0 0 3px rgba(30, 42, 120, .12);
+}
+.feld.fehlerhaft { border-color: #b3261e; }
+
+.termfeld {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 15.5px;
+}
+
+.fehlertext { margin: 4px 0 0 56px; font-size: 13.5px; color: #b3261e; }
+
+.feldgruppe { margin-bottom: 12px; }
+.feldgruppe label, .aufschrift-block {
+  display: block; margin-bottom: 5px;
+  font-size: 13px; font-weight: 700; color: var(--tinte-leise);
+}
+
+.schalter {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px; font-size: 15px; cursor: pointer;
+}
+.schalter input[type=checkbox] { width: 19px; height: 19px; accent-color: var(--navy); margin: 0; }
+
+/* ---------- Arbeitsfläche: Bedienung links, Graph rechts ---------- */
+
+.arbeitsflaeche {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.seitenspalte { min-width: 0; }
+.graphspalte { min-width: 0; position: sticky; top: 16px; }
+
+/* ---------- Einklappbare Fächer ---------- */
+
+.faecher {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.rollbereich { max-height: 320px; overflow-y: auto; }
+
+.griff {
+  height: 16px; margin-top: 10px;
+  border-radius: 999px; background: var(--chip);
+  cursor: ns-resize; touch-action: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.griff::after {
+  content: ""; width: 46px; height: 3px;
+  border-radius: 999px; background: #b8bdcc;
+}
+.griff:hover { background: #e2e6ee; }
+
+.fach {
+  background: var(--karte);
+  border-radius: var(--radius-karte);
+  box-shadow: var(--schatten);
+  overflow: hidden;
+}
+
+.fach > summary {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 22px;
+  font-size: 17px; font-weight: 700; color: var(--indigo);
+  cursor: pointer; list-style: none;
+}
+.fach > summary::-webkit-details-marker { display: none; }
+.fach > summary::before {
+  content: "";
+  width: 8px; height: 8px; flex: none;
+  border-right: 2px solid var(--indigo);
+  border-bottom: 2px solid var(--indigo);
+  transform: rotate(-45deg);
+  transition: transform .15s ease;
+}
+.fach[open] > summary::before { transform: rotate(45deg); }
+.fach > summary:hover { background: #f7f8fc; }
+.fach > summary:focus-visible { outline: 2px solid var(--navy); outline-offset: -2px; }
+
+.fachinhalt { padding: 4px 22px 20px; }
+
+/* ---------- Schieberegler ---------- */
+
+.reglerzeile { margin-bottom: 16px; }
+.reglerkopf {
+  display: flex; align-items: baseline; justify-content: space-between;
+  font-size: 14px; color: var(--tinte-leise); font-weight: 700;
+}
+.reglerkopf .wert { font-size: 17px; color: var(--indigo); }
+input[type=range] { width: 100%; accent-color: var(--navy); margin: 6px 0 0; }
+
+.bereichsfelder { display: flex; gap: 10px; }
+.bereichsfelder > div { flex: 1; }
+
+/* ---------- Tabelle ---------- */
+
+.liste { width: 100%; border-collapse: collapse; font-size: 15px; margin-top: 14px; }
+.liste th {
+  text-align: right; padding: 0 10px 8px 0;
+  font-size: 13px; font-weight: 700; color: var(--tinte-leise);
+}
+.liste th:first-child { text-align: left; }
+.liste td { padding: 6px 10px 6px 0; border-top: 1px solid var(--linie); text-align: right; white-space: nowrap; }
+.liste td:first-child { text-align: left; font-weight: 700; color: var(--indigo); }
+
+.hinweisliste { margin: 0; padding-left: 20px; font-size: 15px; color: #4b5563; }
+.hinweisliste li { margin-bottom: 5px; }
+.hinweisliste code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: var(--chip); padding: 1px 6px; border-radius: 5px; font-size: 14px;
+}
+
+/* ---------- Zeichenfläche ---------- */
+
+canvas {
+  display: block; width: 100%;
+  border-radius: var(--radius-klein);
+  touch-action: none; cursor: grab;
+}
+canvas.zieht { cursor: grabbing; }
+
+.status {
+  margin: 12px 0 0; font-size: 15px; color: #4b5563;
+  min-height: 24px;
+}
+.status strong { color: var(--indigo); }
+
+/* ---------- Mobil ---------- */
+
+@media (max-width: 900px) {
+  .arbeitsflaeche { grid-template-columns: 1fr; }
+  .graphspalte { position: static; order: -1; }
+}
+
+@media (max-width: 560px) {
+  body { padding: 12px 12px 36px; }
+  .karte { padding: 16px 16px; }
+  .fach > summary { padding: 13px 16px; }
+  .fachinhalt { padding: 4px 16px 18px; }
+  .kopf-titel { font-size: 21px; }
+  .knopf { flex: 1 1 auto; justify-content: center; }
+  .marke { width: 38px; font-size: 14.5px; }
+  .fehlertext { margin-left: 48px; }
+}
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+
+<body>
+<div class="huelle">
+
+  <div class="karte">
+    <div class="kopfleiste">
+      <div>
+        <h1 class="kopf-titel"><span class="symbol">📈</span> Funktionsplotter</h1>
+        <p class="kopf-untertitel">Term eingeben, Graph betrachten, Punkte prüfen.</p>
+      </div>
+      <div class="buttonreihe">
+        <a class="knopf zurueck" href="index.html">Zurück</a>
+        <button class="knopf zurueck" id="btnAnsicht">Ansicht zurücksetzen</button>
+        <button class="knopf" id="btnBild">Als Bild speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="arbeitsflaeche">
+  <div class="seitenspalte">
+
+  <div class="karte">
+    <div class="termzeile">
+      <span class="marke" id="markeF" style="color:#1e2a78">f(x) =</span>
+      <input class="feld termfeld" id="fTerm1" type="text" value="x^2 - 2" spellcheck="false" autocomplete="off">
+    </div>
+    <p class="fehlertext" id="fehler1"></p>
+
+    <label class="schalter" style="margin-top:12px;margin-bottom:0">
+      <input type="checkbox" id="cbPunkt"> Prüfpunkt anzeigen und verschieben
+    </label>
+  </div>
+
+  <div class="faecher">
+
+    <details class="fach">
+      <summary>Weitere Funktionen</summary>
+      <div class="fachinhalt">
+        <div class="termzeile">
+          <span class="marke" style="color:#b3261e">g(x) =</span>
+          <input class="feld termfeld" id="fTerm2" type="text" value="" placeholder="z. B. 2x + 1" spellcheck="false" autocomplete="off">
+        </div>
+        <p class="fehlertext" id="fehler2"></p>
+        <div class="termzeile" style="margin-top:10px">
+          <span class="marke" style="color:#1b7a4b">h(x) =</span>
+          <input class="feld termfeld" id="fTerm3" type="text" value="" placeholder="z. B. sin(x)" spellcheck="false" autocomplete="off">
+        </div>
+        <p class="fehlertext" id="fehler3"></p>
+      </div>
+    </details>
+
+    <details class="fach">
+      <summary>Parameter a, b, c</summary>
+      <div class="fachinhalt">
+        <p class="kopf-untertitel" style="margin-bottom:14px">
+          Die Buchstaben lassen sich im Term verwenden, zum Beispiel <code>a*x^2 + b*x + c</code>.
+        </p>
+        <div class="reglerzeile">
+          <div class="reglerkopf"><span>a</span><span class="wert" id="wertA">1</span></div>
+          <input type="range" id="rA" min="-10" max="10" step="0.1" value="1">
+        </div>
+        <div class="reglerzeile">
+          <div class="reglerkopf"><span>b</span><span class="wert" id="wertB">0</span></div>
+          <input type="range" id="rB" min="-10" max="10" step="0.1" value="0">
+        </div>
+        <div class="reglerzeile" style="margin-bottom:0">
+          <div class="reglerkopf"><span>c</span><span class="wert" id="wertC">0</span></div>
+          <input type="range" id="rC" min="-10" max="10" step="0.1" value="0">
+        </div>
+      </div>
+    </details>
+
+    <details class="fach">
+      <summary>Ansicht</summary>
+      <div class="fachinhalt">
+        <label class="schalter"><input type="checkbox" id="cbGitter" checked> Gitternetz</label>
+        <label class="schalter"><input type="checkbox" id="cbFangen"> Prüfpunkt an halben Einheiten fangen</label>
+
+        <span class="aufschrift-block" style="margin-top:14px">x-Bereich</span>
+        <div class="bereichsfelder">
+          <div><input class="feld" id="fXMin" type="text" inputmode="decimal" value="-10"></div>
+          <div><input class="feld" id="fXMax" type="text" inputmode="decimal" value="10"></div>
+        </div>
+
+        <span class="aufschrift-block" style="margin-top:12px">y-Bereich</span>
+        <div class="bereichsfelder">
+          <div><input class="feld" id="fYMin" type="text" inputmode="decimal" value="-6"></div>
+          <div><input class="feld" id="fYMax" type="text" inputmode="decimal" value="6"></div>
+        </div>
+
+        <div class="buttonreihe" style="margin-top:12px">
+          <button class="knopf" id="btnBereich">Bereich übernehmen</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="fach">
+      <summary>Wertetabelle</summary>
+      <div class="fachinhalt">
+        <div class="bereichsfelder">
+          <div>
+            <label class="aufschrift-block" for="fTabVon">von</label>
+            <input class="feld" id="fTabVon" type="text" inputmode="decimal" value="-5">
+          </div>
+          <div>
+            <label class="aufschrift-block" for="fTabBis">bis</label>
+            <input class="feld" id="fTabBis" type="text" inputmode="decimal" value="5">
+          </div>
+          <div>
+            <label class="aufschrift-block" for="fTabSchritt">Schritt</label>
+            <input class="feld" id="fTabSchritt" type="text" inputmode="decimal" value="1">
+          </div>
+        </div>
+        <div class="rollbereich">
+          <table class="liste">
+            <thead><tr id="tabkopf"><th>x</th><th>f(x)</th></tr></thead>
+            <tbody id="tabelle"></tbody>
+          </table>
+        </div>
+      </div>
+    </details>
+
+    <details class="fach">
+      <summary>Erlaubte Schreibweisen</summary>
+      <div class="fachinhalt">
+        <ul class="hinweisliste">
+          <li>Rechenzeichen: <code>+</code> <code>-</code> <code>*</code> <code>/</code>, Potenz mit <code>^</code>, Klammern <code>( )</code></li>
+          <li>Malzeichen darf entfallen: <code>2x</code>, <code>3(x+1)</code>, <code>a x^2</code></li>
+          <li>Komma und Punkt sind beide als Dezimalzeichen erlaubt: <code>0,5x</code></li>
+          <li>Funktionen: <code>sin</code> <code>cos</code> <code>tan</code> <code>asin</code> <code>acos</code> <code>atan</code> <code>sqrt</code> <code>abs</code> <code>ln</code> <code>log</code> <code>exp</code></li>
+          <li>Konstanten: <code>pi</code>, <code>e</code> · Parameter: <code>a</code>, <code>b</code>, <code>c</code></li>
+          <li>Winkel werden im Bogenmaß gerechnet, <code>sin(pi/2)</code> ergibt 1</li>
+        </ul>
+      </div>
+    </details>
+
+  </div>
+
+  </div><!-- seitenspalte -->
+
+  <div class="graphspalte">
+    <div class="karte">
+      <canvas id="leinwand"></canvas>
+      <div class="griff" id="griff" title="Höhe der Zeichenfläche ändern"></div>
+      <p class="status" id="status">Ziehen verschiebt die Ansicht, Mausrad oder zwei Finger zoomen.</p>
+    </div>
+  </div>
+
+  </div><!-- arbeitsflaeche -->
+
+  <p class="fusszeile">KGS Schwarmstedt</p>
+</div>
+
+<script>
+/* =========================================================
+   1 · Termrechner (eigener Parser, kein eval)
+   ========================================================= */
+
+const FUNKTIONEN = {
+  sin: Math.sin, cos: Math.cos, tan: Math.tan,
+  asin: Math.asin, acos: Math.acos, atan: Math.atan,
+  sqrt: Math.sqrt, abs: Math.abs,
+  ln: Math.log, log: (w) => Math.log(w) / Math.LN10, exp: Math.exp
+};
+
+const KONSTANTEN = { pi: Math.PI, e: Math.E };
+
+function zerlegen(text) {
+  const marken = [];
+  let i = 0;
+  const roh = text.replace(/,/g, ".");
+
+  while (i < roh.length) {
+    const z = roh[i];
+
+    if (/\s/.test(z)) { i++; continue; }
+
+    if (/[0-9.]/.test(z)) {
+      let start = i;
+      while (i < roh.length && /[0-9.]/.test(roh[i])) i++;
+      const wert = Number(roh.slice(start, i));
+      if (isNaN(wert)) throw new Error("Zahl nicht lesbar: " + roh.slice(start, i));
+      marken.push({ art: "zahl", wert: wert });
+      continue;
+    }
+
+    if (/[a-zA-Zµ]/.test(z)) {
+      let start = i;
+      while (i < roh.length && /[a-zA-Z]/.test(roh[i])) i++;
+      marken.push({ art: "name", wert: roh.slice(start, i) });
+      continue;
+    }
+
+    if ("+-*/^()".includes(z)) { marken.push({ art: z }); i++; continue; }
+
+    throw new Error("Unbekanntes Zeichen: " + z);
+  }
+
+  /* Malzeichen ergänzen: 2x, 3(x+1), (x+1)(x-1), x sin(x) */
+  const ergaenzt = [];
+  for (let k = 0; k < marken.length; k++) {
+    const jetzt = marken[k], naechste = marken[k + 1];
+    ergaenzt.push(jetzt);
+    if (!naechste) continue;
+    const endeWert = jetzt.art === "zahl" || jetzt.art === "name" || jetzt.art === ")";
+    const startWert = naechste.art === "zahl" || naechste.art === "name" || naechste.art === "(";
+    const istFunktion = jetzt.art === "name" && FUNKTIONEN[jetzt.wert];
+    if (endeWert && startWert && !istFunktion) ergaenzt.push({ art: "*" });
+  }
+  return ergaenzt;
+}
+
+/* Baut aus dem Term eine Funktion (x, a, b, c) → Zahl */
+function kompiliere(text) {
+  const marken = zerlegen(text);
+  let pos = 0;
+
+  const schau = () => marken[pos];
+  const nimm = (art) => {
+    if (!marken[pos] || marken[pos].art !== art) throw new Error("Erwartet: " + art);
+    return marken[pos++];
+  };
+
+  function ausdruck() {
+    let links = produkt();
+    while (schau() && (schau().art === "+" || schau().art === "-")) {
+      const zeichen = marken[pos++].art;
+      const rechts = produkt();
+      const l = links, r = rechts;
+      links = zeichen === "+" ? (u) => l(u) + r(u) : (u) => l(u) - r(u);
+    }
+    return links;
+  }
+
+  function produkt() {
+    let links = vorzeichen();
+    while (schau() && (schau().art === "*" || schau().art === "/")) {
+      const zeichen = marken[pos++].art;
+      const rechts = vorzeichen();
+      const l = links, r = rechts;
+      links = zeichen === "*" ? (u) => l(u) * r(u) : (u) => l(u) / r(u);
+    }
+    return links;
+  }
+
+  function vorzeichen() {
+    if (schau() && schau().art === "-") { pos++; const w = vorzeichen(); return (u) => -w(u); }
+    if (schau() && schau().art === "+") { pos++; return vorzeichen(); }
+    return potenz();
+  }
+
+  function potenz() {
+    const basis = grundwert();
+    if (schau() && schau().art === "^") {
+      pos++;
+      const hoch = vorzeichen();          /* rechtsassoziativ */
+      return (u) => Math.pow(basis(u), hoch(u));
+    }
+    return basis;
+  }
+
+  function grundwert() {
+    const marke = schau();
+    if (!marke) throw new Error("Term ist unvollständig");
+
+    if (marke.art === "zahl") { pos++; return () => marke.wert; }
+
+    if (marke.art === "(") { pos++; const inhalt = ausdruck(); nimm(")"); return inhalt; }
+
+    if (marke.art === "name") {
+      pos++;
+      const name = marke.wert;
+      if (FUNKTIONEN[name]) {
+        nimm("(");
+        const arg = ausdruck();
+        nimm(")");
+        const fn = FUNKTIONEN[name];
+        return (u) => fn(arg(u));
+      }
+      if (KONSTANTEN[name] !== undefined) { const w = KONSTANTEN[name]; return () => w; }
+      if (name === "x") return (u) => u.x;
+      if (name === "a") return (u) => u.a;
+      if (name === "b") return (u) => u.b;
+      if (name === "c") return (u) => u.c;
+      throw new Error("Unbekannter Name: " + name);
+    }
+
+    throw new Error("Unerwartetes Zeichen");
+  }
+
+  const baum = ausdruck();
+  if (pos < marken.length) throw new Error("Term konnte nicht vollständig gelesen werden");
+  return (x, a, b, c) => baum({ x: x, a: a, b: b, c: c });
+}
+
+/* =========================================================
+   2 · Zustand
+   ========================================================= */
+
+const KURVEN = [
+  { id: 1, marke: "f", farbe: "#1e2a78", term: "x^2 - 2", fn: null },
+  { id: 2, marke: "g", farbe: "#b3261e", term: "",        fn: null },
+  { id: 3, marke: "h", farbe: "#1b7a4b", term: "",        fn: null }
+];
+
+const zustand = {
+  ansicht: { xMin: -10, xMax: 10, yMin: -6, yMax: 6 },
+  gitter: true,
+  a: 1, b: 0, c: 0,
+  punktAn: false,
+  hoehe: null,          /* vom Nutzer eingestellte Höhe der Zeichenfläche */
+  fangen: false,
+  punkt: { x: 2, y: 2 }
+};
+
+const $ = (id) => document.getElementById(id);
+const leinwand = $("leinwand");
+const ctx = leinwand.getContext("2d");
+
+function zahl(text) {
+  if (typeof text !== "string") return NaN;
+  const bereinigt = text.trim().replace(/\s/g, "").replace(",", ".");
+  if (bereinigt === "") return NaN;
+  return Number(bereinigt);
+}
+
+function ausgabe(wert, stellen) {
+  if (!isFinite(wert)) return "–";
+  return wert.toLocaleString("de-DE", {
+    minimumFractionDigits: stellen === undefined ? 0 : stellen,
+    maximumFractionDigits: stellen === undefined ? 3 : stellen
+  });
+}
+
+/* Runde Achsenschritte */
+function schrittweite(spanne, ziel) {
+  const roh = spanne / (ziel || 10);
+  const groesse = Math.pow(10, Math.floor(Math.log10(roh)));
+  const norm = roh / groesse;
+  let s;
+  if (norm <= 1) s = 1; else if (norm <= 2) s = 2; else if (norm <= 5) s = 5; else s = 10;
+  return s * groesse;
+}
+
+function stellenFuer(schritt) {
+  return Math.max(0, Math.min(6, Math.ceil(-Math.log10(schritt))));
+}
+
+/* =========================================================
+   3 · Terme übersetzen
+   ========================================================= */
+
+function termeLesen() {
+  KURVEN.forEach((kurve, i) => {
+    const feld = $("fTerm" + kurve.id);
+    const fehlerfeld = $("fehler" + kurve.id);
+    kurve.term = feld.value;
+
+    if (kurve.term.trim() === "") {
+      kurve.fn = null;
+      feld.classList.remove("fehlerhaft");
+      fehlerfeld.textContent = "";
+      return;
+    }
+
+    try {
+      const fn = kompiliere(kurve.term);
+      fn(1, zustand.a, zustand.b, zustand.c);   /* Probelauf */
+      kurve.fn = fn;
+      feld.classList.remove("fehlerhaft");
+      fehlerfeld.textContent = "";
+    } catch (fehler) {
+      kurve.fn = null;
+      feld.classList.add("fehlerhaft");
+      fehlerfeld.textContent = fehler.message;
+    }
+  });
+}
+
+function auswerten(kurve, x) {
+  if (!kurve.fn) return NaN;
+  try {
+    const w = kurve.fn(x, zustand.a, zustand.b, zustand.c);
+    return typeof w === "number" ? w : NaN;
+  } catch (e) { return NaN; }
+}
+
+/* =========================================================
+   4 · Zeichnen
+   ========================================================= */
+
+let flaeche = { breite: 700, hoehe: 420 };
+
+/* Standardhöhe: möglichst die sichtbare Fensterhöhe ausnutzen. */
+function standardhoehe() {
+  return Math.max(320, Math.min(820, window.innerHeight - 190));
+}
+
+function flaecheVorbereiten() {
+  const breite = leinwand.clientWidth || 700;
+  const hoehe = Math.round(zustand.hoehe || standardhoehe());
+  const dichte = window.devicePixelRatio || 1;
+  leinwand.style.height = hoehe + "px";
+  leinwand.width = Math.round(breite * dichte);
+  leinwand.height = Math.round(hoehe * dichte);
+  ctx.setTransform(dichte, 0, 0, dichte, 0, 0);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, breite, hoehe);
+  flaeche = { breite: breite, hoehe: hoehe };
+}
+
+const nachX = (wert) => (wert - zustand.ansicht.xMin) /
+  (zustand.ansicht.xMax - zustand.ansicht.xMin) * flaeche.breite;
+const nachY = (wert) => flaeche.hoehe - (wert - zustand.ansicht.yMin) /
+  (zustand.ansicht.yMax - zustand.ansicht.yMin) * flaeche.hoehe;
+const zuX = (pixel) => zustand.ansicht.xMin +
+  pixel / flaeche.breite * (zustand.ansicht.xMax - zustand.ansicht.xMin);
+const zuY = (pixel) => zustand.ansicht.yMin +
+  (flaeche.hoehe - pixel) / flaeche.hoehe * (zustand.ansicht.yMax - zustand.ansicht.yMin);
+
+function zeichnen() {
+  flaecheVorbereiten();
+  const a = zustand.ansicht;
+
+  const xSchritt = schrittweite(a.xMax - a.xMin, flaeche.breite / 70);
+  const ySchritt = schrittweite(a.yMax - a.yMin, flaeche.hoehe / 55);
+
+  /* --- Gitternetz --- */
+  if (zustand.gitter) {
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "#eef0f6";
+    for (let w = Math.ceil(a.xMin / xSchritt) * xSchritt; w <= a.xMax; w += xSchritt) {
+      const x = Math.round(nachX(w)) + 0.5;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, flaeche.hoehe); ctx.stroke();
+    }
+    for (let w = Math.ceil(a.yMin / ySchritt) * ySchritt; w <= a.yMax; w += ySchritt) {
+      const y = Math.round(nachY(w)) + 0.5;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(flaeche.breite, y); ctx.stroke();
+    }
+  }
+
+  /* --- Achsen --- */
+  const xAchse = Math.min(flaeche.hoehe - 18, Math.max(18, nachY(0)));
+  const yAchse = Math.min(flaeche.breite - 24, Math.max(28, nachX(0)));
+
+  ctx.strokeStyle = "#6b7280";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(0, Math.round(xAchse) + 0.5); ctx.lineTo(flaeche.breite, Math.round(xAchse) + 0.5);
+  ctx.moveTo(Math.round(yAchse) + 0.5, 0); ctx.lineTo(Math.round(yAchse) + 0.5, flaeche.hoehe);
+  ctx.stroke();
+
+  /* --- Achsenzahlen --- */
+  ctx.fillStyle = "#6b7280";
+  ctx.font = "12.5px -apple-system, Segoe UI, Roboto, sans-serif";
+  const xStellen = stellenFuer(xSchritt), yStellen = stellenFuer(ySchritt);
+
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for (let w = Math.ceil(a.xMin / xSchritt) * xSchritt; w <= a.xMax; w += xSchritt) {
+    if (Math.abs(w) < xSchritt / 2) continue;
+    const x = nachX(w);
+    ctx.beginPath();
+    ctx.moveTo(x, xAchse - 4); ctx.lineTo(x, xAchse + 4);
+    ctx.strokeStyle = "#6b7280"; ctx.stroke();
+    ctx.fillText(ausgabe(w, xStellen), x, xAchse + 7);
+  }
+
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (let w = Math.ceil(a.yMin / ySchritt) * ySchritt; w <= a.yMax; w += ySchritt) {
+    if (Math.abs(w) < ySchritt / 2) continue;
+    const y = nachY(w);
+    ctx.beginPath();
+    ctx.moveTo(yAchse - 4, y); ctx.lineTo(yAchse + 4, y);
+    ctx.strokeStyle = "#6b7280"; ctx.stroke();
+    ctx.fillText(ausgabe(w, yStellen), yAchse - 8, y);
+  }
+
+  ctx.textAlign = "right"; ctx.textBaseline = "top";
+  ctx.fillText("0", yAchse - 8, xAchse + 7);
+
+  /* --- Graphen --- */
+  const sprung = flaeche.hoehe * 1.5;
+  KURVEN.forEach((kurve) => {
+    if (!kurve.fn) return;
+    ctx.strokeStyle = kurve.farbe;
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+
+    let zeichnend = false;
+    let vorher = null;
+
+    for (let px = 0; px <= flaeche.breite; px += 1) {
+      const x = zuX(px);
+      const y = auswerten(kurve, x);
+
+      if (!isFinite(y)) { zeichnend = false; vorher = null; continue; }
+
+      const py = nachY(y);
+      /* Polstellen nicht durchziehen */
+      if (vorher !== null && Math.abs(py - vorher) > sprung) { zeichnend = false; }
+
+      if (!zeichnend) { ctx.moveTo(px, py); zeichnend = true; }
+      else ctx.lineTo(px, py);
+
+      vorher = py;
+    }
+    ctx.stroke();
+  });
+
+  /* --- Prüfpunkt --- */
+  if (zustand.punktAn) {
+    const px = nachX(zustand.punkt.x);
+    const py = nachY(zustand.punkt.y);
+
+    ctx.strokeStyle = "#c2670c";
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(px, py); ctx.lineTo(px, xAchse);
+    ctx.moveTo(px, py); ctx.lineTo(yAchse, py);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = "#c2670c";
+    ctx.beginPath(); ctx.arc(px, py, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.beginPath(); ctx.arc(px, py, 3.5, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = "#1f2430";
+    ctx.font = "600 13px -apple-system, Segoe UI, Roboto, sans-serif";
+    ctx.textAlign = "left"; ctx.textBaseline = "bottom";
+    const beschriftung = "P (" + ausgabe(zustand.punkt.x, 2) + " | " + ausgabe(zustand.punkt.y, 2) + ")";
+    const versatz = px > flaeche.breite - 130 ? -ctx.measureText(beschriftung).width - 14 : 14;
+    ctx.fillText(beschriftung, px + versatz, py - 10);
+  }
+
+  statusZeigen();
+}
+
+/* =========================================================
+   5 · Statuszeile
+   ========================================================= */
+
+function statusZeigen() {
+  const status = $("status");
+
+  if (!zustand.punktAn) {
+    status.textContent = "Ziehen verschiebt die Ansicht, Mausrad oder zwei Finger zoomen.";
+    return;
+  }
+
+  const teile = ["<strong>P (" + ausgabe(zustand.punkt.x, 2) + " | " +
+                 ausgabe(zustand.punkt.y, 2) + ")</strong>"];
+
+  KURVEN.forEach((kurve) => {
+    if (!kurve.fn) return;
+    const y = auswerten(kurve, zustand.punkt.x);
+    if (!isFinite(y)) { teile.push(kurve.marke + "(x) nicht definiert"); return; }
+
+    const abstandPixel = Math.abs(nachY(y) - nachY(zustand.punkt.y));
+    const treffer = abstandPixel < 4;
+    teile.push(kurve.marke + "(" + ausgabe(zustand.punkt.x, 2) + ") = " + ausgabe(y, 2) +
+               (treffer ? " · Punkt liegt auf dem Graphen" : ""));
+  });
+
+  status.innerHTML = teile.join(" · ");
+}
+
+/* =========================================================
+   6 · Maus, Finger, Zoom
+   ========================================================= */
+
+const zeiger = new Map();
+let zieht = null;          /* "ansicht" oder "punkt" */
+let letzterZeiger = null;
+let letzterAbstand = 0;
+
+function punktGetroffen(px, py) {
+  if (!zustand.punktAn) return false;
+  const dx = px - nachX(zustand.punkt.x);
+  const dy = py - nachY(zustand.punkt.y);
+  return Math.sqrt(dx * dx + dy * dy) < 22;
+}
+
+function fangen(wert) {
+  return zustand.fangen ? Math.round(wert * 2) / 2 : wert;
+}
+
+leinwand.addEventListener("pointerdown", (e) => {
+  leinwand.setPointerCapture(e.pointerId);
+  const kasten = leinwand.getBoundingClientRect();
+  const px = e.clientX - kasten.left, py = e.clientY - kasten.top;
+  zeiger.set(e.pointerId, { x: px, y: py });
+
+  if (zeiger.size === 2) {
+    const beide = [...zeiger.values()];
+    letzterAbstand = Math.hypot(beide[0].x - beide[1].x, beide[0].y - beide[1].y);
+    zieht = null;
+    return;
+  }
+
+  zieht = punktGetroffen(px, py) ? "punkt" : "ansicht";
+  letzterZeiger = { x: px, y: py };
+  if (zieht === "ansicht") leinwand.classList.add("zieht");
+});
+
+leinwand.addEventListener("pointermove", (e) => {
+  if (!zeiger.has(e.pointerId)) return;
+  const kasten = leinwand.getBoundingClientRect();
+  const px = e.clientX - kasten.left, py = e.clientY - kasten.top;
+  zeiger.set(e.pointerId, { x: px, y: py });
+
+  /* Zwei Finger: zoomen */
+  if (zeiger.size === 2) {
+    const beide = [...zeiger.values()];
+    const abstand = Math.hypot(beide[0].x - beide[1].x, beide[0].y - beide[1].y);
+    if (letzterAbstand > 0) {
+      const mitte = { x: (beide[0].x + beide[1].x) / 2, y: (beide[0].y + beide[1].y) / 2 };
+      zoomen(letzterAbstand / abstand, mitte.x, mitte.y);
+    }
+    letzterAbstand = abstand;
+    return;
+  }
+
+  if (!zieht || !letzterZeiger) return;
+
+  if (zieht === "punkt") {
+    zustand.punkt.x = fangen(zuX(px));
+    zustand.punkt.y = fangen(zuY(py));
+    zeichnen();
+  } else {
+    const a = zustand.ansicht;
+    const dx = (px - letzterZeiger.x) / flaeche.breite * (a.xMax - a.xMin);
+    const dy = (py - letzterZeiger.y) / flaeche.hoehe * (a.yMax - a.yMin);
+    a.xMin -= dx; a.xMax -= dx;
+    a.yMin += dy; a.yMax += dy;
+    bereichsfelderAktualisieren();
+    zeichnen();
+  }
+
+  letzterZeiger = { x: px, y: py };
+});
+
+function zeigerEnde(e) {
+  zeiger.delete(e.pointerId);
+  if (zeiger.size < 2) letzterAbstand = 0;
+  if (zeiger.size === 0) { zieht = null; letzterZeiger = null; leinwand.classList.remove("zieht"); }
+}
+leinwand.addEventListener("pointerup", zeigerEnde);
+leinwand.addEventListener("pointercancel", zeigerEnde);
+leinwand.addEventListener("pointerleave", zeigerEnde);
+
+function zoomen(faktor, mx, my) {
+  const a = zustand.ansicht;
+  const x = zuX(mx), y = zuY(my);
+  a.xMin = x + (a.xMin - x) * faktor;
+  a.xMax = x + (a.xMax - x) * faktor;
+  a.yMin = y + (a.yMin - y) * faktor;
+  a.yMax = y + (a.yMax - y) * faktor;
+  bereichsfelderAktualisieren();
+  zeichnen();
+}
+
+leinwand.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const kasten = leinwand.getBoundingClientRect();
+  zoomen(e.deltaY > 0 ? 1.12 : 1 / 1.12, e.clientX - kasten.left, e.clientY - kasten.top);
+}, { passive: false });
+
+/* =========================================================
+   7 · Bedienelemente
+   ========================================================= */
+
+function neuLesen() { termeLesen(); zeichnen(); tabelleFuellen(); }
+
+[1, 2, 3].forEach((i) => $("fTerm" + i).addEventListener("input", neuLesen));
+
+$("cbPunkt").addEventListener("change", (e) => {
+  zustand.punktAn = e.target.checked;
+  if (zustand.punktAn) {
+    /* Punkt in die Mitte der sichtbaren Fläche setzen */
+    const a = zustand.ansicht;
+    zustand.punkt.x = fangen((a.xMin + a.xMax) / 2 + (a.xMax - a.xMin) * 0.15);
+    zustand.punkt.y = fangen((a.yMin + a.yMax) / 2);
+  }
+  zeichnen();
+});
+
+$("cbGitter").addEventListener("change", (e) => { zustand.gitter = e.target.checked; zeichnen(); });
+$("cbFangen").addEventListener("change", (e) => { zustand.fangen = e.target.checked; });
+
+["A", "B", "C"].forEach((buchstabe) => {
+  const regler = $("r" + buchstabe);
+  regler.addEventListener("input", () => {
+    zustand[buchstabe.toLowerCase()] = Number(regler.value);
+    $("wert" + buchstabe).textContent = ausgabe(Number(regler.value), 1);
+    zeichnen();
+    tabelleFuellen();
+  });
+});
+
+function bereichsfelderAktualisieren() {
+  const a = zustand.ansicht;
+  $("fXMin").value = ausgabe(a.xMin, 2);
+  $("fXMax").value = ausgabe(a.xMax, 2);
+  $("fYMin").value = ausgabe(a.yMin, 2);
+  $("fYMax").value = ausgabe(a.yMax, 2);
+}
+
+$("btnBereich").addEventListener("click", () => {
+  const xMin = zahl($("fXMin").value), xMax = zahl($("fXMax").value);
+  const yMin = zahl($("fYMin").value), yMax = zahl($("fYMax").value);
+  if ([xMin, xMax, yMin, yMax].some(isNaN) || xMax <= xMin || yMax <= yMin) {
+    alert("Bitte gültige Bereiche eingeben, jeweils der zweite Wert größer als der erste.");
+    return;
+  }
+  zustand.ansicht = { xMin: xMin, xMax: xMax, yMin: yMin, yMax: yMax };
+  zeichnen();
+});
+
+$("btnAnsicht").addEventListener("click", () => {
+  const seitenverhaeltnis = flaeche.hoehe / flaeche.breite;
+  zustand.ansicht = { xMin: -10, xMax: 10, yMin: -10 * seitenverhaeltnis, yMax: 10 * seitenverhaeltnis };
+  bereichsfelderAktualisieren();
+  zeichnen();
+});
+
+$("btnBild").addEventListener("click", () => {
+  const verweis = document.createElement("a");
+  verweis.download = "funktionsgraph.png";
+  verweis.href = leinwand.toDataURL("image/png");
+  verweis.click();
+});
+
+/* Höhe der Zeichenfläche am Griff ziehen */
+let griffStart = null;
+$("griff").addEventListener("pointerdown", (e) => {
+  $("griff").setPointerCapture(e.pointerId);
+  griffStart = { y: e.clientY, hoehe: zustand.hoehe || standardhoehe() };
+});
+$("griff").addEventListener("pointermove", (e) => {
+  if (!griffStart) return;
+  zustand.hoehe = Math.max(260, Math.min(1100, griffStart.hoehe + (e.clientY - griffStart.y)));
+  zeichnen();
+});
+["pointerup", "pointercancel"].forEach((art) => {
+  $("griff").addEventListener(art, () => { griffStart = null; });
+});
+
+/* =========================================================
+   8 · Wertetabelle
+   ========================================================= */
+
+function tabelleFuellen() {
+  const von = zahl($("fTabVon").value);
+  const bis = zahl($("fTabBis").value);
+  const schritt = zahl($("fTabSchritt").value);
+  const kopf = $("tabkopf");
+  const koerper = $("tabelle");
+
+  const aktive = KURVEN.filter((k) => k.fn);
+  kopf.innerHTML = "<th>x</th>" + aktive.map((k) => "<th>" + k.marke + "(x)</th>").join("");
+  koerper.innerHTML = "";
+
+  if ([von, bis, schritt].some(isNaN) || schritt <= 0 || bis < von) return;
+  if ((bis - von) / schritt > 200) return;
+
+  for (let x = von; x <= bis + schritt / 1000; x += schritt) {
+    const zeile = document.createElement("tr");
+    let inhalt = "<td>" + ausgabe(x, 2) + "</td>";
+    aktive.forEach((k) => {
+      const y = auswerten(k, x);
+      inhalt += "<td>" + (isFinite(y) ? ausgabe(y, 2) : "–") + "</td>";
+    });
+    zeile.innerHTML = inhalt;
+    koerper.appendChild(zeile);
+  }
+}
+
+["fTabVon", "fTabBis", "fTabSchritt"].forEach((id) => {
+  $(id).addEventListener("input", tabelleFuellen);
+});
+
+/* =========================================================
+   9 · Start
+   ========================================================= */
+
+let bremse;
+window.addEventListener("resize", () => {
+  clearTimeout(bremse);
+  bremse = setTimeout(zeichnen, 120);
+});
+
+termeLesen();
+zeichnen();
+bereichsfelderAktualisieren();
+tabelleFuellen();
+</script>
+</body>
+</html>

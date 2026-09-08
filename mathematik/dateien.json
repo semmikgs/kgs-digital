@@ -1,6 +1,6 @@
 {
   "fachbereich": "mathematik",
-  "aktualisiert": "2026-09-07",
+  "aktualisiert": "2026-09-08",
   "eintraege": [
     {
       "pfad": "tools/diagramm-baukasten.html",
@@ -21,6 +21,16 @@
       "kategorie": "tools",
       "groesse": "19 KB",
       "geaendert": "2026-09-07"
+    },
+    {
+      "pfad": "tools/funktionsplotter.html",
+      "datei": "funktionsplotter.html",
+      "typ": "html",
+      "titel": "Funktionsplotter",
+      "beschreibung": "Funktionsterme zeichnen, zoomen, mit Parametern verändern und Punkte auf dem Graphen prüfen.",
+      "kategorie": "tools",
+      "groesse": "35 KB",
+      "geaendert": "2026-09-08"
     },
     {
       "pfad": "tools/ti34-multiview.html",

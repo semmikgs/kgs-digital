@@ -10,7 +10,7 @@
       "beschreibung": "Wertetabelle eingeben und daraus ein Balken-, Linien- oder Streudiagramm erzeugen. Speichern als Bild.",
       "kategorie": "tools",
       "groesse": "29 KB",
-      "geaendert": "2026-09-07"
+      "geaendert": "2026-09-08"
     },
     {
       "pfad": "tools/einheiten-umrechner.html",
@@ -20,7 +20,7 @@
       "beschreibung": "Längen, Flächen, Volumen, Massen, Zeiten und Winkel umrechnen. Mit Zehnerpotenzen und SI-Präfixen.",
       "kategorie": "tools",
       "groesse": "19 KB",
-      "geaendert": "2026-09-07"
+      "geaendert": "2026-09-08"
     },
     {
       "pfad": "tools/funktionsplotter.html",
@@ -40,7 +40,7 @@
       "beschreibung": "",
       "kategorie": "tools",
       "groesse": "33 KB",
-      "geaendert": "2026-09-07"
+      "geaendert": "2026-09-08"
     }
   ]
 }

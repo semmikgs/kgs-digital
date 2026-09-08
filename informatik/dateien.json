@@ -1,6 +1,6 @@
 {
   "fachbereich": "informatik",
-  "aktualisiert": "2026-09-07",
+  "aktualisiert": "2026-09-08",
   "eintraege": [
     {
       "pfad": "tools/binaer.html",
@@ -10,7 +10,7 @@
       "beschreibung": "",
       "kategorie": "tools",
       "groesse": "5 KB",
-      "geaendert": "2026-09-07"
+      "geaendert": "2026-09-08"
     }
   ]
 }

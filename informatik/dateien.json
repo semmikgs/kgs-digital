@@ -1,7 +1,17 @@
 {
   "fachbereich": "informatik",
-  "aktualisiert": "2026-09-08",
+  "aktualisiert": "2026-09-10",
   "eintraege": [
+    {
+      "pfad": "tools/Scratchiope.html",
+      "datei": "Scratchiope.html",
+      "typ": "html",
+      "titel": "Calliope-Blöcke – Editor und Simulator",
+      "beschreibung": "",
+      "kategorie": "tools",
+      "groesse": "1,8 MB",
+      "geaendert": "2026-09-10"
+    },
     {
       "pfad": "tools/binaer.html",
       "datei": "binaer.html",

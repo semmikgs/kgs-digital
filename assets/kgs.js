@@ -47,7 +47,7 @@
 
     liste.forEach((f) => {
       const a = el("a", "kachel");
-      a.href = f.ordner + "/";
+      a.href = f.link || (f.ordner + "/");   // link: Verweis auf eine andere Seite (z. B. 3D-Modelle)
       a.appendChild(el("span", "symbol", f.symbol || "📁"));
       a.appendChild(el("h2", null, f.titel));
       a.appendChild(el("p", null, f.beschreibung || ""));

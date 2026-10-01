@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Tafel</title>
+<style>
+  :root {
+    --rail: #eceff3; --rail-edge: #d3dae2; --face: #fff; --face-edge: #ccd5de;
+    --ink: #232d38; --muted: #6b7885; --sel: #232d38; --ok: #2e9d5b; --warn: #c62d20;
+    --b: 38px; --bp: 28px; --bc: 24px; --gap: 4px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #fff; touch-action: none;
+    -webkit-user-select: none; user-select: none; overscroll-behavior: none;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); }
+  #app { display: flex; height: 100%; }
+  #board { position: relative; flex: 1; overflow: hidden; }
+  #board canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+
+  #bar { width: 122px; flex: none; background: linear-gradient(180deg, #f3f5f8 0%, var(--rail) 100%);
+    border-left: 1px solid var(--rail-edge);
+    display: flex; flex-direction: column; justify-content: space-evenly; padding: 6px 7px; }
+  .sec { display: grid; gap: var(--gap); }
+  .g2 { grid-template-columns: 1fr 1fr; }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  .rule { height: 1px; background: var(--rail-edge); margin: 0 3px; }
+
+  button { height: var(--b); border: 1px solid var(--face-edge); background: var(--face); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; padding: 0; color: var(--ink);
+    position: relative; overflow: hidden; box-shadow: 0 1px 1px rgba(35,45,56,.06);
+    -webkit-tap-highlight-color: transparent; outline: none; font: inherit; }
+  button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2;
+    stroke-linecap: round; stroke-linejoin: round; }
+  button.on { background: var(--sel); color: #fff; border-color: var(--sel); box-shadow: none; }
+  button.pick.on { background: var(--face); color: var(--ink); border-color: var(--sel);
+    box-shadow: inset 0 0 0 2px var(--sel); }
+  button:disabled { opacity: .3; box-shadow: none; }
+  #clearBtn { color: var(--warn); }
+  #shareBtn { background: var(--sel); color: #fff; border-color: var(--sel); }
+  #presets button { height: var(--bp); }
+  #colors button { height: var(--bc); border-radius: 5px; border-color: rgba(35,45,56,.22); }
+  #colors button.on { box-shadow: inset 0 0 0 2px #fff, 0 0 0 2px var(--sel); border-color: var(--sel); }
+  #pageLabel { display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
+    font-variant-numeric: tabular-nums; color: var(--muted); }
+  #presets button.pressing::after { content: ""; position: absolute; left: 0; bottom: 0; height: 4px;
+    background: var(--sel); animation: fill .65s linear forwards; }
+  #presets button.saved { border-color: var(--ok); box-shadow: inset 0 0 0 2px var(--ok); }
+  @keyframes fill { from { width: 0; } to { width: 100%; } }
+
+  /* Dialog */
+  #veil { position: absolute; left: 0; top: 0; right: 0; bottom: 0; display: none;
+    align-items: center; justify-content: center; background: rgba(24,32,40,.34); }
+  #veil.show { display: flex; }
+  #panel { background: #fff; border-radius: 14px; padding: 20px 24px; width: min(94%, 820px);
+    max-height: 92%; overflow-y: auto; box-shadow: 0 18px 44px rgba(20,28,36,.3); -webkit-user-select: text; user-select: text; }
+  #panel h2 { margin: 0 0 12px; font-size: 21px; }
+  #panel h3 { margin: 0 0 6px; font-size: 16px; }
+  #panel p, #panel li { font-size: 15px; line-height: 1.45; margin: 5px 0; color: #38444f; }
+  #panel ul { margin: 5px 0 0; padding-left: 20px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card { border: 1px solid #dbe2e9; border-radius: 10px; padding: 14px 16px; }
+  .sep { height: 1px; background: #e2e8ee; margin: 16px 0; }
+  #panel input { font: inherit; font-size: 16px; padding: 10px 12px; border: 1px solid #c3ccd5;
+    border-radius: 8px; width: 100%; margin: 4px 0 8px; background: #fff; color: var(--ink); }
+  #panel input.code { font-size: 26px; letter-spacing: .16em; text-align: center; text-transform: uppercase; font-weight: 700; }
+  #panel button { height: 42px; padding: 0 16px; font-size: 15px; font-weight: 600; width: auto; }
+  #panel button.wide { width: 100%; }
+  #panel button.primary { background: var(--sel); color: #fff; border-color: var(--sel); }
+  #panel button.danger { color: var(--warn); }
+  .acts { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  .bigcode { font-size: 42px; font-weight: 800; letter-spacing: .14em; text-align: center;
+    padding: 10px 0 2px; font-variant-numeric: tabular-nums; }
+  .hint { font-size: 13px; color: var(--muted); }
+  .list { margin-top: 10px; max-height: 240px; overflow-y: auto; }
+  .row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #eaeff4; }
+  .row .t { flex: 1; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row button { height: 34px; padding: 0 10px; font-size: 14px; }
+  .msg { font-size: 14px; margin-top: 8px; min-height: 18px; }
+  .msg.err { color: var(--warn); }
+  .msg.ok { color: var(--ok); }
+  @media (max-width: 820px) { .cols { grid-template-columns: 1fr; } }
+  @media (max-height: 600px) { :root { --b: 33px; --bp: 25px; --bc: 21px; --gap: 3px; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="board">
+    <canvas id="bg"></canvas><canvas id="ink"></canvas><canvas id="live"></canvas>
+    <div id="veil"><div id="panel"></div></div>
+  </div>
+
+  <nav id="bar">
+    <div class="sec g2">
+      <button id="undo" title="Rückgängig"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+      <button id="redo" title="Wiederholen"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+      <button id="clearBtn" title="Tafel löschen"><svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9.5 7V4.5h5V7"/><path d="M6.5 7l1 13h9l1-13"/><path d="M10.5 10.5v6M13.5 10.5v6"/></svg></button>
+      <button id="infoBtn" title="Hilfe"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6v.2"/></svg></button>
+    </div>
+    <div class="sec">
+      <button id="shareBtn" title="Teilen und Speichern"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.8 15.7 6.5M8.3 13.2l7.4 4.3"/></svg></button>
+    </div>
+
+    <div class="rule"></div>
+    <div class="sec g2" id="presets"></div>
+    <div class="rule"></div>
+
+    <div class="sec g3" id="tools">
+      <button data-tool="pen" title="Stift"></button>
+      <button data-tool="marker" title="Textmarker"></button>
+      <button data-tool="eraser" title="Radierer"></button>
+    </div>
+    <div class="sec g3" id="sizes">
+      <button class="pick" data-size="0" title="Dünn"><i class="sample"></i></button>
+      <button class="pick" data-size="1" title="Mittel"><i class="sample"></i></button>
+      <button class="pick" data-size="2" title="Dick"><i class="sample"></i></button>
+    </div>
+    <div class="sec g4" id="colors"></div>
+
+    <div class="rule"></div>
+    <div class="sec g3">
+      <button id="prev" title="Vorherige Seite"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+      <span id="pageLabel">1 / 1</span>
+      <button id="next" title="Nächste Seite"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+    </div>
+    <div class="sec g2">
+      <button id="addPage" title="Neue Seite"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button id="bgBtn" title="Hintergrund wechseln"></button>
+    </div>
+  </nav>
+</div>
+
+<script>
+'use strict';
+(function () {
+  // ============ Supabase ============
+  var SB_URL = 'https://xzhxqbyobdlyqkyyjcxc.supabase.co';
+  var SB_KEY = 'sb_publishable_TlasNLd2Yxq8nxrkgHMnlA_J5-IezYg';
+  var SESSION_KEY = 'tafel-session-v1';
+  var session = null;
+
+  function loadSession() {
+    try { session = JSON.parse(localStorage.getItem(SESSION_KEY)) || null; } catch (e) { session = null; }
+  }
+  function storeSession(s) {
+    session = s;
+    try { s ? localStorage.setItem(SESSION_KEY, JSON.stringify(s)) : localStorage.removeItem(SESSION_KEY); } catch (e) {}
+  }
+  function authBody(json) {
+    return { method: 'POST', headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(json) };
+  }
+  async function login(email, password) {
+    var r = await fetch(SB_URL + '/auth/v1/token?grant_type=password', authBody({ email: email, password: password }));
+    var d = await r.json();
+    if (!r.ok) throw new Error(d.error_description || d.msg || d.message || 'Anmeldung fehlgeschlagen');
+    storeSession({ at: d.access_token, rt: d.refresh_token, exp: Date.now() + (d.expires_in - 60) * 1000,
+                   email: d.user && d.user.email, uid: d.user && d.user.id });
+    return session;
+  }
+  async function refresh() {
+    if (!session) throw new Error('Nicht angemeldet');
+    var r = await fetch(SB_URL + '/auth/v1/token?grant_type=refresh_token', authBody({ refresh_token: session.rt }));
+    var d = await r.json();
+    if (!r.ok) { storeSession(null); throw new Error('Sitzung abgelaufen, bitte neu anmelden'); }
+    storeSession({ at: d.access_token, rt: d.refresh_token, exp: Date.now() + (d.expires_in - 60) * 1000,
+                   email: d.user && d.user.email || session.email, uid: d.user && d.user.id || session.uid });
+    return session;
+  }
+  async function token() {
+    if (!session) return null;
+    if (Date.now() > session.exp) await refresh();
+    return session.at;
+  }
+  async function api(path, opts, needAuth) {
+    opts = opts || {};
+    var h = { 'apikey': SB_KEY, 'Content-Type': 'application/json' };
+    var t = needAuth ? await token() : null;
+    h['Authorization'] = 'Bearer ' + (t || SB_KEY);
+    if (opts.prefer) h['Prefer'] = opts.prefer;
+    var r = await fetch(SB_URL + path, { method: opts.method || 'GET', headers: h,
+      body: opts.body ? JSON.stringify(opts.body) : undefined });
+    var txt = await r.text();
+    var d = txt ? JSON.parse(txt) : null;
+    if (!r.ok) throw new Error((d && (d.message || d.error_description || d.hint)) || ('Fehler ' + r.status));
+    return d;
+  }
+  function rpc(fn, args, needAuth) { return api('/rest/v1/rpc/' + fn, { method: 'POST', body: args }, needAuth); }
+
+  // ============ Konfiguration ============
+  var COLORS = [
+    { id: 'black',  name: 'Schwarz',    pen: '#1b1b1b', marker: '#8d8d8d' },
+    { id: 'gray',   name: 'Grau',       pen: '#5a6672', marker: '#aab4bf' },
+    { id: 'brown',  name: 'Braun',      pen: '#7c4a1e', marker: '#c98c4f' },
+    { id: 'purple', name: 'Violett',    pen: '#7b1fa2', marker: '#c07ae0' },
+    { id: 'navy',   name: 'Dunkelblau', pen: '#123a8f', marker: '#5f86e0' },
+    { id: 'blue',   name: 'Blau',       pen: '#1459c7', marker: '#4d94ff' },
+    { id: 'sky',    name: 'Hellblau',   pen: '#0a86c4', marker: '#4fc8f5' },
+    { id: 'teal',   name: 'Türkis',     pen: '#0d8378', marker: '#3fd3c0' },
+    { id: 'dgreen', name: 'Dunkelgrün', pen: '#146b2c', marker: '#4fae67' },
+    { id: 'green',  name: 'Grün',       pen: '#1f8a3b', marker: '#4cd46a' },
+    { id: 'lime',   name: 'Hellgrün',   pen: '#66a80f', marker: '#a8e63c' },
+    { id: 'olive',  name: 'Oliv',       pen: '#8a7a12', marker: '#ccc04a' },
+    { id: 'yellow', name: 'Gelb',       pen: '#c29600', marker: '#ffe400' },
+    { id: 'orange', name: 'Orange',     pen: '#e8660c', marker: '#ffa233' },
+    { id: 'red',    name: 'Rot',        pen: '#d0261d', marker: '#ff5a5a' },
+    { id: 'pink',   name: 'Pink',       pen: '#c2185b', marker: '#ff7ab8' }
+  ];
+  var SIZES = { pen: [2.5, 5, 10], marker: [16, 28, 44], eraser: [24, 48, 90] };
+  var MARKER_ALPHA = 0.4, PALM_MIN = 30, LONG_PRESS = 650;
+  var PRESET_KEY = 'tafel-presets-v3';
+  var DEFAULT_PRESETS = [
+    { tool: 'pen', color: 'black', size: 1 }, { tool: 'pen', color: 'blue', size: 1 },
+    { tool: 'pen', color: 'red', size: 1 },   { tool: 'pen', color: 'green', size: 1 },
+    { tool: 'marker', color: 'yellow', size: 2 }, { tool: 'marker', color: 'green', size: 2 },
+    { tool: 'marker', color: 'blue', size: 2 },   { tool: 'marker', color: 'red', size: 2 }
+  ];
+  var ICON = {
+    pen: '<svg viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>',
+    marker: '<svg viewBox="0 0 24 24"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>',
+    eraser: '<svg viewBox="0 0 24 24"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>',
+    blank: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>',
+    grid: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9.3h16M4 14.7h16M9.3 4v16M14.7 4v16"/></svg>',
+    lines: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h10"/></svg>'
+  };
+  var BG_ORDER = ['blank', 'grid', 'lines'];
+
+  // ============ Zustand ============
+  var state = { tool: 'pen', color: 'black', size: { pen: 1, marker: 2, eraser: 1 } };
+  var pages = [newPage('blank')], cur = 0;
+  var active = new Map();
+  var presets = loadPresets();
+
+  function newPage(bg) { return { strokes: [], redo: [], snaps: [], bg: bg }; }
+  function colorById(id) { for (var i = 0; i < COLORS.length; i++) if (COLORS[i].id === id) return COLORS[i]; return COLORS[0]; }
+  function $(s) { return document.querySelector(s); }
+  function $$(s) { return Array.prototype.slice.call(document.querySelectorAll(s)); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+
+  // ============ Canvas ============
+  var board = $('#board'), cBg = $('#bg'), cInk = $('#ink'), cLive = $('#live');
+  var xBg = cBg.getContext('2d'), xInk = cInk.getContext('2d'), xLive = cLive.getContext('2d');
+  var W = 0, H = 0, DPR = 1, bRect = null;
+
+  function resize() {
+    bRect = board.getBoundingClientRect();
+    W = bRect.width; H = bRect.height; DPR = window.devicePixelRatio || 1;
+    [cBg, cInk, cLive].forEach(function (c) { c.width = Math.round(W * DPR); c.height = Math.round(H * DPR); });
+    [xBg, xInk, xLive].forEach(function (x) { x.setTransform(DPR, 0, 0, DPR, 0, 0); });
+    drawBg(); redrawInk(); requestLive();
+  }
+  function drawBg() {
+    var p = pages[cur];
+    xBg.fillStyle = '#fff'; xBg.fillRect(0, 0, W, H);
+    xBg.lineWidth = 1; xBg.beginPath();
+    if (p.bg === 'grid') {
+      xBg.strokeStyle = '#d6dee7';
+      for (var x = 40; x < W; x += 40) { xBg.moveTo(x + 0.5, 0); xBg.lineTo(x + 0.5, H); }
+      for (var y = 40; y < H; y += 40) { xBg.moveTo(0, y + 0.5); xBg.lineTo(W, y + 0.5); }
+    } else if (p.bg === 'lines') {
+      xBg.strokeStyle = '#c5d3e0';
+      for (var y2 = 56; y2 < H; y2 += 56) { xBg.moveTo(0, y2 + 0.5); xBg.lineTo(W, y2 + 0.5); }
+    }
+    xBg.stroke();
+  }
+  function strokePath(ctx, s) {
+    var p = s.pts, n = p.length / 2;
+    ctx.save();
+    if (s.kind === 'erase') { ctx.globalCompositeOperation = 'destination-out'; ctx.strokeStyle = ctx.fillStyle = '#000'; }
+    else { ctx.strokeStyle = ctx.fillStyle = s.color; ctx.globalAlpha = s.kind === 'marker' ? MARKER_ALPHA : 1; }
+    ctx.lineWidth = s.w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    if (n === 1) { ctx.arc(p[0], p[1], s.w / 2, 0, Math.PI * 2); ctx.fill(); }
+    else {
+      ctx.moveTo(p[0], p[1]);
+      for (var i = 1; i < n - 1; i++) {
+        var x = p[2 * i], y = p[2 * i + 1];
+        ctx.quadraticCurveTo(x, y, (x + p[2 * i + 2]) / 2, (y + p[2 * i + 3]) / 2);
+      }
+      ctx.lineTo(p[2 * n - 2], p[2 * n - 1]);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function eraseIncrement(s, from) {
+    var p = s.pts;
+    xInk.save();
+    xInk.globalCompositeOperation = 'destination-out';
+    xInk.strokeStyle = '#000'; xInk.lineWidth = s.w; xInk.lineCap = 'round'; xInk.lineJoin = 'round';
+    xInk.beginPath(); xInk.moveTo(p[from - 2], p[from - 1]);
+    for (var i = from; i < p.length; i += 2) xInk.lineTo(p[i], p[i + 1]);
+    xInk.stroke(); xInk.restore();
+  }
+  function redrawInk() {
+    xInk.clearRect(0, 0, W, H);
+    pages[cur].strokes.forEach(function (s) { strokePath(xInk, s); });
+  }
+  var livePending = false;
+  function requestLive() {
+    if (livePending) return;
+    livePending = true;
+    requestAnimationFrame(function () {
+      livePending = false;
+      xLive.clearRect(0, 0, W, H);
+      active.forEach(function (s) { if (s.kind !== 'erase') strokePath(xLive, s); });
+    });
+  }
+
+  // ============ Zeichnen ============
+  function pt(e) { return { x: e.clientX - bRect.left, y: e.clientY - bRect.top }; }
+  function contact(e) { return Math.max(e.width || 0, e.height || 0); }
+  function isPalm(e) { return e.pointerType !== 'mouse' && contact(e) >= PALM_MIN; }
+  function palmWidth(e) { return Math.max(60, contact(e) * 1.6); }
+
+  cLive.addEventListener('pointerdown', function (e) {
+    if ($('#veil').classList.contains('show')) return;
+    e.preventDefault();
+    try { cLive.setPointerCapture(e.pointerId); } catch (err) {}
+    var p = pt(e), s;
+    if (isPalm(e)) s = { kind: 'erase', w: palmWidth(e), pts: [p.x, p.y] };
+    else if (state.tool === 'eraser') s = { kind: 'erase', w: SIZES.eraser[state.size.eraser], pts: [p.x, p.y] };
+    else {
+      var c = colorById(state.color);
+      s = { kind: state.tool, color: state.tool === 'marker' ? c.marker : c.pen,
+            w: SIZES[state.tool][state.size[state.tool]], pts: [p.x, p.y] };
+    }
+    active.set(e.pointerId, s);
+    if (s.kind === 'erase') strokePath(xInk, s); else requestLive();
+  });
+  cLive.addEventListener('pointermove', function (e) {
+    var s = active.get(e.pointerId);
+    if (!s) return;
+    if (isPalm(e)) {
+      if (s.kind !== 'erase') { s.kind = 'erase'; delete s.color; s.w = palmWidth(e); strokePath(xInk, s); requestLive(); }
+      else s.w = Math.max(s.w, palmWidth(e));
+    }
+    var list = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+    if (!list || !list.length) list = [e];
+    var start = s.pts.length;
+    for (var i = 0; i < list.length; i++) {
+      var q = pt(list[i]);
+      var lx = s.pts[s.pts.length - 2], ly = s.pts[s.pts.length - 1];
+      if (Math.abs(q.x - lx) + Math.abs(q.y - ly) < 0.8) continue;
+      s.pts.push(q.x, q.y);
+    }
+    if (s.pts.length === start) return;
+    if (s.kind === 'erase') eraseIncrement(s, start); else requestLive();
+  });
+  function endStroke(e) {
+    var s = active.get(e.pointerId);
+    if (!s) return;
+    active['delete'](e.pointerId);
+    if (s.kind !== 'erase') strokePath(xInk, s);
+    var pg = pages[cur];
+    pg.strokes.push(s); pg.redo.length = 0;
+    requestLive(); updateUI();
+  }
+  cLive.addEventListener('pointerup', endStroke);
+  cLive.addEventListener('pointercancel', endStroke);
+  document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+  // ============ Speicherformat ============
+  function r1(n) { return Math.round(n * 10) / 10; }
+  function serialize() {
+    return { v: 1, w: Math.round(W), h: Math.round(H),
+      pages: pages.map(function (p) {
+        return { bg: p.bg, s: p.strokes.map(function (st) {
+          return { k: st.kind, c: st.color || null, w: r1(st.w), p: st.pts.map(r1) };
+        }) };
+      }) };
+  }
+  function deserialize(d) {
+    if (!d || !d.pages) throw new Error('Unbekanntes Format');
+    var sc = Math.min(W / (d.w || W), H / (d.h || H)) || 1;
+    return d.pages.map(function (p) {
+      var pg = newPage(p.bg || 'blank');
+      pg.strokes = (p.s || []).map(function (st) {
+        var o = { kind: st.k, w: st.w * sc, pts: st.p.map(function (n) { return n * sc; }) };
+        if (st.c) o.color = st.c;
+        return o;
+      });
+      return pg;
+    });
+  }
+  function isEmpty() { return pages.length === 1 && !pages[0].strokes.length; }
+  function applyPages(np) {
+    if (!np.length) return;
+    if (isEmpty()) { pages = np; cur = 0; }
+    else { var at = pages.length; pages = pages.concat(np); cur = at; }
+    active.clear(); drawBg(); redrawInk(); requestLive(); updateUI();
+  }
+
+  // ============ Dialog ============
+  var veil = $('#veil'), panel = $('#panel');
+  function closeVeil() { veil.classList.remove('show'); panel.innerHTML = ''; }
+  veil.addEventListener('pointerdown', function (e) { if (e.target === veil) closeVeil(); });
+  function tap(sel, fn) {
+    var el = $(sel);
+    if (el) el.addEventListener('pointerdown', function (e) { e.preventDefault(); if (!el.disabled) fn(el); });
+  }
+  function msg(sel, text, cls) { var el = $(sel); if (el) { el.textContent = text || ''; el.className = 'msg ' + (cls || ''); } }
+
+  function showInfo() {
+    panel.innerHTML =
+      '<h2>Kurzanleitung</h2>' +
+      '<p><b>Favoriten:</b> Kurz tippen wählt das Werkzeug. Zum Neubelegen erst unten Werkzeug, Dicke und Farbe einstellen, dann den Favoriten etwa eine Sekunde gedrückt halten.</p>' +
+      '<p><b>Handballen:</b> wirkt immer als Schwamm.</p>' +
+      '<p><b>Teilen:</b> erzeugt einen Code, mit dem du das Tafelbild auf dem iPad sicherst. Dort meldest du dich an, am Board nicht.</p>' +
+      '<div class="acts"><button id="okBtn" class="primary">Verstanden</button></div>';
+    veil.classList.add('show');
+    tap('#okBtn', closeVeil);
+  }
+  function askClear() {
+    panel.innerHTML =
+      '<h2>Seite löschen?</h2><p>Alle Inhalte dieser Seite werden entfernt. Mit Rückgängig holst du sie zurück.</p>' +
+      '<div class="acts"><button id="noBtn">Abbrechen</button><button id="yesBtn" class="danger">Löschen</button></div>';
+    veil.classList.add('show');
+    tap('#noBtn', closeVeil);
+    tap('#yesBtn', function () {
+      var pg = pages[cur];
+      if (pg.strokes.length) pg.snaps.push(pg.strokes);
+      pg.strokes = []; pg.redo.length = 0;
+      redrawInk(); closeVeil(); updateUI();
+    });
+  }
+
+  // ---- Teilen-Dialog ----
+  function shareHTML() {
+    var acct;
+    if (!session) {
+      acct =
+        '<div class="card"><h3>Konto (nur auf dem iPad)</h3>' +
+        '<p class="hint">Am Board bitte nicht anmelden.</p>' +
+        '<input id="mail" type="email" placeholder="E-Mail" autocomplete="username">' +
+        '<input id="pw" type="password" placeholder="Passwort" autocomplete="current-password">' +
+        '<button id="loginBtn" class="primary wide">Anmelden</button>' +
+        '<div id="amsg" class="msg"></div></div>';
+    } else {
+      acct =
+        '<div class="card"><h3>Meine Tafelbilder</h3>' +
+        '<p class="hint">Angemeldet als ' + esc(session.email) + '</p>' +
+        '<input id="titel" placeholder="Titel für das aktuelle Tafelbild">' +
+        '<button id="saveBtn" class="primary">Aktuelles speichern</button> ' +
+        '<button id="reloadBtn">Liste laden</button> ' +
+        '<button id="logoutBtn">Abmelden</button>' +
+        '<div id="list" class="list"></div><div id="amsg" class="msg"></div></div>';
+    }
+    return '<h2>Teilen</h2><div class="cols">' +
+      '<div class="card"><h3>Code erzeugen</h3>' +
+      '<p class="hint">Legt das aktuelle Tafelbild für 10 Minuten bereit.</p>' +
+      '<button id="mkCode" class="primary wide">Code erzeugen</button>' +
+      '<div id="codeOut"></div><div id="smsg" class="msg"></div></div>' +
+      '<div class="card"><h3>Code eingeben</h3>' +
+      '<p class="hint">Holt ein bereitgestelltes Tafelbild.</p>' +
+      '<input id="codeIn" class="code" maxlength="6" placeholder="ABC123" autocapitalize="characters" autocomplete="off">' +
+      '<button id="getCode" class="primary wide">Laden</button><div id="rmsg" class="msg"></div></div>' +
+      '</div><div class="sep"></div>' + acct +
+      '<div class="acts"><button id="closeBtn">Schließen</button></div>';
+  }
+
+  function showShare() {
+    panel.innerHTML = shareHTML();
+    veil.classList.add('show');
+    tap('#closeBtn', closeVeil);
+
+    tap('#mkCode', async function (btn) {
+      btn.disabled = true; msg('#smsg', 'Wird hochgeladen …');
+      try {
+        var code = await rpc('uebergabe_ablegen', { p_daten: serialize(), p_titel: 'Tafelbild' }, false);
+        $('#codeOut').innerHTML = '<div class="bigcode">' + esc(code) + '</div>' +
+          '<p class="hint" style="text-align:center">10 Minuten gültig, einmal verwendbar</p>';
+        msg('#smsg', '');
+      } catch (e) { msg('#smsg', e.message, 'err'); }
+      btn.disabled = false;
+    });
+
+    tap('#getCode', async function (btn) {
+      var code = ($('#codeIn').value || '').trim().toUpperCase();
+      if (code.length < 4) { msg('#rmsg', 'Bitte Code eingeben', 'err'); return; }
+      btn.disabled = true; msg('#rmsg', 'Wird geladen …');
+      try {
+        var res = await rpc('uebergabe_abholen', { p_code: code }, false);
+        applyPages(deserialize(res.daten));
+        closeVeil();
+      } catch (e) { msg('#rmsg', e.message, 'err'); btn.disabled = false; }
+    });
+
+    if (!session) {
+      tap('#loginBtn', async function (btn) {
+        btn.disabled = true; msg('#amsg', 'Anmeldung läuft …');
+        try {
+          await login($('#mail').value.trim(), $('#pw').value);
+          showShare(); loadList();
+        } catch (e) { msg('#amsg', e.message, 'err'); btn.disabled = false; }
+      });
+    } else {
+      tap('#logoutBtn', function () { storeSession(null); showShare(); });
+      tap('#reloadBtn', loadList);
+      tap('#saveBtn', async function (btn) {
+        btn.disabled = true; msg('#amsg', 'Wird gespeichert …');
+        try {
+          await api('/rest/v1/tafelbilder', { method: 'POST', prefer: 'return=minimal', body: {
+            besitzer: session.uid, titel: ($('#titel').value || '').trim() || 'Ohne Titel',
+            daten: serialize(), seiten: pages.length } }, true);
+          msg('#amsg', 'Gespeichert', 'ok'); loadList();
+        } catch (e) { msg('#amsg', e.message, 'err'); }
+        btn.disabled = false;
+      });
+      loadList();
+    }
+  }
+
+  async function loadList() {
+    var el = $('#list');
+    if (!el) return;
+    el.innerHTML = '<p class="hint">Wird geladen …</p>';
+    try {
+      var rows = await api('/rest/v1/tafelbilder?select=id,titel,seiten,updated_at&order=updated_at.desc&limit=50', {}, true);
+      if (!rows.length) { el.innerHTML = '<p class="hint">Noch keine Tafelbilder gespeichert.</p>'; return; }
+      el.innerHTML = rows.map(function (r) {
+        var d = new Date(r.updated_at);
+        return '<div class="row"><span class="t">' + esc(r.titel) + ' <span class="hint">· ' +
+          r.seiten + ' S. · ' + d.toLocaleDateString('de-DE') + '</span></span>' +
+          '<button data-open="' + r.id + '">Öffnen</button>' +
+          '<button data-send="' + r.id + '">Code</button>' +
+          '<button data-del="' + r.id + '" class="danger">Löschen</button></div>';
+      }).join('');
+      $$('#list button').forEach(function (b) {
+        b.addEventListener('pointerdown', async function (e) {
+          e.preventDefault();
+          var id = b.dataset.open || b.dataset.send || b.dataset.del;
+          b.disabled = true;
+          try {
+            if (b.dataset.open) {
+              var rowsA = await api('/rest/v1/tafelbilder?id=eq.' + id + '&select=daten', {}, true);
+              applyPages(deserialize(rowsA[0].daten)); closeVeil();
+            } else if (b.dataset.send) {
+              var rowsB = await api('/rest/v1/tafelbilder?id=eq.' + id + '&select=titel,daten', {}, true);
+              var code = await rpc('uebergabe_ablegen', { p_daten: rowsB[0].daten, p_titel: rowsB[0].titel }, true);
+              $('#codeOut').innerHTML = '<div class="bigcode">' + esc(code) + '</div>' +
+                '<p class="hint" style="text-align:center">am Board eingeben, 10 Minuten gültig</p>';
+              msg('#amsg', 'Code oben links erzeugt', 'ok');
+            } else {
+              await api('/rest/v1/tafelbilder?id=eq.' + id, { method: 'DELETE', prefer: 'return=minimal' }, true);
+              loadList();
+            }
+          } catch (err) { msg('#amsg', err.message, 'err'); }
+          b.disabled = false;
+        });
+      });
+    } catch (e) { el.innerHTML = '<p class="hint">' + esc(e.message) + '</p>'; }
+  }
+
+  // ============ Leiste ============
+  function onTap(el, fn) {
+    el.addEventListener('pointerdown', function (e) { e.preventDefault(); if (!el.disabled) fn(); });
+  }
+  $$('#tools button').forEach(function (b) {
+    b.innerHTML = ICON[b.dataset.tool];
+    onTap(b, function () { state.tool = b.dataset.tool; updateUI(); });
+  });
+  var colorsEl = $('#colors');
+  COLORS.forEach(function (c) {
+    var b = document.createElement('button');
+    b.className = 'pick'; b.dataset.color = c.id; b.title = c.name; b.style.background = c.pen;
+    onTap(b, function () { state.color = c.id; if (state.tool === 'eraser') state.tool = 'pen'; updateUI(); });
+    colorsEl.appendChild(b);
+  });
+  $$('#sizes button').forEach(function (b) {
+    onTap(b, function () { state.size[state.tool] = +b.dataset.size; updateUI(); });
+  });
+  function styleSample(el, tool, col, i) {
+    var d;
+    if (tool === 'pen') { d = [5, 9, 15][i];
+      el.style.cssText = 'width:' + d + 'px;height:' + d + 'px;border-radius:50%;background:' + col.pen; }
+    else if (tool === 'marker') { d = [7, 11, 16][i];
+      el.style.cssText = 'width:20px;height:' + d + 'px;border-radius:2px;opacity:.62;background:' + col.marker; }
+    else { d = [9, 14, 20][i];
+      el.style.cssText = 'width:' + d + 'px;height:' + d + 'px;border-radius:50%;border:2px solid #52606d'; }
+  }
+  function loadPresets() {
+    try {
+      var v = JSON.parse(localStorage.getItem(PRESET_KEY));
+      if (Object.prototype.toString.call(v) === '[object Array]' && v.length === DEFAULT_PRESETS.length) return v;
+    } catch (e) {}
+    return DEFAULT_PRESETS.map(function (o) { return { tool: o.tool, color: o.color, size: o.size }; });
+  }
+  function savePresets() { try { localStorage.setItem(PRESET_KEY, JSON.stringify(presets)); } catch (e) {} }
+  function presetMatches(p) {
+    if (p.tool !== state.tool || p.size !== state.size[state.tool]) return false;
+    return p.tool === 'eraser' || p.color === state.color;
+  }
+  function renderPreset(b, p) {
+    if (p.tool === 'eraser') { b.innerHTML = ICON.eraser; return; }
+    var col = colorById(p.color);
+    if (p.tool === 'pen') {
+      var h = [3, 5, 8][p.size];
+      b.innerHTML = '<span style="display:block;width:62%;height:' + h + 'px;border-radius:' + h + 'px;background:' + col.pen + '"></span>';
+    } else {
+      var hm = [8, 12, 17][p.size];
+      b.innerHTML = '<span style="display:block;width:72%;height:' + hm + 'px;border-radius:3px;opacity:.6;background:' + col.marker + '"></span>';
+    }
+  }
+  var presetsEl = $('#presets'), presetBtns = [];
+  presets.forEach(function (p, i) {
+    var b = document.createElement('button');
+    b.className = 'pick'; b.title = 'Favorit ' + (i + 1) + ' – lange drücken zum Speichern';
+    presetsEl.appendChild(b); presetBtns.push(b);
+    var timer = null;
+    function cancel() { if (timer) { clearTimeout(timer); timer = null; } b.classList.remove('pressing'); }
+    b.addEventListener('pointerdown', function (e) {
+      e.preventDefault(); cancel(); b.classList.add('pressing');
+      timer = setTimeout(function () {
+        timer = null; b.classList.remove('pressing');
+        presets[i] = { tool: state.tool, color: state.color, size: state.size[state.tool] };
+        savePresets(); updateUI();
+        b.classList.add('saved');
+        setTimeout(function () { b.classList.remove('saved'); }, 700);
+      }, LONG_PRESS);
+    });
+    b.addEventListener('pointerup', function () {
+      if (timer) {
+        var q = presets[i];
+        state.tool = q.tool;
+        if (q.tool !== 'eraser') state.color = q.color;
+        state.size[q.tool] = q.size;
+        updateUI();
+      }
+      cancel();
+    });
+    b.addEventListener('pointerleave', cancel);
+    b.addEventListener('pointercancel', cancel);
+  });
+
+  onTap($('#undo'), function () {
+    var pg = pages[cur];
+    if (pg.strokes.length) pg.redo.push(pg.strokes.pop());
+    else if (pg.snaps.length) pg.strokes = pg.snaps.pop();
+    else return;
+    redrawInk(); updateUI();
+  });
+  onTap($('#redo'), function () {
+    var pg = pages[cur];
+    if (!pg.redo.length) return;
+    var s = pg.redo.pop(); pg.strokes.push(s); strokePath(xInk, s); updateUI();
+  });
+  onTap($('#clearBtn'), askClear);
+  onTap($('#infoBtn'), showInfo);
+  onTap($('#shareBtn'), showShare);
+
+  function gotoPage(i) {
+    if (i < 0 || i >= pages.length) return;
+    active.clear(); cur = i;
+    drawBg(); redrawInk(); requestLive(); updateUI();
+  }
+  onTap($('#prev'), function () { gotoPage(cur - 1); });
+  onTap($('#next'), function () { gotoPage(cur + 1); });
+  onTap($('#addPage'), function () { pages.splice(cur + 1, 0, newPage(pages[cur].bg)); gotoPage(cur + 1); });
+  onTap($('#bgBtn'), function () {
+    var pg = pages[cur];
+    pg.bg = BG_ORDER[(BG_ORDER.indexOf(pg.bg) + 1) % BG_ORDER.length];
+    drawBg(); updateUI();
+  });
+
+  function updateUI() {
+    var col = colorById(state.color);
+    $$('#tools button').forEach(function (b) { b.classList.toggle('on', b.dataset.tool === state.tool); });
+    $$('#colors button').forEach(function (b) {
+      b.classList.toggle('on', state.tool !== 'eraser' && b.dataset.color === state.color);
+    });
+    $$('#sizes button').forEach(function (b, i) {
+      b.classList.toggle('on', state.size[state.tool] === i);
+      styleSample(b.firstElementChild, state.tool, col, i);
+    });
+    presetBtns.forEach(function (b, i) {
+      renderPreset(b, presets[i]);
+      b.classList.toggle('on', presetMatches(presets[i]));
+    });
+    var pg = pages[cur];
+    $('#pageLabel').textContent = (cur + 1) + ' / ' + pages.length;
+    $('#prev').disabled = cur === 0;
+    $('#next').disabled = cur === pages.length - 1;
+    $('#undo').disabled = !pg.strokes.length && !pg.snaps.length;
+    $('#redo').disabled = !pg.redo.length;
+    $('#clearBtn').disabled = !pg.strokes.length;
+    $('#bgBtn').innerHTML = ICON[pg.bg];
+  }
+
+  loadSession();
+  window.addEventListener('resize', resize);
+  resize();
+  updateUI();
+})();
+</script>
+</body>
+</html>

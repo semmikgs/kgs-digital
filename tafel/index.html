@@ -110,7 +110,8 @@
       <button id="clearBtn" title="Seite löschen"><svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9.5 7V4.5h5V7"/><path d="M6.5 7l1 13h9l1-13"/><path d="M10.5 10.5v6M13.5 10.5v6"/></svg></button>
       <button id="infoBtn" title="Hilfe"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6v.2"/></svg></button>
     </div>
-    <div class="sec">
+    <div class="sec g2">
+      <button id="fullBtn" title="Vollbild"></button>
       <button id="shareBtn" title="Teilen, Speichern, PDF"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.8 15.7 6.5M8.3 13.2l7.4 4.3"/></svg></button>
     </div>
 
@@ -245,7 +246,9 @@
     eraser: '<svg viewBox="0 0 24 24"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>',
     blank: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>',
     grid: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9.3h16M4 14.7h16M9.3 4v16M14.7 4v16"/></svg>',
-    lines: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h10"/></svg>'
+    lines: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h10"/></svg>',
+    full: '<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+    unfull: '<svg viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>'
   };
   var BG_ORDER = ['blank', 'grid', 'lines'];
 
@@ -875,6 +878,30 @@
   onTap($('#clearBtn'), askClear);
   onTap($('#infoBtn'), showInfo);
   onTap($('#shareBtn'), showShare);
+
+  // ---- Vollbild ----
+  var root = document.documentElement;
+  var fullBtn = $('#fullBtn');
+  var canFull = !!(root.requestFullscreen || root.webkitRequestFullscreen);
+  function inFull() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+  function paintFull() {
+    fullBtn.innerHTML = inFull() ? ICON.unfull : ICON.full;
+    fullBtn.title = inFull() ? 'Vollbild beenden' : 'Vollbild';
+  }
+  if (!canFull) {
+    fullBtn.style.display = 'none';
+  } else {
+    paintFull();
+    onTap(fullBtn, function () {
+      try {
+        if (inFull()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        else (root.requestFullscreen || root.webkitRequestFullscreen).call(root);
+      } catch (e) {}
+    });
+    ['fullscreenchange', 'webkitfullscreenchange'].forEach(function (ev) {
+      document.addEventListener(ev, function () { paintFull(); setTimeout(layout, 120); });
+    });
+  }
 
   function gotoPage(i) {
     if (i < 0 || i >= pages.length) return;

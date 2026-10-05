@@ -1,6 +1,6 @@
 {
   "fachbereich": "informatik",
-  "aktualisiert": "2026-10-02",
+  "aktualisiert": "2026-10-05",
   "eintraege": [
     {
       "pfad": "tools/Scratchiope.html",
@@ -10,7 +10,7 @@
       "beschreibung": "",
       "kategorie": "tools",
       "groesse": "1,8 MB",
-      "geaendert": "2026-10-02"
+      "geaendert": "2026-10-05"
     },
     {
       "pfad": "tools/binaer.html",
@@ -20,7 +20,7 @@
       "beschreibung": "",
       "kategorie": "tools",
       "groesse": "5 KB",
-      "geaendert": "2026-10-02"
+      "geaendert": "2026-10-05"
     }
   ]
 }

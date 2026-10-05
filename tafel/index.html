@@ -6,6 +6,7 @@
 <title>Tafel</title>
 <style>
   :root {
+    color-scheme: only light;   /* Dunkelmodus des Browsers soll die Oberflaeche nicht umfaerben */
     --rail: #eceff3; --rail-edge: #d3dae2; --face: #fff; --face-edge: #ccd5de;
     --ink: #232d38; --muted: #6b7885; --sel: #232d38; --ok: #2e9d5b; --warn: #c62d20;
     --b: 38px; --bp: 28px; --bc: 24px; --gap: 4px;
@@ -296,20 +297,9 @@
   }
 
   function drawBg() {
-    var p = pages[cur];
     xBg.fillStyle = '#fff';
     xBg.fillRect(0, 0, SHEET_W, SHEET_H);
-    xBg.lineWidth = 1.4;
-    xBg.beginPath();
-    if (p.bg === 'grid') {
-      xBg.strokeStyle = '#d6dee7';
-      for (var x = 64; x < SHEET_W; x += 64) { xBg.moveTo(x, 0); xBg.lineTo(x, SHEET_H); }
-      for (var y = 64; y < SHEET_H; y += 64) { xBg.moveTo(0, y); xBg.lineTo(SHEET_W, y); }
-    } else if (p.bg === 'lines') {
-      xBg.strokeStyle = '#c5d3e0';
-      for (var y2 = 90; y2 < SHEET_H; y2 += 90) { xBg.moveTo(0, y2); xBg.lineTo(SHEET_W, y2); }
-    }
-    xBg.stroke();
+    paintBg(xBg, pages[cur].bg);
   }
 
   function strokePath(ctx, s) {
@@ -471,30 +461,40 @@
   }
 
   // ============ Export ============
-  function renderPageTo(ctx, pg, scale) {
-    ctx.save();
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, SHEET_W, SHEET_H);
+  function paintBg(ctx, bg) {
     ctx.lineWidth = 1.4; ctx.beginPath();
-    if (pg.bg === 'grid') {
+    if (bg === 'grid') {
       ctx.strokeStyle = '#d6dee7';
       for (var x = 64; x < SHEET_W; x += 64) { ctx.moveTo(x, 0); ctx.lineTo(x, SHEET_H); }
       for (var y = 64; y < SHEET_H; y += 64) { ctx.moveTo(0, y); ctx.lineTo(SHEET_W, y); }
-    } else if (pg.bg === 'lines') {
+    } else if (bg === 'lines') {
       ctx.strokeStyle = '#c5d3e0';
       for (var y2 = 90; y2 < SHEET_H; y2 += 90) { ctx.moveTo(0, y2); ctx.lineTo(SHEET_W, y2); }
     }
     ctx.stroke();
-    pg.strokes.forEach(function (s) { strokePath(ctx, s); });
-    ctx.restore();
   }
 
+  // Striche kommen auf eine eigene, durchsichtige Ebene und werden erst danach auf
+  // Weiss gelegt. Sonst wuerde der Radierer Loecher durch den Hintergrund stanzen,
+  // die im Export schwarz erscheinen.
   function pageCanvas(pg, scale) {
+    var w = Math.round(SHEET_W * scale), h = Math.round(SHEET_H * scale);
+
+    var ink = document.createElement('canvas');
+    ink.width = w; ink.height = h;
+    var xi = ink.getContext('2d');
+    xi.setTransform(scale, 0, 0, scale, 0, 0);
+    pg.strokes.forEach(function (s) { strokePath(xi, s); });
+
     var c = document.createElement('canvas');
-    c.width = Math.round(SHEET_W * scale);
-    c.height = Math.round(SHEET_H * scale);
-    renderPageTo(c.getContext('2d'), pg, scale);
+    c.width = w; c.height = h;
+    var x = c.getContext('2d');
+    x.fillStyle = '#fff';
+    x.fillRect(0, 0, w, h);
+    x.setTransform(scale, 0, 0, scale, 0, 0);
+    paintBg(x, pg.bg);
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.drawImage(ink, 0, 0);
     return c;
   }
 
@@ -790,17 +790,16 @@
 
   function styleSample(el, tool, col, i) {
     var d;
-    if (tool === 'pen') {
-      d = [3, 5, 9, 15][i];
-      el.style.cssText = 'width:' + d + 'px;height:' + d + 'px;border-radius:50%;background:' + col.pen;
-    } else if (tool === 'line') {
-      d = [1, 2, 4, 7][i];
-      el.style.cssText = 'width:20px;height:' + d + 'px;border-radius:' + d + 'px;background:' + col.pen;
+    if (tool === 'pen' || tool === 'line') {
+      // Balken statt Punkt: der Dickenunterschied ist so deutlich besser zu sehen
+      d = [2, 3.5, 6, 10][i];
+      el.style.cssText = 'width:22px;height:' + d + 'px;border-radius:' + d +
+        'px;background:' + col.pen + ';box-shadow:0 0 0 1px rgba(35,45,56,.18)';
     } else if (tool === 'marker') {
       d = [5, 8, 12, 17][i];
       el.style.cssText = 'width:20px;height:' + d + 'px;border-radius:2px;opacity:.62;background:' + col.marker;
     } else {
-      d = [8, 12, 17, 22][i];
+      d = [7, 11, 15, 19][i];
       el.style.cssText = 'width:' + d + 'px;height:' + d + 'px;border-radius:50%;border:2px solid #52606d';
     }
   }

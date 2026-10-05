@@ -18,9 +18,14 @@
   #app { display: flex; height: 100%; }
 
   /* Bühne = freier Platz, Blatt = festes 16:9 darin */
-  #stage { position: relative; flex: 1; overflow: hidden; background: #dfe4ea; }
-  #sheet { position: absolute; background: #fff; box-shadow: 0 0 0 1px rgba(35,45,56,.16), 0 6px 20px rgba(20,28,36,.14); }
-  #sheet canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+  /* touch-action muss an der Zeichenflaeche selbst stehen. Safari auf dem iPad
+     wertet die Angabe am Seitenrahmen nicht streng genug aus und bricht sonst
+     laufende Striche ab, sobald ein zweiter Kontakt dazukommt. */
+  #stage { position: relative; flex: 1; overflow: hidden; background: #dfe4ea; touch-action: none; }
+  #sheet { position: absolute; background: #fff; touch-action: none;
+    box-shadow: 0 0 0 1px rgba(35,45,56,.16), 0 6px 20px rgba(20,28,36,.14); }
+  #sheet canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+    touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 
   #bar { width: 130px; flex: none; background: linear-gradient(180deg, #f3f5f8 0%, var(--rail) 100%);
     border-left: 1px solid var(--rail-edge);
@@ -230,7 +235,11 @@
   // Werte in Blatt-Einheiten (1920 breit)
   var SIZES = { pen: [2, 4, 8, 16], marker: [18, 30, 48, 74], eraser: [30, 60, 110, 190] };
   var MARKER_ALPHA = 0.4;
-  var PALM_MIN = 30;        // Kontaktbreite in CSS-Pixeln
+  // Handballen-Schwellen als Kontaktbreite in CSS-Pixeln, je nach Bauart des Geräts
+  var PALM_BOARD = 30;      // Gerät meldet für Finger keine Fläche (ActiveBoard)
+  var PALM_ECHT  = 55;      // Gerät meldet für jeden Finger eine Fläche (iPad)
+  var PALM_START = 45;      // solange noch keine Berührung ausgewertet wurde
+  var PEN_SPERRE = 900;     // ms, so lange nach einem Stiftkontakt werden Finger ignoriert
   var LONG_PRESS = 650;
   var PRESET_KEY = 'tafel-presets-v4';
   var DEFAULT_PRESETS = [
@@ -362,12 +371,41 @@
   // ============ Zeichnen ============
   function pt(e) { return { x: (e.clientX - sRect.left) / k, y: (e.clientY - sRect.top) / k }; }
   function contact(e) { return Math.max(e.width || 0, e.height || 0); }
-  function isPalm(e) { return e.pointerType !== 'mouse' && contact(e) >= PALM_MIN; }
+
+  // Jedes Gerät meldet Kontaktflächen anders: das ActiveBoard liefert für einen
+  // Finger 0, das iPad realistische Werte. Die Schwelle wird deshalb aus der
+  // schmalsten je beobachteten Berührung abgeleitet statt fest gesetzt.
+  // Geräte melden Kontaktflächen sehr unterschiedlich. Das ActiveBoard gibt für
+  // einen Finger 0 an und nur für den Handballen echte Werte; das iPad meldet für
+  // jeden Finger realistische 30 bis 50. Eine feste Schwelle kann daher nicht für
+  // beide stimmen, deshalb erkennt die Tafel die Bauart an den gemeldeten Werten.
+  var sahNull = false, sahEcht = false;
+  function merkeBasis(e) {
+    if (e.pointerType !== 'touch') return;
+    if (contact(e) < 5) sahNull = true; else sahEcht = true;
+  }
+  function palmSchwelle() {
+    if (sahNull) return PALM_BOARD;   // Board: nur der Handballen meldet überhaupt eine Fläche
+    if (sahEcht) return PALM_ECHT;    // Tablet: Finger melden ebenfalls Flächen
+    return PALM_START;                // noch keine Berührung gesehen
+  }
+  function isPalm(e) { return e.pointerType !== 'mouse' && contact(e) >= palmSchwelle(); }
   function palmWidth(e) { return Math.max(60, (contact(e) * 1.6) / k); }
+
+  // Vorrang für den Stift: solange der Pencil zeichnet und kurz danach werden
+  // Fingerkontakte vollständig verworfen, damit die aufliegende Hand den Strich
+  // nicht unterbricht.
+  var penAktiv = 0, penZuletzt = 0;
+  function stiftFuehrt() { return penAktiv > 0 || (Date.now() - penZuletzt) < PEN_SPERRE; }
 
   cLive.addEventListener('pointerdown', function (e) {
     if ($('#veil').classList.contains('show')) return;
     e.preventDefault();
+    if (e.pointerType === 'pen') { penAktiv++; penZuletzt = Date.now(); }
+    else if (e.pointerType === 'touch') {
+      merkeBasis(e);
+      if (stiftFuehrt()) return;          // Handballen oder Finger neben dem Stift
+    }
     try { cLive.setPointerCapture(e.pointerId); } catch (err) {}
     var p = pt(e), s, c = colorById(state.color);
     if (isPalm(e)) {
@@ -385,6 +423,8 @@
   });
 
   cLive.addEventListener('pointermove', function (e) {
+    if (e.pointerType === 'pen') penZuletzt = Date.now();
+    else if (e.pointerType === 'touch') merkeBasis(e);
     var s = active.get(e.pointerId);
     if (!s) return;
 
@@ -416,6 +456,7 @@
   });
 
   function endStroke(e) {
+    if (e.pointerType === 'pen') { penAktiv = Math.max(0, penAktiv - 1); penZuletzt = Date.now(); }
     var s = active.get(e.pointerId);
     if (!s) return;
     active['delete'](e.pointerId);
@@ -427,6 +468,11 @@
   cLive.addEventListener('pointerup', endStroke);
   cLive.addEventListener('pointercancel', endStroke);
   document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+  // Safari erkennt auf der Zeichenflaeche sonst eigene Gesten und bricht Striche ab
+  ['touchstart', 'touchmove', 'touchend'].forEach(function (ev) {
+    cLive.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false });
+  });
 
   // ============ Speicherformat ============
   function r1(n) { return Math.round(n * 10) / 10; }

@@ -48,6 +48,19 @@
   button:disabled { opacity: .3; box-shadow: none; }
   #clearBtn { color: var(--warn); }
   #shareBtn { background: var(--sel); color: #fff; border-color: var(--sel); }
+  /* Glättungsregler: bewusst flach, damit die Leiste nicht wächst */
+  #glatt { padding: 0 2px; }
+  #glattReg { -webkit-appearance: none; appearance: none; width: 100%; height: 22px;
+    background: none; outline: none; margin: 0; }
+  #glattReg::-webkit-slider-runnable-track { height: 5px; border-radius: 3px;
+    background: linear-gradient(90deg, #b9c3cd, var(--sel)); }
+  #glattReg::-moz-range-track { height: 5px; border-radius: 3px;
+    background: linear-gradient(90deg, #b9c3cd, var(--sel)); }
+  #glattReg::-webkit-slider-thumb { -webkit-appearance: none; appearance: none;
+    width: 18px; height: 18px; margin-top: -6.5px; border-radius: 50%;
+    background: var(--face); border: 2px solid var(--sel); box-shadow: 0 1px 2px rgba(35,45,56,.3); }
+  #glattReg::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%;
+    background: var(--face); border: 2px solid var(--sel); box-shadow: 0 1px 2px rgba(35,45,56,.3); }
   #testband { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
     text-align: center; color: #8a3b12; background: #ffe3c9; border: 1px solid #f0b282;
     border-radius: 6px; padding: 3px 0; }
@@ -143,6 +156,11 @@
       <button class="pick" data-size="2" title="Mittel"><i class="sample"></i></button>
       <button class="pick" data-size="3" title="Dick"><i class="sample"></i></button>
     </div>
+    <div class="sec" id="glatt">
+      <input id="glattReg" type="range" min="0" max="100" step="5" value="45"
+             title="Glättung der Schrift: links kantig und direkt, rechts weich">
+    </div>
+
     <div class="sec g4" id="colors"></div>
 
     <div class="rule"></div>
@@ -247,6 +265,7 @@
   var PALM_START = 45;      // solange noch keine Berührung ausgewertet wurde
   var PEN_SPERRE = 900;     // ms, so lange nach einem Stiftkontakt werden Finger ignoriert
   var LONG_PRESS = 650;
+  var GLATT_KEY = 'tafel-glaettung-v1';
   var PRESET_KEY = 'tafel-presets-v4';
   var DEFAULT_PRESETS = [
     { tool: 'pen', color: 'black', size: 2 }, { tool: 'pen', color: 'blue', size: 2 },
@@ -413,6 +432,36 @@
   function isPalm(e) { return e.pointerType !== 'mouse' && contact(e) >= palmSchwelle(); }
   function palmWidth(e) { return Math.max(60, (contact(e) * 1.6) / k); }
 
+  // Glättung: Stift und Finger melden leicht zittrige Punkte. Statt sie direkt zu
+  // zeichnen, wandert ein geglätteter Punkt der Spitze hinterher. Je stärker die
+  // Glättung, desto weicher die Linie, aber desto träger folgt sie auch.
+  var glaettung = (function () {
+    var v = parseFloat(localStorage.getItem(GLATT_KEY));
+    return (isFinite(v) && v >= 0 && v <= 1) ? v : 0.45;
+  })();
+  // Nicht linear: im unteren Bereich soll der Regler schon spürbar wirken,
+  // ohne dass das obere Ende unbrauchbar träge wird.
+  function alpha() { return 0.12 + Math.pow(1 - glaettung, 1.8) * 0.88; }
+  function schiebe(s, x, y) {
+    var lx = s.pts[s.pts.length - 2], ly = s.pts[s.pts.length - 1];
+    if (Math.abs(x - lx) + Math.abs(y - ly) < 1.2) return false;
+    s.pts.push(x, y);
+    return true;
+  }
+  // Am Strichende holt die geglättete Spur die echte Stiftposition ein,
+  // sonst bliebe der Strich kurz vor dem Absetzpunkt stehen.
+  function nachlauf(s) {
+    if (s.rx === undefined) return false;
+    var neu = false;
+    for (var i = 0; i < 3; i++) {
+      s.gx += (s.rx - s.gx) * 0.5;
+      s.gy += (s.ry - s.gy) * 0.5;
+      if (schiebe(s, s.gx, s.gy)) neu = true;
+    }
+    if (schiebe(s, s.rx, s.ry)) neu = true;
+    return neu;
+  }
+
   // Vorrang für den Stift: solange der Pencil zeichnet und kurz danach werden
   // Fingerkontakte vollständig verworfen, damit die aufliegende Hand den Strich
   // nicht unterbricht.
@@ -439,6 +488,7 @@
       s = { kind: state.tool, color: state.tool === 'marker' ? c.marker : c.pen,
             w: SIZES[state.tool][state.size[state.tool]], pts: [p.x, p.y] };
     }
+    s.gx = p.x; s.gy = p.y; s.rx = p.x; s.ry = p.y;
     active.set(e.pointerId, s);
     if (s.kind === 'erase') strokePath(xInk, s); else requestLive();
   });
@@ -465,12 +515,18 @@
     }
     var list = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
     if (!list || !list.length) list = [e];
-    var start = s.pts.length;
+    var start = s.pts.length, a = alpha();
     for (var i = 0; i < list.length; i++) {
       var r = pt(list[i]);
-      var lx = s.pts[s.pts.length - 2], ly = s.pts[s.pts.length - 1];
-      if (Math.abs(r.x - lx) + Math.abs(r.y - ly) < 1.2) continue;
-      s.pts.push(r.x, r.y);
+      s.rx = r.x; s.ry = r.y;
+      if (s.kind === 'erase' || a >= 1) {           // Radierer bleibt bewusst ungefiltert
+        s.gx = r.x; s.gy = r.y;
+        schiebe(s, r.x, r.y);
+      } else {
+        s.gx += (r.x - s.gx) * a;
+        s.gy += (r.y - s.gy) * a;
+        schiebe(s, s.gx, s.gy);
+      }
     }
     if (s.pts.length === start) return;
     if (s.kind === 'erase') eraseIncrement(s, start); else requestLive();
@@ -481,6 +537,7 @@
     var s = active.get(e.pointerId);
     if (!s) return;
     active['delete'](e.pointerId);
+    if (s.kind !== 'erase' && s.kind !== 'line' && alpha() < 1) nachlauf(s);
     if (s.kind !== 'erase') strokePath(xInk, s);
     var pg = pages[cur];
     pg.strokes.push(s); pg.redo.length = 0;
@@ -839,6 +896,9 @@
       '<p><b>Favoriten:</b> Kurz tippen wählt das Werkzeug. Zum Neubelegen erst unten Werkzeug, Dicke und Farbe einstellen, dann den Favoriten etwa eine Sekunde gedrückt halten.</p>' +
       '<p><b>Gerade:</b> Werkzeug wählen, aufsetzen, ziehen. Die Linie folgt bis zum Loslassen.</p>' +
       '<p><b>Handballen:</b> wirkt immer als Schwamm.</p>' +
+      '<p><b>Glättung:</b> der Schieberegler unter den Strichstärken. Nach links folgt die Linie ' +
+      'unmittelbar und zeigt jede Ecke, nach rechts wird sie weicher, läuft dafür etwas nach. ' +
+      'Der Radierer bleibt davon unberührt.</p>' +
       '<p><b>Blattformat:</b> Die Tafel hat ein festes Querformat, damit sie auf jedem Gerät und im PDF gleich aussieht.</p>' +
       '<p><b>Live-Sitzung:</b> unter Teilen eine Sitzung starten und den Code am anderen Gerät eingeben. ' +
       'Danach gleichen sich beide laufend ab, etwa im Zwei-Sekunden-Takt. Verlassen ändert nichts am Tafelbild.</p>' +
@@ -1079,6 +1139,17 @@
   });
   $$('#sizes button').forEach(function (b) {
     onTap(b, function () { state.size[sizeKey(state.tool)] = +b.dataset.size; updateUI(); });
+  });
+
+  var glattReg = $('#glattReg');
+  glattReg.value = Math.round(glaettung * 100);
+  glattReg.addEventListener('input', function () {
+    glaettung = (+glattReg.value) / 100;
+    try { localStorage.setItem(GLATT_KEY, String(glaettung)); } catch (e) {}
+  });
+  // Der Regler soll die Zeichenfläche nicht mitbedienen
+  ['pointerdown', 'pointermove', 'pointerup', 'touchstart', 'touchmove'].forEach(function (ev) {
+    glattReg.addEventListener(ev, function (e) { e.stopPropagation(); });
   });
 
   function styleSample(el, tool, col, i) {

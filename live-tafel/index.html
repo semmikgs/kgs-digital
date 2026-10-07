@@ -48,24 +48,31 @@
   button:disabled { opacity: .3; box-shadow: none; }
   #clearBtn { color: var(--warn); }
   #shareBtn { background: var(--sel); color: #fff; border-color: var(--sel); }
-  /* Glättungsregler: bewusst flach, damit die Leiste nicht wächst */
-  #glatt { padding: 0 2px; }
-  #glattReg { -webkit-appearance: none; appearance: none; width: 100%; height: 22px;
+  /* Glättungsregler: die Laufschiene zeigt selbst, worum es geht —
+     links eine zackige Linie, nach rechts läuft sie glatt aus. */
+  #glatt { padding: 0 1px; }
+  #glattReg { -webkit-appearance: none; appearance: none; width: 100%; height: 26px;
     background: none; outline: none; margin: 0; }
-  #glattReg::-webkit-slider-runnable-track { height: 5px; border-radius: 3px;
-    background: linear-gradient(90deg, #b9c3cd, var(--sel)); }
-  #glattReg::-moz-range-track { height: 5px; border-radius: 3px;
-    background: linear-gradient(90deg, #b9c3cd, var(--sel)); }
+  #glattReg::-webkit-slider-runnable-track { height: 24px; border-radius: 6px;
+    border: 1px solid var(--face-edge);
+    background: var(--face) url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2024'%20preserveAspectRatio='none'%3E%3Cpath%20d='M0.0%208.6%20L2.0%2016.5%20L4.0%2011.0%20L6.0%2018.2%20L8.0%2012.5%20L10.0%2018.6%20L12.0%2012.3%20L14.0%2017.3%20L16.0%2010.7%20L18.0%2015.0%20L20.0%208.5%20L22.0%2012.5%20L24.0%206.7%20L26.0%2010.9%20L28.0%206.1%20L30.0%2010.9%20L32.0%207.2%20L34.0%2012.3%20L36.0%209.4%20L38.0%2014.6%20L40.0%2011.9%20L42.0%2016.5%20L44.0%2013.6%20L46.0%2017.2%20L48.0%2013.9%20L50.0%2016.4%20L52.0%2012.5%20L54.0%2014.3%20L56.0%2010.3%20L58.0%2011.7%20L60.0%208.3%20L62.0%209.9%20L64.0%207.3%20L66.0%209.5%20L68.0%208.0%20L70.0%2010.7%20L72.0%2010.0%20L74.0%2012.9%20L76.0%2012.5%20L78.0%2015.0%20L80.0%2014.4%20L82.0%2016.1%20L84.0%2015.0%20L86.0%2015.7%20L88.0%2014.0%20L90.0%2013.9%20L92.0%2011.9%20L94.0%2011.4%20L96.0%209.6%20L98.0%209.3%20L100.0%208.3%20L102.0%208.6%20L104.0%208.5%20L106.0%209.5%20L108.0%2010.2%20L110.0%2011.5%20L112.0%2012.6%20L114.0%2013.9%20L116.0%2014.7%20L118.0%2015.4%20L120.0%2015.6'%20fill='none'%20stroke='%23596a7a'%20stroke-width='2'%20stroke-linejoin='miter'%20stroke-linecap='round'/%3E%3C/svg%3E") center/100% 100% no-repeat; }
+  #glattReg::-moz-range-track { height: 24px; border-radius: 6px;
+    border: 1px solid var(--face-edge);
+    background: var(--face) url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2024'%20preserveAspectRatio='none'%3E%3Cpath%20d='M0.0%208.6%20L2.0%2016.5%20L4.0%2011.0%20L6.0%2018.2%20L8.0%2012.5%20L10.0%2018.6%20L12.0%2012.3%20L14.0%2017.3%20L16.0%2010.7%20L18.0%2015.0%20L20.0%208.5%20L22.0%2012.5%20L24.0%206.7%20L26.0%2010.9%20L28.0%206.1%20L30.0%2010.9%20L32.0%207.2%20L34.0%2012.3%20L36.0%209.4%20L38.0%2014.6%20L40.0%2011.9%20L42.0%2016.5%20L44.0%2013.6%20L46.0%2017.2%20L48.0%2013.9%20L50.0%2016.4%20L52.0%2012.5%20L54.0%2014.3%20L56.0%2010.3%20L58.0%2011.7%20L60.0%208.3%20L62.0%209.9%20L64.0%207.3%20L66.0%209.5%20L68.0%208.0%20L70.0%2010.7%20L72.0%2010.0%20L74.0%2012.9%20L76.0%2012.5%20L78.0%2015.0%20L80.0%2014.4%20L82.0%2016.1%20L84.0%2015.0%20L86.0%2015.7%20L88.0%2014.0%20L90.0%2013.9%20L92.0%2011.9%20L94.0%2011.4%20L96.0%209.6%20L98.0%209.3%20L100.0%208.3%20L102.0%208.6%20L104.0%208.5%20L106.0%209.5%20L108.0%2010.2%20L110.0%2011.5%20L112.0%2012.6%20L114.0%2013.9%20L116.0%2014.7%20L118.0%2015.4%20L120.0%2015.6'%20fill='none'%20stroke='%23596a7a'%20stroke-width='2'%20stroke-linejoin='miter'%20stroke-linecap='round'/%3E%3C/svg%3E") center/100% 100% no-repeat; }
   #glattReg::-webkit-slider-thumb { -webkit-appearance: none; appearance: none;
-    width: 18px; height: 18px; margin-top: -6.5px; border-radius: 50%;
-    background: var(--face); border: 2px solid var(--sel); box-shadow: 0 1px 2px rgba(35,45,56,.3); }
-  #glattReg::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%;
-    background: var(--face); border: 2px solid var(--sel); box-shadow: 0 1px 2px rgba(35,45,56,.3); }
+    width: 8px; height: 26px; margin-top: -1px; border-radius: 4px;
+    background: var(--sel); border: 2px solid var(--face); box-shadow: 0 1px 3px rgba(35,45,56,.45); }
+  #glattReg::-moz-range-thumb { width: 8px; height: 26px; border-radius: 4px;
+    background: var(--sel); border: 2px solid var(--face); box-shadow: 0 1px 3px rgba(35,45,56,.45); }
   #testband { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
     text-align: center; color: #8a3b12; background: #ffe3c9; border: 1px solid #f0b282;
     border-radius: 6px; padding: 3px 0; }
   #shareBtn.live::after { content: ""; position: absolute; right: 5px; top: 5px; width: 8px; height: 8px;
     border-radius: 50%; background: #45d07a; box-shadow: 0 0 0 2px var(--sel); }
+  #shareBtn.live { flex-direction: column; gap: 1px; }
+  #shareBtn.live svg { width: 15px; height: 15px; }
+  #shareBtn .livetext { font-size: 9px; font-weight: 800; letter-spacing: .1em;
+    text-transform: uppercase; line-height: 1; color: #8df0b4; }
   #presets button { height: var(--bp); }
   #colors button { height: var(--bc); border-radius: 5px; border-color: rgba(35,45,56,.22); }
   #colors button.on { box-shadow: inset 0 0 0 2px #fff, 0 0 0 2px var(--sel); border-color: var(--sel); }
@@ -742,8 +749,13 @@
     liveAnzeige();
   }
 
+  var ICON_TEILEN = null;
   function liveAnzeige() {
-    $('#shareBtn').classList.toggle('live', !!live);
+    var sb = $('#shareBtn');
+    if (ICON_TEILEN === null) ICON_TEILEN = sb.innerHTML;
+    sb.classList.toggle('live', !!live);
+    sb.innerHTML = live ? ICON_TEILEN + '<span class="livetext">Live</span>' : ICON_TEILEN;
+    sb.title = live ? 'Live-Sitzung läuft – Teilen, Speichern, PDF' : 'Teilen, Speichern, PDF';
     var el = $('#lstatus');
     if (el) {
       el.textContent = !live ? '' :

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <!--
-  Calliope-Blöcke: Editor und Simulator (Stufe 4)
+  Calliope-Blöcke: Editor und Simulator (Stufe 5)
   Enthält Blockly (Copyright Google LLC / Raspberry Pi Foundation, Apache-2.0),
   @blockly/continuous-toolbox (Apache-2.0), MicroPython für den Calliope mini 3
   (MIT, Micro:bit Educational Foundation / Calliope gGmbH), microbit-fs (MIT),
@@ -96,20 +96,21 @@
   .stage {
     background: #fff; border: 1px solid var(--line); border-radius: 8px;
     aspect-ratio: 4 / 3; display: grid; place-items: center; overflow: hidden;
+    flex: none;
   }
-  #board { width: 96%; height: 96%; user-select: none; touch-action: none; }
-  #board .board { fill: var(--board); stroke: var(--board-edge); stroke-width: 3; stroke-linejoin: round; }
-  #board .boardLabel { fill: #E8F1F2; font-size: 16px; font-weight: 700; }
-  #board .boardLabel.small { font-size: 11px; font-weight: 600; opacity: .75; }
-  #board .pad { fill: #D4A64A; stroke: #B7892F; stroke-width: 1.5; }
-  #board .padHole { fill: var(--board-edge); }
-  #board .led { fill: var(--led-off); stroke: rgba(0,0,0,.35); stroke-width: 1; transition: fill 40ms linear; }
-  #board .led.on { fill: var(--led-on); stroke: #FFB3A8; filter: url(#ledGlow); }
-  #board .hwButton { cursor: pointer; }
-  #board .btnPlate { fill: #C9CFD6; stroke: #98A1AB; stroke-width: 1.5; }
-  #board .btnCap { fill: #2F3338; stroke: #15181B; stroke-width: 2; transition: transform 60ms; transform-box: fill-box; transform-origin: center; }
-  #board .hwButton:hover .btnCap { fill: #3A3F45; }
-  #board .hwButton.down .btnCap { fill: #4C97FF; stroke: #2F6FCC; transform: scale(.9); }
+  .calBoard { width: 100%; flex: 1 1 auto; min-height: 0; user-select: none; touch-action: none; }
+  .calBoard .board { fill: var(--board); stroke: var(--board-edge); stroke-width: 3; stroke-linejoin: round; }
+  .calBoard .boardLabel { fill: #E8F1F2; font-size: 16px; font-weight: 700; }
+  .calBoard .boardLabel.small { font-size: 11px; font-weight: 600; opacity: .75; }
+  .calBoard .pad { fill: #D4A64A; stroke: #B7892F; stroke-width: 1.5; }
+  .calBoard .padHole { fill: var(--board-edge); }
+  .calBoard .led { fill: var(--led-off); stroke: rgba(0,0,0,.35); stroke-width: 1; transition: fill 40ms linear; }
+  .calBoard .led.on { fill: var(--led-on); stroke: #FFB3A8; filter: var(--glow); }
+  .calBoard .hwButton { cursor: pointer; }
+  .calBoard .btnPlate { fill: #C9CFD6; stroke: #98A1AB; stroke-width: 1.5; }
+  .calBoard .btnCap { fill: #2F3338; stroke: #15181B; stroke-width: 2; transition: transform 60ms; transform-box: fill-box; transform-origin: center; }
+  .calBoard .hwButton:hover .btnCap { fill: #3A3F45; }
+  .calBoard .hwButton.down .btnCap { fill: #4C97FF; stroke: #2F6FCC; transform: scale(.9); }
 
   .stageFooter {
     background: #fff; border: 1px solid var(--line); border-radius: 8px;
@@ -210,16 +211,16 @@
   @media (max-width: 1100px) { .menubar .hint { display: none; } .projectName { width: 160px; } .flashBtn { margin-left: auto; } }
 
   /* Sechseck-Board */
-  #board .boardLabel.part { font-size: 10px; font-weight: 700; fill: #E8F1F2; opacity: .9; }
-  #board .pad { fill: #D4A64A; stroke: #B7892F; stroke-width: 1.2; }
-  #board .padLabel { font-size: 8px; font-weight: 700; fill: #4A3712; text-anchor: middle; }
-  #board .chipBody { fill: #2B2F33; stroke: #15181B; stroke-width: 1.2; }
-  #board .chipPin { stroke: #C9CFD6; stroke-width: 1.6; stroke-linecap: round; }
-  #board .thermoStem { fill: #E8F1F2; }
-  #board .thermoBulb { stroke: #E8F1F2; stroke-width: 1; }
-  #board .sunCore { fill: #FFD500; }
-  #board .sunRay { stroke: #FFD500; stroke-width: 1.6; stroke-linecap: round; }
-  #board .sensorTag, #board .chip, #board .speaker, #board .mic, #board .rgb { cursor: default; }
+  .calBoard .boardLabel.part { font-size: 9.5px; font-weight: 700; fill: #E8F1F2; opacity: .9; }
+  .calBoard .pad { fill: #D4A64A; stroke: #B7892F; stroke-width: 1.2; }
+  .calBoard .padLabel { font-size: 8px; font-weight: 700; fill: #4A3712; text-anchor: middle; }
+  .calBoard .chipBody { fill: #2B2F33; stroke: #15181B; stroke-width: 1.2; }
+  .calBoard .chipPin { stroke: #C9CFD6; stroke-width: 1.6; stroke-linecap: round; }
+  .calBoard .thermoStem { fill: #E8F1F2; }
+  .calBoard .thermoBulb { stroke: #E8F1F2; stroke-width: 1; }
+  .calBoard .sunCore { fill: #FFD500; }
+  .calBoard .sunRay { stroke: #FFD500; stroke-width: 1.6; stroke-linecap: round; }
+  .calBoard .sensorTag, .calBoard .chip, .calBoard .speaker, .calBoard .mic, .calBoard .rgb { cursor: default; }
 
 
   /* Übertragen */
@@ -240,17 +241,75 @@
   .modalBody ol { margin: 0 0 12px; padding-left: 20px; }
   .modalBody li { margin-bottom: 4px; }
 
+
+  /* Zwei Calliopes auf der Bühne */
+  .boards { display: flex; gap: 6px; width: 100%; height: 100%; min-height: 0; align-items: stretch; justify-content: center; }
+  .boardBox { margin: 0; flex: 1 1 0; min-width: 0; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px 0; }
+  .boardBox[hidden] { display: none; }
+  .boardName { font-size: 12px; font-weight: 700; color: var(--ink-soft); margin-top: 2px; }
+  .boards:not(.two) .boardName { display: none; }
+  .stage.two { aspect-ratio: 2 / 1; }
+
+  /* Lagesensor, Kompass und Funk auf dem Board */
+  .calBoard .levelRing { fill: rgba(0,0,0,.25); stroke: #8FA7AD; stroke-width: 1; }
+  .calBoard .levelBubble { fill: #FFD500; }
+  .calBoard .needleN { fill: #9FB3B8; }
+  .calBoard .needleS { fill: #5E767C; }
+  .calBoard .needle.ok .needleN { fill: #EC5959; }
+  .calBoard .needle.ok .needleS { fill: #E8F1F2; }
+  .calBoard .radio .wave { fill: none; stroke: #E8F1F2; stroke-width: 2; stroke-linecap: round; opacity: .3; }
+  .calBoard .radio.active .wave { opacity: 1; stroke: #0FBD8C; }
+  .calBoard .radio.active .boardIconLine { stroke: #0FBD8C; }
+
+  /* Eingänge: Überschriften, Knopfreihen, Funk */
+  .panel > summary {
+    cursor: pointer; font-weight: 700; font-size: 13px; list-style: none;
+    display: flex; align-items: center; gap: 8px; margin: -2px 0;
+  }
+  .panel > summary::-webkit-details-marker { display: none; }
+  .panel > summary::before {
+    content: ''; width: 0; height: 0; flex: none;
+    border-left: 6px solid var(--ink-soft); border-top: 4px solid transparent; border-bottom: 4px solid transparent;
+    transition: transform .15s;
+  }
+  .panel[open] > summary::before { transform: rotate(90deg); }
+  .panel:not([open]) { padding-bottom: 10px; }
+  .sensor { grid-template-columns: 11.5em 1fr 3.6em; }
+  .btnRow { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+  .checkRow { display: flex; align-items: flex-start; gap: 8px; line-height: 1.4; }
+  .checkRow input { width: 18px; height: 18px; margin-top: 1px; accent-color: #0FBD8C; flex: none; }
+  .radioStatus { font-size: 12px; font-weight: 500; color: var(--ink-soft); margin-left: auto; }
+  .radioLog {
+    list-style: none; margin: 0; padding: 6px 8px; max-height: 108px; overflow-y: auto;
+    background: #F7F8FA; border: 1px solid var(--line); border-radius: 6px;
+    font-size: 12px; line-height: 1.5; display: flex; flex-direction: column; gap: 2px;
+  }
+  .radioLog li { display: flex; gap: 6px; align-items: baseline; }
+  .radioEmpty { color: var(--ink-soft); }
+  .radioFrom { font-weight: 700; white-space: nowrap; }
+  .radioChan { color: #0B8E69; white-space: nowrap; }
+  .radioBody { overflow-wrap: anywhere; }
+  .radioHeard { margin-left: auto; color: var(--ink-soft); white-space: nowrap; }
+  .radioSend { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; font-size: 12px; }
+  .radioSend label { display: flex; flex-direction: column; gap: 3px; }
+  .radioSend .grow { flex: 1 1 8em; min-width: 7em; }
+  .radioSend input {
+    height: 28px; border: 1px solid var(--line); border-radius: 6px; padding: 0 8px; font: inherit; font-size: 13px; color: var(--ink);
+  }
+  .radioSend input[type=number] { width: 4.5em; }
+  .radioSend input:focus { outline: none; border-color: var(--menu); box-shadow: 0 0 0 3px rgba(76,151,255,.25); }
+
   /* Stufe 2: Board-Elemente */
-  #board .boardLabel.tiny { font-size: 10px; font-weight: 600; opacity: .7; }
-  #board .rgbRing { fill: #E9EEF0; stroke: #9FB3B8; stroke-width: 1.5; }
-  #board .rgbLed { stroke: rgba(0,0,0,.25); stroke-width: 1; }
-  #board .boardIcon { fill: #E8F1F2; opacity: .85; }
-  #board .boardIconLine { fill: none; stroke: #E8F1F2; stroke-width: 2; stroke-linecap: round; opacity: .85; }
-  #board .speaker .wave { fill: none; stroke: #E8F1F2; stroke-width: 2.2; stroke-linecap: round; opacity: 0; }
-  #board .speaker.playing .wave { opacity: .9; animation: calWave .5s ease-in-out infinite alternate; }
-  #board .speaker.playing .w2 { animation-delay: .15s; }
+  .calBoard .boardLabel.tiny { font-size: 10px; font-weight: 600; opacity: .7; }
+  .calBoard .rgbRing { fill: #E9EEF0; stroke: #9FB3B8; stroke-width: 1.5; }
+  .calBoard .rgbLed { stroke: rgba(0,0,0,.25); stroke-width: 1; }
+  .calBoard .boardIcon { fill: #E8F1F2; opacity: .85; }
+  .calBoard .boardIconLine { fill: none; stroke: #E8F1F2; stroke-width: 2; stroke-linecap: round; opacity: .85; }
+  .calBoard .speaker .wave { fill: none; stroke: #E8F1F2; stroke-width: 2.2; stroke-linecap: round; opacity: 0; }
+  .calBoard .speaker.playing .wave { opacity: .9; animation: calWave .5s ease-in-out infinite alternate; }
+  .calBoard .speaker.playing .w2 { animation-delay: .15s; }
   @keyframes calWave { from { opacity: .25; } to { opacity: 1; } }
-  #board .micLevel { fill: #FFD500; opacity: 0; }
+  .calBoard .micLevel { fill: #FFD500; opacity: 0; }
 
   /* Bühne mit Variablen-Anzeigen */
   .stage { position: relative; }
@@ -273,6 +332,7 @@
 
   /* Eingänge-Panel */
   .inputs {
+    flex: none;
     background: #fff; border: 1px solid var(--line); border-radius: 8px;
     padding: 10px 14px; display: grid; gap: 8px; font-size: 13px;
   }
@@ -345,8 +405,8 @@
   .valueBubble[hidden] { display: none; }
 
   @media (prefers-reduced-motion: reduce) {
-    #board .led, #board .btnCap { transition: none; }
-    #board .speaker.playing .wave { animation: none; }
+    .calBoard .led, .calBoard .btnCap { transition: none; }
+    .calBoard .speaker.playing .wave { animation: none; }
   }
 </style>
 </head>
@@ -422,7 +482,16 @@
 
     <div class="stage">
       <div id="monitors" class="monitors" aria-live="polite"></div>
-      <svg id="board" role="img" aria-label="Simuliertes Board mit LED-Anzeige, RGB-LEDs, Knöpfen A und B, Lautsprecher, Mikrofon und Temperatursensor"></svg>
+      <div class="boards">
+        <figure class="boardBox">
+          <svg id="board" class="calBoard" role="img" aria-label="Simuliertes Board mit LED-Anzeige, RGB-LEDs, Knöpfen A und B, Lautsprecher, Mikrofon, Temperatur-, Lage- und Kompasssensor sowie Funk"></svg>
+          <figcaption class="boardName">Calliope 1</figcaption>
+        </figure>
+        <figure class="boardBox" id="board2Box" hidden>
+          <svg id="board2" class="calBoard" role="img" aria-label="Zweiter simulierter Calliope für den Funk"></svg>
+          <figcaption class="boardName">Calliope 2</figcaption>
+        </figure>
+      </div>
     </div>
 
     <div class="inputs" aria-label="Eingänge des Simulators">
@@ -440,7 +509,40 @@
         <input id="sSound" type="range" min="0" max="255" value="20" data-sensor="SOUND">
         <output id="sSoundOut"></output></label>
       <div class="clapRow"><button id="clapBtn" class="smallBtn" type="button" title="Kurzes lautes Geräusch am Mikrofon">Klatschen</button></div>
+
     </div>
+
+    <details class="inputs panel">
+      <summary>Lage und Kompass</summary>
+      <label class="sensor"><span>Neigung links/rechts</span>
+        <input id="sRoll" type="range" min="-180" max="180" value="0" data-tilt="roll" data-unit=" °">
+        <output id="sRollOut"></output></label>
+      <label class="sensor"><span>Neigung vorn/hinten</span>
+        <input id="sPitch" type="range" min="-180" max="180" value="0" data-tilt="pitch" data-unit=" °">
+        <output id="sPitchOut"></output></label>
+      <label class="sensor"><span>Kompass-Richtung</span>
+        <input id="sHeading" type="range" min="0" max="359" value="0" data-heading="1" data-unit=" °">
+        <output id="sHeadingOut"></output></label>
+      <div class="btnRow">
+        <button id="flatBtn" class="smallBtn" type="button" title="Neigung auf 0 zurücksetzen">Flach legen</button>
+        <button id="shakeBtn" class="smallBtn" type="button" title="Calliope kurz schütteln">Schütteln</button>
+        <button id="fallBtn" class="smallBtn" type="button" title="Calliope kurz fallen lassen">Freier Fall</button>
+      </div>
+    </details>
+
+    <details class="inputs panel" id="radioPanel">
+      <summary>Funk <span id="radioStatus" class="radioStatus">Kanal 7</span></summary>
+      <label class="checkRow">
+        <input id="partnerToggle" type="checkbox">
+        <span>Zweiten Calliope anzeigen – beide führen dasselbe Programm aus</span>
+      </label>
+      <ul id="radioLog" class="radioLog" aria-live="polite"><li class="radioEmpty">Noch keine Nachrichten.</li></ul>
+      <div class="radioSend">
+        <label>Kanal <input id="radioChannel" type="number" min="0" max="83" value="7"></label>
+        <label class="grow">Nachricht <input id="radioText" type="text" value="Hallo!" maxlength="60"></label>
+        <button id="radioSendBtn" class="smallBtn" type="button" title="Nachricht an alle Calliopes auf diesem Kanal schicken">Senden</button>
+      </div>
+    </details>
   </aside>
 </main>
 
@@ -2973,6 +3075,7 @@ return Blockly.Msg;
     looks:     ['#9966FF', '#855CD6', '#774DCB'],
     sound:     ['#CF63CF', '#C94FC9', '#BD42BD'],
     sensing:   ['#5CB1D6', '#47A8D1', '#2E8EB8'],
+    radio:     ['#0FBD8C', '#0DA57A', '#0B8E69'],
     operators: ['#59C059', '#46B946', '#389438'],
     variables: ['#FF8C1A', '#FF8000', '#DB6E00']
   };
@@ -2987,6 +3090,8 @@ return Blockly.Msg;
       looks_blocks: style(C.looks),
       sound_blocks: style(C.sound),
       sensing_blocks: style(C.sensing),
+      radio_blocks: style(C.radio),
+      radio_hat_blocks: style(C.radio, { hat: 'cap' }),
       operator_blocks: style(C.operators),
       variable_blocks: style(C.variables),
       shadow_blocks: { colourPrimary: '#FFFFFF', colourSecondary: '#FFFFFF', colourTertiary: '#FFFFFF' }
@@ -2997,6 +3102,7 @@ return Blockly.Msg;
       looks: { colour: C.looks[0] },
       sound: { colour: C.sound[0] },
       sensing: { colour: C.sensing[0] },
+      radio: { colour: C.radio[0] },
       operators: { colour: C.operators[0] },
       variables: { colour: C.variables[0] }
     },
@@ -3190,6 +3296,19 @@ return Blockly.Msg;
   const RGB_OPTIONS = [['alle', 'ALL'], ['1', '0'], ['2', '1'], ['3', '2']];
   const SENSOR_OPTIONS = [['Helligkeit', 'LIGHT'], ['Mikrofon-Lautstärke', 'SOUND'], ['Temperatur', 'TEMP']];
 
+  /* Lagen des Calliope, wie sie die Firmware kennt */
+  const GESTURES = [
+    ['geschüttelt', 'shake'],
+    ['Logo oben', 'up'],
+    ['Logo unten', 'down'],
+    ['nach links gekippt', 'left'],
+    ['nach rechts gekippt', 'right'],
+    ['Anzeige oben', 'face up'],
+    ['Anzeige unten', 'face down'],
+    ['im freien Fall', 'freefall']
+  ];
+  const AXIS_OPTIONS = [['x', 'x'], ['y', 'y'], ['z', 'z']];
+
   /* Töne C4 bis C6, deutsche Notennamen */
   const NOTE_NAMES = ['C', 'Cis', 'D', 'Dis', 'E', 'F', 'Fis', 'G', 'Gis', 'A', 'Ais', 'H'];
   const NOTE_OPTIONS = [];
@@ -3232,6 +3351,10 @@ return Blockly.Msg;
       args0: [{ type: 'field_dropdown', name: 'BTN', options: BTN_OPTIONS }],
       nextStatement: null, style: 'event_blocks',
       tooltip: 'Läuft los, sobald der gewählte Knopf gedrückt wird.' },
+    { type: 'cal_when_gesture', message0: 'Wenn %1',
+      args0: [{ type: 'field_dropdown', name: 'GESTURE', options: GESTURES }],
+      nextStatement: null, style: 'event_blocks',
+      tooltip: 'Läuft los, sobald der Calliope in diese Lage kommt.' },
     { type: 'cal_when_sensor', message0: 'Wenn %1 > %2',
       args0: [{ type: 'field_dropdown', name: 'SENSOR', options: SENSOR_OPTIONS }, { type: 'input_value', name: 'VALUE' }],
       nextStatement: null, inputsInline: true, style: 'event_blocks',
@@ -3325,6 +3448,18 @@ return Blockly.Msg;
       tooltip: 'Wie hell es ist: 0 (dunkel) bis 255 (sehr hell).' },
     { type: 'cal_temperature', message0: 'Temperatur in °C', output: 'Value', style: 'sensing_blocks',
       tooltip: 'Die gemessene Temperatur in Grad Celsius.' },
+    { type: 'cal_accel', message0: 'Beschleunigung %1',
+      args0: [{ type: 'field_dropdown', name: 'AXIS', options: AXIS_OPTIONS }],
+      output: 'Value', style: 'sensing_blocks',
+      tooltip: 'Wert des Lagesensors in Milli-g. x zeigt nach rechts, y nach hinten, z nach unten. Flach auf dem Tisch ist z etwa -1024.' },
+    { type: 'cal_gesture_is', message0: 'ist %1 ?',
+      args0: [{ type: 'field_dropdown', name: 'GESTURE', options: GESTURES }],
+      output: 'Boolean', style: 'sensing_blocks',
+      tooltip: 'Wahr, solange der Calliope in dieser Lage ist.' },
+    { type: 'cal_compass', message0: 'Kompass-Richtung', output: 'Value', style: 'sensing_blocks',
+      tooltip: 'Himmelsrichtung in Grad: 0 ist Norden, 90 Osten, 180 Süden, 270 Westen.' },
+    Object.assign({ type: 'cal_compass_calibrate', message0: 'kalibriere Kompass', style: 'sensing_blocks',
+      tooltip: 'Stellt den Kompass ein. Auf dem echten Calliope muss das einmal gemacht werden, bevor die Richtung stimmt.' }, stmt),
     { type: 'cal_sound_level', message0: 'Mikrofon-Lautstärke', output: 'Value', style: 'sensing_blocks',
       tooltip: 'Wie laut es in der Umgebung ist: 0 (leise) bis 255 (sehr laut).' },
 
@@ -3371,7 +3506,20 @@ return Blockly.Msg;
     Object.assign({ type: 'cal_var_show', message0: 'zeige Variable %1', args0: [varField],
       style: 'variable_blocks', tooltip: 'Zeigt die Variable auf der Bühne an.' }, stmt),
     Object.assign({ type: 'cal_var_hide', message0: 'verstecke Variable %1', args0: [varField],
-      style: 'variable_blocks', tooltip: 'Blendet die Variable auf der Bühne aus.' }, stmt)
+      style: 'variable_blocks', tooltip: 'Blendet die Variable auf der Bühne aus.' }, stmt),
+
+    /* Funk */
+    Object.assign({ type: 'cal_radio_channel', message0: 'setze Funk-Kanal auf %1',
+      args0: [{ type: 'input_value', name: 'CHANNEL' }], style: 'radio_blocks',
+      tooltip: 'Kanal von 0 bis 83. Nur Calliopes auf demselben Kanal hören sich gegenseitig.' }, stmt),
+    Object.assign({ type: 'cal_radio_send', message0: 'sende %1 über Funk',
+      args0: [{ type: 'input_value', name: 'TEXT' }], style: 'radio_blocks',
+      tooltip: 'Schickt einen Text oder eine Zahl an alle anderen Calliopes auf demselben Kanal.' }, stmt),
+    { type: 'cal_when_radio', message0: 'Wenn Funk-Nachricht empfangen wird',
+      nextStatement: null, style: 'radio_hat_blocks',
+      tooltip: 'Läuft los, sobald eine Funk-Nachricht ankommt.' },
+    { type: 'cal_radio_message', message0: 'Funk-Nachricht', output: 'Value', style: 'radio_blocks',
+      tooltip: 'Die zuletzt empfangene Funk-Nachricht.' }
   ]);
 
   const num = (name, n) => ({ [name]: { shadow: { type: 'cal_num', fields: { NUM: n } } } });
@@ -3383,7 +3531,8 @@ return Blockly.Msg;
     { kind: 'category', name: 'Ereignisse', categorystyle: 'events', contents: [
       block('cal_when_start'),
       block('cal_when_button'),
-      block('cal_when_sensor', { inputs: num('VALUE', 100) })
+      block('cal_when_sensor', { inputs: num('VALUE', 100) }),
+      block('cal_when_gesture')
     ] },
     { kind: 'category', name: 'Steuerung', categorystyle: 'control', contents: [
       block('cal_wait', { inputs: num('SECS', 1) }),
@@ -3418,7 +3567,17 @@ return Blockly.Msg;
       block('cal_button_pressed'),
       block('cal_light'),
       block('cal_temperature'),
-      block('cal_sound_level')
+      block('cal_sound_level'),
+      block('cal_accel'),
+      block('cal_gesture_is'),
+      block('cal_compass'),
+      block('cal_compass_calibrate')
+    ] },
+    { kind: 'category', name: 'Funk', categorystyle: 'radio', contents: [
+      block('cal_radio_channel', { inputs: num('CHANNEL', 7) }),
+      block('cal_radio_send', { inputs: txt('TEXT', 'Hallo!') }),
+      block('cal_when_radio'),
+      block('cal_radio_message')
     ] },
     { kind: 'category', name: 'Operatoren', categorystyle: 'operators', contents: [
       block('cal_add', { inputs: inputs(num('A', ''), num('B', '')) }),
@@ -3477,7 +3636,7 @@ return Blockly.Msg;
     }] }
   };
 
-  window.CalBlocks = { theme, toolbox, toolboxWithoutVariables, variablesFlyout, starter };
+  window.CalBlocks = { theme, toolbox, toolboxWithoutVariables, variablesFlyout, starter, GESTURES };
 })();
 
 </script>
@@ -3496,6 +3655,13 @@ return Blockly.Msg;
       this.pressed = { A: false, B: false };
       this.sensors = { LIGHT: 120, TEMP: 21, SOUND: 20 };
       this.clapUntil = 0;
+      this.tilt = { roll: 0, pitch: 0 };     // Neigung in Grad
+      this.heading = 0;                       // Kompass-Richtung in Grad
+      this.compassOk = false;                 // Kompass kalibriert?
+      this.gestureUntil = 0;
+      this.gestureOverride = '';
+      this.radioChannel = 7;
+      this.radioUntil = 0;
       this.buttonListeners = [];
       this.dirty = true;
       this.ledEls = [];
@@ -3521,7 +3687,8 @@ return Blockly.Msg;
       };
       this.svg.setAttribute('viewBox', '28 2 344 296');
       const defs = el('defs', {});
-      const f = el('filter', { id: 'ledGlow', x: '-60%', y: '-60%', width: '220%', height: '220%' }, defs);
+      const glowId = 'ledGlow' + (++boardCount);   // je Board eine eigene Kennung
+      const f = el('filter', { id: glowId, x: '-60%', y: '-60%', width: '220%', height: '220%' }, defs);
       el('feGaussianBlur', { stdDeviation: '3', result: 'b' }, f);
       const m = el('feMerge', {}, f);
       el('feMergeNode', { in: 'b' }, m);
@@ -3545,7 +3712,9 @@ return Blockly.Msg;
       const x0 = 200 - (step * 4) / 2, y0 = cy0 - (step * 4) / 2;
       for (let i = 0; i < 25; i++) {
         const cx = x0 + (i % 5) * step, cy = y0 + Math.floor(i / 5) * step;
-        this.ledEls.push(el('rect', { x: cx - w / 2, y: cy - h / 2, width: w, height: h, rx: 3, class: 'led' }));
+        const led = el('rect', { x: cx - w / 2, y: cy - h / 2, width: w, height: h, rx: 3, class: 'led' });
+        led.style.setProperty('--glow', `url(#${glowId})`);
+        this.ledEls.push(led);
       }
 
       /* Knöpfe */
@@ -3565,7 +3734,7 @@ return Blockly.Msg;
       });
 
       /* RGB-LEDs */
-      text(160, 188, 'RGB', 'boardLabel part', null, 'end');
+      text(163, 188, 'RGB', 'boardLabel part', null, 'end');
       [176, 200, 224].forEach((cx, i) => {
         const g = el('g', { class: 'rgb' }, null, 'RGB-LED ' + (i + 1));
         el('circle', { cx, cy: 184, r: 10, class: 'rgbRing' }, g);
@@ -3599,6 +3768,31 @@ return Blockly.Msg;
       el('rect', { x: -5, y: -12, width: 10, height: 16, rx: 5, class: 'boardIcon' }, this.micEl);
       el('path', { d: 'M-9 -2a9 9 0 0 0 18 0M0 7v5M-5 12h10', class: 'boardIconLine' }, this.micEl);
       text(266, 252, 'Mikrofon', 'boardLabel part');
+
+      /* Lage- und Kompasssensor (ein Bauteil, wie auf dem echten Gerät) */
+      const motion = el('g', { class: 'motion' }, null, 'Lagesensor und Kompass in einem Bauteil');
+      for (let k = 0; k < 3; k++) {
+        const q = 172 + k * 8;
+        el('line', { x1: q - 66, y1: 160, x2: q - 66, y2: 164, class: 'chipPin' }, motion);
+        el('line', { x1: q - 66, y1: 196, x2: q - 66, y2: 200, class: 'chipPin' }, motion);
+        el('line', { x1: 86, y1: q, x2: 90, y2: q, class: 'chipPin' }, motion);
+        el('line', { x1: 122, y1: q, x2: 126, y2: q, class: 'chipPin' }, motion);
+      }
+      el('rect', { x: 90, y: 164, width: 32, height: 32, rx: 4, class: 'chipBody' }, motion);
+      el('circle', { cx: 106, cy: 180, r: 12, class: 'levelRing' }, motion);
+      this.needleEl = el('g', { class: 'needle', transform: 'translate(106 180)' }, motion);
+      el('path', { d: 'M0 -10 L3 0 L-3 0 Z', class: 'needleN' }, this.needleEl);
+      el('path', { d: 'M0 10 L3 0 L-3 0 Z', class: 'needleS' }, this.needleEl);
+      this.bubbleEl = el('circle', { cx: 106, cy: 180, r: 2.6, class: 'levelBubble' }, motion);
+      text(106, 207, 'Lage/Kompass', 'boardLabel part', motion);
+
+      /* Funkmodul */
+      this.radioEl = el('g', { class: 'radio' }, null, 'Funkmodul');
+      el('rect', { x: 284, y: 176, width: 26, height: 18, rx: 3, class: 'chipBody' }, this.radioEl);
+      el('circle', { cx: 297, cy: 170, r: 2.4, class: 'boardIcon' }, this.radioEl);
+      el('path', { d: 'M291.5 166 a8 8 0 0 1 11 0', class: 'wave w1' }, this.radioEl);
+      el('path', { d: 'M287.5 161 a13 13 0 0 1 19 0', class: 'wave w2' }, this.radioEl);
+      text(297, 207, 'Funk', 'boardLabel part', this.radioEl);
 
       /* Anschlüsse (nur angedeutet) */
       ['P0', 'P1', 'P2', 'P3'].forEach((p, i) => {
@@ -3646,11 +3840,49 @@ return Blockly.Msg;
       return this.sensors[name];
     }
 
+    /* Lage: aus den beiden Neigungswinkeln ergibt sich der Messwert jeder Achse.
+       Die Summe ist immer genau 1 g, wie beim ruhig gehaltenen Gerät. */
+    setTilt(roll, pitch) { this.tilt = { roll, pitch }; this.dirty = true; }
+    setHeading(deg) { this.heading = ((Math.round(deg) % 360) + 360) % 360; this.dirty = true; }
+    gesture(name, ms = 400) {
+      this.gestureOverride = name;
+      this.gestureUntil = performance.now() + ms;
+      this.dirty = true;
+    }
+    accel(axis) {
+      const now = performance.now();
+      if (now < this.gestureUntil) {
+        if (this.gestureOverride === 'freefall') return 0;
+        if (this.gestureOverride === 'shake') return Math.round((Math.random() * 2 - 1) * 2000);
+      }
+      const r = rad(this.tilt.roll), p = rad(this.tilt.pitch);
+      const v = axis === 'x' ? 1024 * Math.sin(r) * Math.cos(p)
+        : axis === 'y' ? 1024 * Math.sin(p)
+          : -1024 * Math.cos(r) * Math.cos(p);
+      return Math.round(v) || 0;
+    }
+    currentGesture() {
+      if (performance.now() < this.gestureUntil) return this.gestureOverride;
+      const v = { x: this.accel('x'), y: this.accel('y'), z: this.accel('z') };
+      const axis = ['x', 'y', 'z'].reduce((a, b) => Math.abs(v[b]) > Math.abs(v[a]) ? b : a);
+      if (Math.abs(v[axis]) < 800) return '';
+      if (axis === 'z') return v.z < 0 ? 'face up' : 'face down';
+      if (axis === 'y') return v.y < 0 ? 'up' : 'down';
+      return v.x < 0 ? 'left' : 'right';
+    }
+    compassHeading() { return this.heading; }
+    calibrateCompass() { this.compassOk = true; this.dirty = true; }
+
+    /* Funk */
+    setChannel(n) { this.radioChannel = Math.max(0, Math.min(83, Math.round(toNum(n)))); this.dirty = true; }
+    blinkRadio() { this.radioUntil = performance.now() + 250; this.dirty = true; }
+
     renderLoop() {
-      const clapping = performance.now() < this.clapUntil;
-      if (this.dirty || clapping || this.wasClapping) {
+      const now = performance.now();
+      const busy = now < this.clapUntil || now < this.gestureUntil || now < this.radioUntil;
+      if (this.dirty || busy || this.wasBusy) {
         this.dirty = false;
-        this.wasClapping = clapping;
+        this.wasBusy = busy;
         this.ledEls.forEach((r, i) => r.classList.toggle('on', this.leds[i] > 0));
         this.rgbEls.forEach((c, i) => {
           const hex = this.rgb[i];
@@ -3661,6 +3893,13 @@ return Blockly.Msg;
         const level = this.read('SOUND') / 255;
         this.micLevelEl.style.opacity = String(level * 0.55);
         this.micLevelEl.setAttribute('r', String(12 + level * 10));
+        /* Libelle: zeigt die Neigung, Nadel: zeigt nach Norden */
+        const ax = this.accel('x') / 1024, ay = this.accel('y') / 1024;
+        this.bubbleEl.setAttribute('cx', String(106 + Math.max(-1, Math.min(1, ax)) * 6));
+        this.bubbleEl.setAttribute('cy', String(180 + Math.max(-1, Math.min(1, ay)) * 6));
+        this.needleEl.setAttribute('transform', `translate(106 180) rotate(${-this.heading})`);
+        this.needleEl.classList.toggle('ok', this.compassOk);
+        this.radioEl.classList.toggle('active', now < this.radioUntil);
         this.sunEl.style.opacity = String(0.35 + 0.65 * (this.sensors.LIGHT / 255));
         const tt = Math.max(0, Math.min(1, (this.sensors.TEMP + 10) / 60));
         this.thermoEl.setAttribute('fill', `hsl(${Math.round(210 - 210 * tt)}, 85%, 60%)`);
@@ -3694,6 +3933,9 @@ return Blockly.Msg;
       this.rgb = ['#000000', '#000000', '#000000'];
       this.speaker.stop();
       this.speaker.setVolume(100);
+      this.compassOk = false;
+      this.radioChannel = 7;
+      this.gestureUntil = 0;
       this.dirty = true;
     }
   }
@@ -3747,32 +3989,81 @@ return Blockly.Msg;
     stop() { this.stopped = true; if (this.cancelSleep) this.cancelSleep(); }
   }
 
-  const HATS = new Set(['cal_when_start', 'cal_when_button', 'cal_when_sensor']);
+  const HATS = new Set(['cal_when_start', 'cal_when_button', 'cal_when_sensor', 'cal_when_gesture', 'cal_when_radio']);
+
+  /* Alle Calliopes im Fenster – für die Hervorhebung laufender Skripte */
+  const RUNTIMES = new Set();
+  let boardCount = 0;
+
+  /* ---------- Funkverbindung zwischen den Calliopes ---------- */
+  class RadioBus {
+    constructor() {
+      this.members = new Set();
+      this.log = [];
+      this.listeners = [];
+    }
+    join(rt) { this.members.add(rt); }
+    leave(rt) { this.members.delete(rt); }
+    onLog(fn) { this.listeners.push(fn); }
+    note(entry) {
+      this.log.push(Object.assign({ at: Date.now() }, entry));
+      if (this.log.length > 50) this.log.splice(0, this.log.length - 50);
+      this.listeners.forEach(fn => fn(this.log));
+    }
+    clear() { this.log.length = 0; this.listeners.forEach(fn => fn(this.log)); }
+
+    /* von einem Calliope gesendet: alle anderen auf demselben Kanal hören mit */
+    send(sender, text) {
+      const channel = sender.sim.radioChannel;
+      sender.sim.blinkRadio();
+      const heard = [];
+      this.members.forEach(rt => {
+        if (rt !== sender && rt.sim.radioChannel === channel) { heard.push(rt); rt.receiveRadio(text); }
+      });
+      this.note({ from: sender.name, channel, text, heard: heard.length });
+    }
+
+    /* von Hand im Funk-Monitor eingespielt */
+    inject(channel, text) {
+      const heard = [];
+      this.members.forEach(rt => { if (rt.sim.radioChannel === channel) { heard.push(rt); rt.receiveRadio(text); } });
+      this.note({ from: 'Monitor', channel, text, heard: heard.length });
+      return heard.length;
+    }
+  }
 
   /* ---------- Interpreter ---------- */
   class Runtime {
-    constructor(workspace, sim) {
+    constructor(workspace, sim, options = {}) {
       this.ws = workspace;
       this.sim = sim;
+      this.name = options.name || 'Calliope';
+      this.radio = options.radio || null;
+      this.lastRadio = '';
+      if (this.radio) this.radio.join(this);
+      RUNTIMES.add(this);
       this.threads = new Set();
       this.listeners = [];
       this.vars = new Map();
       this.monitors = new Set();
       this.monitorListeners = [];
       this.sensorHatState = new Map();
+      this.lastGesture = '';
       this.bubbleHandler = null;
       sim.onButton(code => this.trigger('cal_when_button', b => b.getFieldValue('BTN') === code));
-      setInterval(() => this.pollSensorHats(), 50);
+      setInterval(() => { this.pollSensorHats(); this.pollGestureHats(); }, 50);
     }
 
     onChange(fn) { this.listeners.push(fn); }
     emit() {
-      const running = this.runningRootIds();
+      /* Ein Skript gilt als laufend, sobald irgendein Calliope es ausführt. */
+      const running = new Set();
+      RUNTIMES.forEach(rt => rt.runningRootIds().forEach(id => running.add(id)));
       for (const b of this.ws.getTopBlocks(false)) {
         const svg = b.getSvgRoot && b.getSvgRoot();
         if (svg) svg.classList.toggle('calRunning', running.has(b.id));
       }
-      this.listeners.forEach(fn => fn(running.size > 0));
+      RUNTIMES.forEach(rt => rt.listeners.forEach(fn => fn(running.size > 0)));
     }
 
     /* Variablen und Bühnenanzeige */
@@ -3818,6 +4109,8 @@ return Blockly.Msg;
       this.vars.clear();
       this.emitMonitors();
       this.sensorHatState.clear();
+      this.lastGesture = '';
+      this.lastRadio = '';
       for (const b of this.ws.getTopBlocks(true)) {
         if (b.type === 'cal_when_start' && b.isEnabled()) this.start(b);
       }
@@ -3842,6 +4135,26 @@ return Blockly.Msg;
         if (now && !before && !this.isRunning(b)) this.start(b);
       }
       for (const id of [...this.sensorHatState.keys()]) if (!seen.has(id)) this.sensorHatState.delete(id);
+    }
+
+    /* "Wenn Logo oben": startet, sobald der Calliope in diese Lage kommt */
+    pollGestureHats() {
+      const now = this.sim.currentGesture();
+      if (now === this.lastGesture) return;
+      this.lastGesture = now;
+      if (!now) return;
+      this.trigger('cal_when_gesture', b => b.getFieldValue('GESTURE') === now);
+    }
+
+    /* Funk: eine ankommende Nachricht startet die Empfangsskripte neu */
+    receiveRadio(text) {
+      this.lastRadio = text;
+      this.sim.blinkRadio();
+      for (const b of this.ws.getTopBlocks(true)) {
+        if (b.type !== 'cal_when_radio' || !b.isEnabled()) continue;
+        if (this.isRunning(b)) this.stopRoot(b);
+        this.start(b);
+      }
     }
 
     async runThread(t) {
@@ -3897,6 +4210,10 @@ return Blockly.Msg;
         case 'cal_light': return sim.read('LIGHT');
         case 'cal_temperature': return sim.read('TEMP');
         case 'cal_sound_level': return sim.read('SOUND');
+        case 'cal_accel': return sim.accel(b.getFieldValue('AXIS'));
+        case 'cal_gesture_is': return sim.currentGesture() === b.getFieldValue('GESTURE');
+        case 'cal_compass': return sim.compassHeading();
+        case 'cal_radio_message': return this.lastRadio;
 
         /* Operatoren */
         case 'cal_add': return this.num(b, 'A') + this.num(b, 'B');
@@ -4061,6 +4378,19 @@ return Blockly.Msg;
           sim.speaker.setVolume(sim.speaker.volume + this.num(b, 'VOL'));
           break;
 
+        /* Lage und Kompass */
+        case 'cal_compass_calibrate':
+          await this.calibrateCompass(t);
+          break;
+
+        /* Funk */
+        case 'cal_radio_channel':
+          sim.setChannel(this.input(b, 'CHANNEL'));
+          break;
+        case 'cal_radio_send':
+          if (this.radio) this.radio.send(this, toText(this.input(b, 'TEXT')));
+          break;
+
         /* Variablen */
         case 'cal_var_set':
           this.setVar(b.getFieldValue('VAR'), this.input(b, 'VALUE'));
@@ -4077,6 +4407,24 @@ return Blockly.Msg;
           this.setMonitor(b.getFieldValue('VAR'), false);
           break;
       }
+    }
+
+    /* Kalibrieren: ein Punkt läuft einmal im Kreis, danach ist der Kompass bereit */
+    async calibrateCompass(t) {
+      const ring = [];
+      for (let x = 0; x < 5; x++) ring.push([x, 0]);
+      for (let y = 1; y < 5; y++) ring.push([4, y]);
+      for (let x = 3; x >= 0; x--) ring.push([x, 4]);
+      for (let y = 3; y >= 1; y--) ring.push([0, y]);
+      for (const [x, y] of ring) {
+        t.check();
+        this.sim.clear();
+        this.sim.setPixel(x, y, true);
+        await t.sleep(80);
+      }
+      this.sim.clear();
+      this.sim.calibrateCompass();
+      await t.sleep(200);
     }
 
     /* verhält sich wie display.scroll() der Firmware */
@@ -4096,13 +4444,13 @@ return Blockly.Msg;
     }
   }
 
-  window.CalRuntime = { CalliopeSim, Runtime, toText };
+  window.CalRuntime = { CalliopeSim, Runtime, RadioBus, toText };
 })();
 
 </script>
 <script>
 /* pyprelude */
-window.CAL_PY_PRELUDE = "from calliopemini import *\nimport music, neopixel, random, math\n\n_rgb = neopixel.NeoPixel(pin_RGB, 3)\n_tasks = []\n_run = {}\n_vol = 100\n_pa = _pb = False\n_INF = float('inf')\n_NAN = float('nan')\n_FW = '00155550001101054144555555001115544444454354455444545455454151150544444440141544444425554541032'\n\ndef _n(v):\n    if v is True or v is False:\n        return int(v)\n    if type(v) is int or type(v) is float:\n        return v\n    try:\n        return int(v)\n    except Exception:\n        pass\n    try:\n        return float(v)\n    except Exception:\n        return 0\n\ndef _isnum(v):\n    if v is True or v is False:\n        return False\n    if type(v) is int or type(v) is float:\n        return True\n    try:\n        float(v)\n        return True\n    except Exception:\n        return False\n\ndef _s(v):\n    if v is True:\n        return 'wahr'\n    if v is False:\n        return 'falsch'\n    if type(v) is float:\n        if v != v:\n            return 'NaN'\n        if v == _INF:\n            return 'Unendlich'\n        if v == -_INF:\n            return '-Unendlich'\n        r = round(v, 6)\n        return str(int(r)) if r == int(r) else str(r)\n    return str(v)\n\ndef _b(v):\n    if v is True or v is False:\n        return v\n    if type(v) is int or type(v) is float:\n        return v == v and v != 0\n    return _s(v).strip().lower() not in ('', '0', 'false', 'falsch')\n\ndef _cmp(a, b):\n    if _isnum(a) and _isnum(b):\n        d = _n(a) - _n(b)\n    else:\n        a = _s(a).lower()\n        b = _s(b).lower()\n        d = (a > b) - (a < b)\n    return (d > 0) - (d < 0)\n\ndef _rnd(v):\n    try:\n        return math.floor(_n(v) + 0.5)\n    except Exception:\n        return 0\n\ndef _div(a, b):\n    a = _n(a)\n    b = _n(b)\n    if b == 0:\n        return _NAN if a == 0 else (_INF if a > 0 else -_INF)\n    return a / b\n\ndef _mod(a, b):\n    a = _n(a)\n    b = _n(b)\n    return _NAN if b == 0 else a % b\n\ndef _isint(v):\n    n = _n(v)\n    try:\n        return (type(n) is int or n == int(n)) and '.' not in _s(v)\n    except Exception:\n        return False\n\ndef _rand(a, b):\n    ia = _isint(a) and _isint(b)\n    lo = _n(a)\n    hi = _n(b)\n    if lo > hi:\n        lo, hi = hi, lo\n    if ia:\n        return random.randint(int(lo), int(hi))\n    return lo + random.random() * (hi - lo)\n\ndef _letter(i, t):\n    t = _s(t)\n    try:\n        i = int(math.floor(_n(i))) - 1\n    except Exception:\n        return ''\n    return t[i] if 0 <= i < len(t) else ''\n\ndef _math(op, n):\n    n = _n(n)\n    try:\n        if op == 'abs': return abs(n)\n        if op == 'floor': return math.floor(n)\n        if op == 'ceiling': return math.ceil(n)\n        if op == 'sqrt': return math.sqrt(n)\n        if op == 'sin': return round(math.sin(n * math.pi / 180), 6)\n        if op == 'cos': return round(math.cos(n * math.pi / 180), 6)\n        if op == 'tan': return round(math.tan(n * math.pi / 180), 6)\n        if op == 'asin': return math.asin(n) * 180 / math.pi\n        if op == 'acos': return math.acos(n) * 180 / math.pi\n        if op == 'atan': return math.atan(n) * 180 / math.pi\n        if op == 'ln': return -_INF if n == 0 else math.log(n)\n        if op == 'log': return -_INF if n == 0 else math.log(n) / math.log(10)\n        if op == 'e^': return math.exp(n)\n        if op == '10^': return 10.0 ** n\n    except Exception:\n        return _NAN\n    return 0\n\ndef _c255(v):\n    return max(0, min(255, _rnd(v)))\n\ndef _hex(r, g, b):\n    return '#%02X%02X%02X' % (_c255(r), _c255(g), _c255(b))\n\ndef _setrgb(w, v):\n    v = _s(v).strip()\n    try:\n        c = (int(v[1:3], 16), int(v[3:5], 16), int(v[5:7], 16)) if len(v) == 7 and v[0] == '#' else (0, 0, 0)\n    except Exception:\n        c = (0, 0, 0)\n    for i in (range(3) if w < 0 else (w,)):\n        _rgb[i] = c\n    _rgb.show()\n\ndef _plot(x, y, m):\n    x = _rnd(x)\n    y = _rnd(y)\n    if 0 <= x <= 4 and 0 <= y <= 4:\n        if m == 2:\n            m = 0 if display.get_pixel(x, y) else 1\n        display.set_pixel(x, y, 9 if m else 0)\n\ndef _txt(v):\n    s = _s(v)\n    for a, b in (('ä', 'ae'), ('ö', 'oe'), ('ü', 'ue'), ('Ä', 'Ae'), ('Ö', 'Oe'), ('Ü', 'Ue'), ('ß', 'ss')):\n        s = s.replace(a, b)\n    return ''.join([c if 32 <= ord(c) < 127 else '?' for c in s])\n\ndef _show_text(v):\n    s = _txt(v)\n    if not s:\n        return 0\n    if len(s) == 1:\n        display.show(s)\n        return 400\n    n = 4\n    for i in range(len(s)):\n        d = ord(_FW[ord(s[i]) - 32]) - 48\n        n += d % 3 + 3 + (1 if i == 0 else d // 3)\n    display.scroll(s, delay=150, wait=False)\n    return n * 150\n\ndef _tone(f, ms):\n    f = _n(f)\n    ms = int(_n(ms))\n    if ms <= 0:\n        return 0\n    if f > 0:\n        music.pitch(int(min(f, 20000)), duration=ms, wait=False)\n    else:\n        music.stop()\n    return ms\n\ndef _setvol(p):\n    global _vol\n    _vol = max(0, min(100, _n(p)))\n    set_volume(int(_vol * 255 / 100))\n\ndef _btn(k):\n    a = button_a.is_pressed()\n    b = button_b.is_pressed()\n    return (a and b) if k == 'AB' else (a if k == 'A' else b)\n\ndef _read(k):\n    if k == 'LIGHT':\n        return display.read_light_level()\n    if k == 'TEMP':\n        return temperature()\n    return microphone.sound_level()\n\ndef _start(f):\n    if f in _run:\n        return\n    t = [f(), 0, f, True]\n    _tasks.append(t)\n    _run[f] = t\n\ndef _end(t):\n    t[3] = False\n    if t in _tasks:\n        _tasks.remove(t)\n    if _run.get(t[2]) is t:\n        del _run[t[2]]\n\ndef _stop_all():\n    for t in _tasks:\n        t[3] = False\n    del _tasks[:]\n    _run.clear()\n    music.stop()\n\ndef _poll():\n    global _pa, _pb\n    a = button_a.is_pressed()\n    b = button_b.is_pressed()\n    na = a and not _pa\n    nb = b and not _pb\n    _pa = a\n    _pb = b\n    if na or nb:\n        for f in _BTN.get('AB' if a and b else ('A' if na else 'B'), ()):\n            _start(f)\n\ndef _poll_sensors():\n    for h in _SENS:\n        try:\n            now = _read(h[1]) > _n(h[2]())\n        except Exception:\n            now = False\n        if now and not h[3]:\n            _start(h[0])\n        h[3] = now\n\ndef _main():\n    _setrgb(-1, '#000000')\n    _setvol(100)\n    for f in _START:\n        _start(f)\n    tb = ts = running_time()\n    while True:\n        now = running_time()\n        if now - tb >= 10:\n            tb = now\n            _poll()\n        if _SENS and now - ts >= 50:\n            ts = now\n            _poll_sensors()\n        nxt = now + 10\n        for t in _tasks[:]:\n            if not t[3]:\n                continue\n            if t[1] <= now:\n                try:\n                    d = next(t[0])\n                    t[1] = running_time() + (int(d) if d and d > 0 else 0)\n                except StopIteration:\n                    _end(t)\n                except Exception as e:\n                    print('Fehler:', e)\n                    _end(t)\n            if t[3] and t[1] < nxt:\n                nxt = t[1]\n        w = nxt - running_time()\n        sleep(w if w > 0 else 0)\n";
+window.CAL_PY_PRELUDE = "from calliopemini import *\nimport music, neopixel, random, math, radio\n\n_rgb = neopixel.NeoPixel(pin_RGB, 3)\n_tasks = []\n_run = {}\n_vol = 100\n_pa = _pb = False\n_msg = ''\n_lg = ''\n_INF = float('inf')\n_NAN = float('nan')\n_FW = '00155550001101054144555555001115544444454354455444545455454151150544444440141544444425554541032'\n\ndef _n(v):\n    if v is True or v is False:\n        return int(v)\n    if type(v) is int or type(v) is float:\n        return v\n    try:\n        return int(v)\n    except Exception:\n        pass\n    try:\n        return float(v)\n    except Exception:\n        return 0\n\ndef _isnum(v):\n    if v is True or v is False:\n        return False\n    if type(v) is int or type(v) is float:\n        return True\n    try:\n        float(v)\n        return True\n    except Exception:\n        return False\n\ndef _s(v):\n    if v is True:\n        return 'wahr'\n    if v is False:\n        return 'falsch'\n    if type(v) is float:\n        if v != v:\n            return 'NaN'\n        if v == _INF:\n            return 'Unendlich'\n        if v == -_INF:\n            return '-Unendlich'\n        r = round(v, 6)\n        return str(int(r)) if r == int(r) else str(r)\n    return str(v)\n\ndef _b(v):\n    if v is True or v is False:\n        return v\n    if type(v) is int or type(v) is float:\n        return v == v and v != 0\n    return _s(v).strip().lower() not in ('', '0', 'false', 'falsch')\n\ndef _cmp(a, b):\n    if _isnum(a) and _isnum(b):\n        d = _n(a) - _n(b)\n    else:\n        a = _s(a).lower()\n        b = _s(b).lower()\n        d = (a > b) - (a < b)\n    return (d > 0) - (d < 0)\n\ndef _rnd(v):\n    try:\n        return math.floor(_n(v) + 0.5)\n    except Exception:\n        return 0\n\ndef _div(a, b):\n    a = _n(a)\n    b = _n(b)\n    if b == 0:\n        return _NAN if a == 0 else (_INF if a > 0 else -_INF)\n    return a / b\n\ndef _mod(a, b):\n    a = _n(a)\n    b = _n(b)\n    return _NAN if b == 0 else a % b\n\ndef _isint(v):\n    n = _n(v)\n    try:\n        return (type(n) is int or n == int(n)) and '.' not in _s(v)\n    except Exception:\n        return False\n\ndef _rand(a, b):\n    ia = _isint(a) and _isint(b)\n    lo = _n(a)\n    hi = _n(b)\n    if lo > hi:\n        lo, hi = hi, lo\n    if ia:\n        return random.randint(int(lo), int(hi))\n    return lo + random.random() * (hi - lo)\n\ndef _letter(i, t):\n    t = _s(t)\n    try:\n        i = int(math.floor(_n(i))) - 1\n    except Exception:\n        return ''\n    return t[i] if 0 <= i < len(t) else ''\n\ndef _math(op, n):\n    n = _n(n)\n    try:\n        if op == 'abs': return abs(n)\n        if op == 'floor': return math.floor(n)\n        if op == 'ceiling': return math.ceil(n)\n        if op == 'sqrt': return math.sqrt(n)\n        if op == 'sin': return round(math.sin(n * math.pi / 180), 6)\n        if op == 'cos': return round(math.cos(n * math.pi / 180), 6)\n        if op == 'tan': return round(math.tan(n * math.pi / 180), 6)\n        if op == 'asin': return math.asin(n) * 180 / math.pi\n        if op == 'acos': return math.acos(n) * 180 / math.pi\n        if op == 'atan': return math.atan(n) * 180 / math.pi\n        if op == 'ln': return -_INF if n == 0 else math.log(n)\n        if op == 'log': return -_INF if n == 0 else math.log(n) / math.log(10)\n        if op == 'e^': return math.exp(n)\n        if op == '10^': return 10.0 ** n\n    except Exception:\n        return _NAN\n    return 0\n\ndef _c255(v):\n    return max(0, min(255, _rnd(v)))\n\ndef _hex(r, g, b):\n    return '#%02X%02X%02X' % (_c255(r), _c255(g), _c255(b))\n\ndef _setrgb(w, v):\n    v = _s(v).strip()\n    try:\n        c = (int(v[1:3], 16), int(v[3:5], 16), int(v[5:7], 16)) if len(v) == 7 and v[0] == '#' else (0, 0, 0)\n    except Exception:\n        c = (0, 0, 0)\n    for i in (range(3) if w < 0 else (w,)):\n        _rgb[i] = c\n    _rgb.show()\n\ndef _plot(x, y, m):\n    x = _rnd(x)\n    y = _rnd(y)\n    if 0 <= x <= 4 and 0 <= y <= 4:\n        if m == 2:\n            m = 0 if display.get_pixel(x, y) else 1\n        display.set_pixel(x, y, 9 if m else 0)\n\ndef _txt(v):\n    s = _s(v)\n    for a, b in (('ä', 'ae'), ('ö', 'oe'), ('ü', 'ue'), ('Ä', 'Ae'), ('Ö', 'Oe'), ('Ü', 'Ue'), ('ß', 'ss')):\n        s = s.replace(a, b)\n    return ''.join([c if 32 <= ord(c) < 127 else '?' for c in s])\n\ndef _show_text(v):\n    s = _txt(v)\n    if not s:\n        return 0\n    if len(s) == 1:\n        display.show(s)\n        return 400\n    n = 4\n    for i in range(len(s)):\n        d = ord(_FW[ord(s[i]) - 32]) - 48\n        n += d % 3 + 3 + (1 if i == 0 else d // 3)\n    display.scroll(s, delay=150, wait=False)\n    return n * 150\n\ndef _tone(f, ms):\n    f = _n(f)\n    ms = int(_n(ms))\n    if ms <= 0:\n        return 0\n    if f > 0:\n        music.pitch(int(min(f, 20000)), duration=ms, wait=False)\n    else:\n        music.stop()\n    return ms\n\ndef _setvol(p):\n    global _vol\n    _vol = max(0, min(100, _n(p)))\n    set_volume(int(_vol * 255 / 100))\n\ndef _btn(k):\n    a = button_a.is_pressed()\n    b = button_b.is_pressed()\n    return (a and b) if k == 'AB' else (a if k == 'A' else b)\n\ndef _read(k):\n    if k == 'LIGHT':\n        return display.read_light_level()\n    if k == 'TEMP':\n        return temperature()\n    return microphone.sound_level()\n\ndef _chan(n):\n    radio.config(channel=max(0, min(83, _rnd(n))))\n    radio.on()\n\ndef _start(f):\n    if f in _run:\n        return\n    t = [f(), 0, f, True]\n    _tasks.append(t)\n    _run[f] = t\n\ndef _end(t):\n    t[3] = False\n    if t in _tasks:\n        _tasks.remove(t)\n    if _run.get(t[2]) is t:\n        del _run[t[2]]\n\ndef _restart(f):\n    t = _run.get(f)\n    if t is not None:\n        _end(t)\n    _start(f)\n\ndef _stop_all():\n    for t in _tasks:\n        t[3] = False\n    del _tasks[:]\n    _run.clear()\n    music.stop()\n\ndef _poll():\n    global _pa, _pb\n    a = button_a.is_pressed()\n    b = button_b.is_pressed()\n    na = a and not _pa\n    nb = b and not _pb\n    _pa = a\n    _pb = b\n    if na or nb:\n        for f in _BTN.get('AB' if a and b else ('A' if na else 'B'), ()):\n            _start(f)\n\ndef _poll_gesture():\n    global _lg\n    g = accelerometer.current_gesture()\n    if g == _lg:\n        return\n    _lg = g\n    if not g:\n        return\n    for h in _GEST:\n        if h[1] == g:\n            _start(h[0])\n\ndef _poll_radio():\n    global _msg\n    m = radio.receive()\n    while m is not None:\n        _msg = m\n        for f in _RADIO:\n            _restart(f)\n        m = radio.receive()\n\ndef _poll_sensors():\n    for h in _SENS:\n        try:\n            now = _read(h[1]) > _n(h[2]())\n        except Exception:\n            now = False\n        if now and not h[3]:\n            _start(h[0])\n        h[3] = now\n\ndef _main():\n    _setrgb(-1, '#000000')\n    _setvol(100)\n    if _RADIO_USED:\n        radio.on()\n    for f in _START:\n        _start(f)\n    tb = ts = running_time()\n    while True:\n        now = running_time()\n        if now - tb >= 10:\n            tb = now\n            _poll()\n            if _RADIO_USED:\n                _poll_radio()\n        if (_SENS or _GEST) and now - ts >= 50:\n            ts = now\n            _poll_sensors()\n            _poll_gesture()\n        nxt = now + 10\n        for t in _tasks[:]:\n            if not t[3]:\n                continue\n            if t[1] <= now:\n                try:\n                    d = next(t[0])\n                    t[1] = running_time() + (int(d) if d and d > 0 else 0)\n                except StopIteration:\n                    _end(t)\n                except Exception as e:\n                    print('Fehler:', e)\n                    _end(t)\n            if t[3] and t[1] < nxt:\n                nxt = t[1]\n        w = nxt - running_time()\n        sleep(w if w > 0 else 0)\n";
 </script>
 <script>
 /* src/export.js */
@@ -4185,6 +4533,10 @@ window.CAL_PY_PRELUDE = "from calliopemini import *\nimport music, neopixel, ran
         case 'cal_light': return 'display.read_light_level()';
         case 'cal_temperature': return 'temperature()';
         case 'cal_sound_level': return 'microphone.sound_level()';
+        case 'cal_accel': return `accelerometer.get_${b.getFieldValue('AXIS')}()`;
+        case 'cal_gesture_is': return `(accelerometer.current_gesture() == ${py(b.getFieldValue('GESTURE'))})`;
+        case 'cal_compass': return 'compass.heading()';
+        case 'cal_radio_message': return '_msg';
         case 'cal_add': return `(${n(b, 'A')} + ${n(b, 'B')})`;
         case 'cal_sub': return `(${n(b, 'A')} - ${n(b, 'B')})`;
         case 'cal_mul': return `(${n(b, 'A')} * ${n(b, 'B')})`;
@@ -4269,6 +4621,10 @@ window.CAL_PY_PRELUDE = "from calliopemini import *\nimport music, neopixel, ran
         case 'cal_set_volume': return L(`_setvol(${input(b, 'VOL')})`);
         case 'cal_change_volume': return L(`_setvol(_vol + ${n(b, 'VOL')})`);
 
+        case 'cal_compass_calibrate': return [I + 'compass.calibrate()', I + 'yield 0'];
+        case 'cal_radio_channel': return L(`_chan(${input(b, 'CHANNEL')})`);
+        case 'cal_radio_send': return L(`radio.send(_s(${input(b, 'TEXT')}))`);
+
         case 'cal_var_set': return L(`_v[${py(varName(b.getFieldValue('VAR')))}] = ${input(b, 'VALUE')}`);
         case 'cal_var_change': {
           const k = py(varName(b.getFieldValue('VAR')));
@@ -4284,7 +4640,8 @@ window.CAL_PY_PRELUDE = "from calliopemini import *\nimport music, neopixel, ran
     }
 
     /* ---------- Skripte ---------- */
-    const scripts = [], starts = [], buttons = { A: [], B: [], AB: [] }, sensors = [];
+    const scripts = [], starts = [], buttons = { A: [], B: [], AB: [] }, sensors = [], gestures = [], radios = [];
+    const GESTURE_LABEL = Object.fromEntries(CalBlocks.GESTURES.map(([label, id]) => [id, label]));
     const SENSOR_LABEL = { LIGHT: 'Helligkeit', SOUND: 'Mikrofon-Lautstärke', TEMP: 'Temperatur' };
     workspace.getTopBlocks(true).forEach(top => {
       if (!top.isEnabled()) return;
@@ -4292,6 +4649,8 @@ window.CAL_PY_PRELUDE = "from calliopemini import *\nimport music, neopixel, ran
       if (top.type === 'cal_when_start') title = 'Wenn Calliope startet';
       else if (top.type === 'cal_when_button') title = `Wenn Knopf ${top.getFieldValue('BTN').replace('AB', 'A+B')} gedrückt wird`;
       else if (top.type === 'cal_when_sensor') title = `Wenn ${SENSOR_LABEL[top.getFieldValue('SENSOR')]} > …`;
+      else if (top.type === 'cal_when_gesture') title = `Wenn ${GESTURE_LABEL[top.getFieldValue('GESTURE')] || '…'}`;
+      else if (top.type === 'cal_when_radio') title = 'Wenn Funk-Nachricht empfangen wird';
       else return;
       const name = `_skript${scripts.length + 1}`;
       const lines = [`def ${name}():  # ${title}`];
@@ -4301,7 +4660,9 @@ window.CAL_PY_PRELUDE = "from calliopemini import *\nimport music, neopixel, ran
       scripts.push(lines.join('\n'));
       if (top.type === 'cal_when_start') starts.push(name);
       else if (top.type === 'cal_when_button') buttons[top.getFieldValue('BTN')].push(name);
-      else sensors.push(`[${name}, ${py(top.getFieldValue('SENSOR'))}, lambda: ${input(top, 'VALUE', '0')}, False]`);
+      else if (top.type === 'cal_when_sensor') sensors.push(`[${name}, ${py(top.getFieldValue('SENSOR'))}, lambda: ${input(top, 'VALUE', '0')}, False]`);
+      else if (top.type === 'cal_when_gesture') gestures.push(`[${name}, ${py(top.getFieldValue('GESTURE'))}]`);
+      else radios.push(name);
     });
 
     const vars = workspace.getVariableMap().getAllVariables()
@@ -4322,6 +4683,9 @@ window.CAL_PY_PRELUDE = "from calliopemini import *\nimport music, neopixel, ran
       `_START = [${starts.join(', ')}]`,
       `_BTN = {'A': [${buttons.A.join(', ')}], 'B': [${buttons.B.join(', ')}], 'AB': [${buttons.AB.join(', ')}]}`,
       `_SENS = [${sensors.join(', ')}]`,
+      `_GEST = [${gestures.join(', ')}]`,
+      `_RADIO = [${radios.join(', ')}]`,
+      `_RADIO_USED = ${/\bradio\.|_chan\(|\b_msg\b/.test(scripts.join('\n')) || radios.length ? 'True' : 'False'}`,
       '',
       '_main()',
       ''
@@ -4651,8 +5015,7 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
     function applyProject(data, { markClean = true } = {}) {
       loading = true;
       app.autoMonitor = false;
-      runtime.stopAll();
-      sim.reset();
+      app.resetBoards();
       runtime.vars.clear();
       runtime.monitors.clear();
       runtime.emitMonitors();
@@ -4968,8 +5331,23 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
     }
   });
 
+  const radioBus = new CalRuntime.RadioBus();
   const sim = new CalRuntime.CalliopeSim(document.getElementById('board'));
-  const runtime = new CalRuntime.Runtime(workspace, sim);
+  const runtime = new CalRuntime.Runtime(workspace, sim, { name: 'Calliope 1', radio: radioBus });
+
+  /* Der zweite Calliope entsteht erst, wenn er gebraucht wird */
+  const boards = [{ sim, runtime }];
+  let partner = null;
+  function partnerBoard() {
+    if (!partner) {
+      const sim2 = new CalRuntime.CalliopeSim(document.getElementById('board2'));
+      const runtime2 = new CalRuntime.Runtime(workspace, sim2, { name: 'Calliope 2', radio: radioBus });
+      partner = { sim: sim2, runtime: runtime2 };
+      applySensors();
+    }
+    return partner;
+  }
+  const active = () => (partner && partner.on ? boards.concat([partner]) : boards);
 
   /* Variablen-Kategorie erst nach dem Registrieren der Rückrufe einblenden */
   workspace.registerToolboxCategoryCallback('CAL_VARIABLES', CalBlocks.variablesFlyout);
@@ -4980,6 +5358,7 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
   Blockly.serialization.workspaces.load(CalBlocks.starter, workspace);
   /* neue Variablen automatisch auf der Bühne zeigen (während Laden aus) */
   const app = { autoMonitor: false };
+  app.resetBoards = () => active().forEach(bd => { bd.runtime.stopAll(); bd.sim.reset(); });
 
   const refreshToolbox = () => { const tb = workspace.getToolbox(); if (tb) tb.refreshSelection(); };
   workspace.addChangeListener(e => {
@@ -5049,8 +5428,8 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
   const flagBtn = document.getElementById('flagBtn');
   const stopBtn = document.getElementById('stopBtn');
   const status = document.getElementById('runStatus');
-  flagBtn.addEventListener('click', () => { sim.speaker.ensure(); runtime.greenFlag(); });
-  stopBtn.addEventListener('click', () => runtime.stopAll());
+  flagBtn.addEventListener('click', () => { sim.speaker.ensure(); active().forEach(bd => bd.runtime.greenFlag()); });
+  stopBtn.addEventListener('click', () => active().forEach(bd => bd.runtime.stopAll()));
   runtime.onChange(running => {
     flagBtn.classList.toggle('active', running);
     status.textContent = running ? 'Programm läuft' : 'Angehalten';
@@ -5095,17 +5474,84 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
   abBtn.addEventListener('pointercancel', abUp);
   abBtn.addEventListener('lostpointercapture', abUp);
 
-  document.querySelectorAll('[data-sensor]').forEach(slider => {
-    const out = document.getElementById(slider.id + 'Out');
-    const unit = slider.dataset.unit || '';
-    const update = () => {
-      sim.setSensor(slider.dataset.sensor, Number(slider.value));
-      out.textContent = slider.value + unit;
-    };
-    slider.addEventListener('input', update);
-    update();
+  /* Alle Regler wirken auf jeden angezeigten Calliope */
+  const sliders = [...document.querySelectorAll('[data-sensor], [data-tilt], [data-heading]')];
+  const sims = () => active().map(bd => bd.sim);
+  const sval = id => Number(document.getElementById(id).value);
+  function applySensors() {
+    sliders.forEach(sl => {
+      const out = document.getElementById(sl.id + 'Out');
+      if (out) out.textContent = sl.value + (sl.dataset.unit || '');
+    });
+    sims().forEach(s => {
+      s.setSensor('LIGHT', sval('sLight'));
+      s.setSensor('TEMP', sval('sTemp'));
+      s.setSensor('SOUND', sval('sSound'));
+      s.setTilt(sval('sRoll'), sval('sPitch'));
+      s.setHeading(sval('sHeading'));
+    });
+  }
+  sliders.forEach(sl => sl.addEventListener('input', applySensors));
+  applySensors();
+
+  document.getElementById('clapBtn').addEventListener('click', () => sims().forEach(s => s.clap()));
+  document.getElementById('shakeBtn').addEventListener('click', () => sims().forEach(s => s.gesture('shake', 500)));
+  document.getElementById('fallBtn').addEventListener('click', () => sims().forEach(s => s.gesture('freefall', 500)));
+  document.getElementById('flatBtn').addEventListener('click', () => {
+    document.getElementById('sRoll').value = 0;
+    document.getElementById('sPitch').value = 0;
+    applySensors();
   });
-  document.getElementById('clapBtn').addEventListener('click', () => sim.clap());
+
+  /* ---------- Funk ---------- */
+  const partnerToggle = document.getElementById('partnerToggle');
+  const board2Box = document.getElementById('board2Box');
+  const boardsEl = document.querySelector('.boards');
+  partnerToggle.addEventListener('change', () => {
+    const bd = partnerBoard();
+    bd.on = partnerToggle.checked;
+    board2Box.hidden = !bd.on;
+    boardsEl.classList.toggle('two', bd.on);
+    boardsEl.closest('.stage').classList.toggle('two', bd.on);
+    if (bd.on) { applySensors(); } else { bd.runtime.stopAll(); bd.sim.reset(); }
+    Blockly.svgResize(workspace);
+    updateRadioStatus();
+  });
+
+  const radioStatus = document.getElementById('radioStatus');
+  function updateRadioStatus() {
+    radioStatus.textContent = active().map(bd => `${bd.runtime.name}: Kanal ${bd.sim.radioChannel}`).join(' · ');
+  }
+  setInterval(updateRadioStatus, 400);
+
+  const radioLog = document.getElementById('radioLog');
+  radioBus.onLog(entries => {
+    if (!entries.length) {
+      radioLog.replaceChildren(Object.assign(document.createElement('li'), { className: 'radioEmpty', textContent: 'Noch keine Nachrichten.' }));
+      return;
+    }
+    const rows = entries.slice(-20).map(e => {
+      const li = document.createElement('li');
+      const from = document.createElement('span'); from.className = 'radioFrom'; from.textContent = e.from;
+      const ch = document.createElement('span'); ch.className = 'radioChan'; ch.textContent = 'K' + e.channel;
+      const body = document.createElement('span'); body.className = 'radioBody'; body.textContent = e.text === '' ? '(leer)' : e.text;
+      const heard = document.createElement('span'); heard.className = 'radioHeard';
+      heard.textContent = e.heard === 0 ? 'niemand hört' : e.heard === 1 ? '1 hört' : e.heard + ' hören';
+      li.append(from, ch, body, heard);
+      return li;
+    });
+    radioLog.replaceChildren(...rows);
+    radioLog.scrollTop = radioLog.scrollHeight;
+  });
+
+  document.getElementById('radioSendBtn').addEventListener('click', () => {
+    const ch = Math.max(0, Math.min(83, Math.round(Number(document.getElementById('radioChannel').value) || 0)));
+    document.getElementById('radioChannel').value = ch;
+    radioBus.inject(ch, document.getElementById('radioText').value);
+  });
+  document.getElementById('radioText').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('radioSendBtn').click(); }
+  });
 
   /* Tastatur: A und B */
   const typing = () => {
@@ -5121,7 +5567,7 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
     const k = e.key.toLowerCase();
     if (k === 'a' || k === 'b') sim.release(k.toUpperCase());
   });
-  window.addEventListener('blur', () => sim.releaseAll());
+  window.addEventListener('blur', () => active().forEach(bd => bd.sim.releaseAll()));
 
   /* Zoom-Knöpfe */
   document.getElementById('zoomIn').addEventListener('click', () => workspace.zoomCenter(1));
@@ -5132,7 +5578,7 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
   });
 
   window.addEventListener('resize', () => Blockly.svgResize(workspace));
-  window.calApp = Object.assign(app, { workspace, sim, runtime, openModal, para, isModalOpen: () => !modal.hidden });
+  window.calApp = Object.assign(app, { workspace, sim, runtime, radioBus, boards: active, openModal, para, isModalOpen: () => !modal.hidden });
   CalProject.init(window.calApp);
   CalDevice.init(window.calApp);
 })();

@@ -955,7 +955,9 @@
   function liveHTML() {
     if (!live) {
       return '<div class="card"><h3>Live-Sitzung</h3>' +
-        '<p class="hint">Beide Geräte gleichen sich danach laufend ab, ohne Teilen-Knopf.</p>' +
+        '<p class="hint">ActiveBoard und iPad laufen danach synchron: Was auf dem einen Gerät ' +
+        'geschrieben wird, erscheint kurz darauf auch auf dem anderen. Ohne Teilen-Knopf, ' +
+        'in beide Richtungen.</p>' +
         '<button id="liveStartBtn" class="primary wide">Sitzung starten</button>' +
         '<div style="height:10px"></div>' +
         '<input id="liveCode" class="code" maxlength="6" placeholder="ABC123" ' +
@@ -965,7 +967,8 @@
     }
     return '<div class="card"><h3>Live-Sitzung läuft</h3>' +
       '<div class="bigcode">' + esc(live.code) + '</div>' +
-      '<p class="hint" style="text-align:center">Diesen Code auf dem anderen Gerät eingeben.</p>' +
+      '<p class="hint" style="text-align:center">ActiveBoard und iPad laufen synchron.<br>' +
+      'Diesen Code auf dem anderen Gerät eingeben, um es dazuzuholen.</p>' +
       '<button id="liveStopBtn" class="danger wide">Sitzung verlassen</button>' +
       '<p class="hint">Verlassen ändert nichts am Tafelbild, weder hier noch auf dem anderen Gerät.</p>' +
       '<div id="lstatus" class="msg"></div></div>';

@@ -7,7 +7,7 @@
       "datei": "Scratchiope.html",
       "typ": "html",
       "titel": "Calliope-Blöcke – Editor und Simulator",
-      "beschreibung": "",
+      "beschreibung": "Blockumgebung für den Calliope mini 3 im Scratch-Stil: läuft offline, simuliert das Board samt Sensoren und Funk und überträgt das Programm per USB.",
       "kategorie": "tools",
       "groesse": "1,8 MB",
       "geaendert": "2026-10-07"

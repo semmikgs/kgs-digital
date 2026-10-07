@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>KGS-Live-Tafel (Testversion)</title>
+<title>KGS-Live-Tafel</title>
 <style>
   :root {
     color-scheme: only light;   /* Dunkelmodus des Browsers soll die Oberflaeche nicht umfaerben */
@@ -64,9 +64,6 @@
     background: var(--sel); border: 2px solid var(--face); box-shadow: 0 1px 3px rgba(35,45,56,.45); }
   #glattReg::-moz-range-thumb { width: 8px; height: 26px; border-radius: 4px;
     background: var(--sel); border: 2px solid var(--face); box-shadow: 0 1px 3px rgba(35,45,56,.45); }
-  #testband { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
-    text-align: center; color: #8a3b12; background: #ffe3c9; border: 1px solid #f0b282;
-    border-radius: 6px; padding: 3px 0; }
   #shareBtn.live::after { content: ""; position: absolute; right: 5px; top: 5px; width: 8px; height: 8px;
     border-radius: 50%; background: #45d07a; box-shadow: 0 0 0 2px var(--sel); }
   #shareBtn.live { flex-direction: column; gap: 1px; }
@@ -135,7 +132,6 @@
   </div>
 
   <nav id="bar">
-    <div id="testband">Testversion</div>
     <div class="sec g2">
       <button id="undo" title="Rückgängig"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
       <button id="redo" title="Wiederholen"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
@@ -901,10 +897,6 @@
   function showInfo() {
     panel.innerHTML =
       '<h2>KGS-Live-Tafel &ndash; Kurzanleitung</h2>' +
-      '<p style="background:#ffe3c9;border:1px solid #f0b282;border-radius:8px;padding:10px 12px">'+
-      '<b>Dies ist eine Testversion.</b> Sie wird erprobt und kann sich jederzeit &auml;ndern oder '+
-      'ausfallen. F&uuml;r den normalen Unterricht bitte die <b>KGS-Tafel</b> verwenden. '+
-      'Sichere wichtige Tafelbilder als PDF, bevor du dich auf die Sitzung verl&auml;sst.</p>' +
       '<p><b>Favoriten:</b> Kurz tippen wählt das Werkzeug. Zum Neubelegen erst unten Werkzeug, Dicke und Farbe einstellen, dann den Favoriten etwa eine Sekunde gedrückt halten.</p>' +
       '<p><b>Gerade:</b> Werkzeug wählen, aufsetzen, ziehen. Die Linie folgt bis zum Loslassen.</p>' +
       '<p><b>Handballen:</b> wirkt immer als Schwamm.</p>' +
@@ -935,7 +927,9 @@
   function accountHTML() {
     if (!session) {
       return '<div class="card"><h3>Konto</h3>' +
-        '<p class="hint">Nur auf dem iPad nötig, zum dauerhaften Speichern. Am Board nicht anmelden.</p>' +
+        '<p class="hint">Nur für dauerhaftes Speichern nötig. Für Live-Sitzung, Übergabe und PDF ' +
+        'braucht es kein Konto. Melde dich nur auf deinem eigenen Gerät an, nicht am ActiveBoard: ' +
+        'dort arbeiten alle mit demselben Zugang, die Anmeldung bliebe für die nächste Lehrkraft stehen.</p>' +
         '<button id="showLogin" class="link">Anmelden …</button>' +
         '<div id="loginFold" class="fold">' +
         '<input id="mail" type="email" placeholder="E-Mail" autocomplete="username">' +
@@ -944,7 +938,8 @@
         '<div id="amsg" class="msg"></div></div>';
     }
     return '<div class="card"><h3>Meine Tafelbilder</h3>' +
-      '<p class="hint">Angemeldet als ' + esc(session.email) + '</p>' +
+      '<p class="hint">Angemeldet als ' + esc(session.email) +
+      '. Am Ende der Stunde abmelden, wenn das Gerät nicht dir allein gehört.</p>' +
       '<input id="titel" placeholder="Titel für das aktuelle Tafelbild">' +
       '<button id="saveBtn" class="primary">Aktuelles speichern</button> ' +
       '<button id="reloadBtn">Liste laden</button> ' +

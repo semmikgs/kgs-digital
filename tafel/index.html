@@ -48,6 +48,8 @@
   button:disabled { opacity: .3; box-shadow: none; }
   #clearBtn { color: var(--warn); }
   #shareBtn { background: var(--sel); color: #fff; border-color: var(--sel); }
+  #shareBtn.live::after { content: ""; position: absolute; right: 5px; top: 5px; width: 8px; height: 8px;
+    border-radius: 50%; background: #45d07a; box-shadow: 0 0 0 2px var(--sel); }
   #presets button { height: var(--bp); }
   #colors button { height: var(--bc); border-radius: 5px; border-color: rgba(35,45,56,.22); }
   #colors button.on { box-shadow: inset 0 0 0 2px #fff, 0 0 0 2px var(--sel); border-color: var(--sel); }
@@ -268,7 +270,22 @@
   var active = new Map();
   var presets = loadPresets();
 
-  function newPage(bg) { return { strokes: [], redo: [], snaps: [], bg: bg }; }
+  // Seiten tragen eine feste Kennung. Nur so landet ein Strich auch dann auf der
+  // richtigen Seite, wenn auf dem anderen Geraet gleichzeitig eine Seite entsteht.
+  function neueId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+  function newPage(bg, id) {
+    return { id: id || neueId(), strokes: [], redo: [], snaps: [], bg: bg };
+  }
+  function seiteNach(id) {
+    for (var i = 0; i < pages.length; i++) if (pages[i].id === id) return pages[i];
+    return null;
+  }
+  function seiteIndex(id) {
+    for (var i = 0; i < pages.length; i++) if (pages[i].id === id) return i;
+    return -1;
+  }
   function colorById(id) { for (var i = 0; i < COLORS.length; i++) if (COLORS[i].id === id) return COLORS[i]; return COLORS[0]; }
   function sizeKey(t) { return t === 'line' ? 'pen' : t; }
   function $(s) { return document.querySelector(s); }
@@ -463,6 +480,7 @@
     if (s.kind !== 'erase') strokePath(xInk, s);
     var pg = pages[cur];
     pg.strokes.push(s); pg.redo.length = 0;
+    sende('strich', { seite: pg.id, s: packStrich(s) });
     requestLive(); updateUI();
   }
   cLive.addEventListener('pointerup', endStroke);
@@ -476,12 +494,18 @@
 
   // ============ Speicherformat ============
   function r1(n) { return Math.round(n * 10) / 10; }
+  function packStrich(st) {
+    return { k: st.kind, c: st.color || null, w: r1(st.w), p: st.pts.map(r1) };
+  }
+  function entpackStrich(st, sc) {
+    var o = { kind: st.k, w: st.w * sc, pts: st.p.map(function (n) { return n * sc; }) };
+    if (st.c) o.color = st.c;
+    return o;
+  }
   function serialize() {
-    return { v: 2, w: SHEET_W, h: SHEET_H,
+    return { v: 3, w: SHEET_W, h: SHEET_H,
       pages: pages.map(function (p) {
-        return { bg: p.bg, s: p.strokes.map(function (st) {
-          return { k: st.kind, c: st.color || null, w: r1(st.w), p: st.pts.map(r1) };
-        }) };
+        return { id: p.id, bg: p.bg, s: p.strokes.map(packStrich) };
       }) };
   }
   function deserialize(d) {
@@ -489,12 +513,8 @@
     // Ältere Tafelbilder lagen in Bildschirmpixeln vor und werden hochgerechnet.
     var sc = d.v >= 2 ? 1 : (SHEET_W / (d.w || SHEET_W));
     return d.pages.map(function (p) {
-      var pg = newPage(p.bg || 'blank');
-      pg.strokes = (p.s || []).map(function (st) {
-        var o = { kind: st.k, w: st.w * sc, pts: st.p.map(function (n) { return n * sc; }) };
-        if (st.c) o.color = st.c;
-        return o;
-      });
+      var pg = newPage(p.bg || 'blank', p.id);
+      pg.strokes = (p.s || []).map(function (st) { return entpackStrich(st, sc); });
       return pg;
     });
   }
@@ -504,6 +524,171 @@
     if (isEmpty()) { pages = np; cur = 0; }
     else { var at = pages.length; pages = pages.concat(np); cur = at; }
     active.clear(); drawBg(); redrawInk(); requestLive(); updateUI();
+  }
+
+  // ============ Live-Sitzung ============
+  // Übertragen werden einzelne Ereignisse, nicht ganze Tafelbilder. Alle Geräte
+  // spielen dieselbe Folge in derselben Reihenfolge nach und kommen damit auf
+  // denselben Stand, ohne sich gegenseitig zu überschreiben.
+  var LIVE_TAKT = 2000;    // ms zwischen zwei Abfragen
+  var LIVE_SAMMEL = 600;   // ms, so lange werden eigene Ereignisse gebündelt
+  var live = null;
+
+  function frischAuf(pg, auchBg) {
+    if (pg && pages[cur] && pg.id === pages[cur].id) {
+      if (auchBg) drawBg();
+      redrawInk(); requestLive();
+    }
+    updateUI();
+  }
+
+  // Wendet ein Ereignis auf den lokalen Zustand an, ohne es weiterzuschicken.
+  function anwenden(art, d) {
+    var pg, i;
+    d = d || {};
+    if (art === 'start') {
+      var np = deserialize(d.doc || {});
+      if (!np.length) return;
+      pages = np; cur = 0;
+      active.clear(); drawBg(); redrawInk(); requestLive(); updateUI();
+      return;
+    }
+    if (art === 'strich') {
+      pg = seiteNach(d.seite); if (!pg || !d.s) return;
+      var s = entpackStrich(d.s, 1);
+      pg.strokes.push(s); pg.redo.length = 0;
+      if (pages[cur] && pg.id === pages[cur].id) { strokePath(xInk, s); requestLive(); }
+      updateUI();
+      return;
+    }
+    if (art === 'zurueck') {
+      pg = seiteNach(d.seite); if (!pg) return;
+      if (pg.strokes.length) pg.redo.push(pg.strokes.pop());
+      else if (pg.snaps.length) pg.strokes = pg.snaps.pop();
+      else return;
+    } else if (art === 'vor') {
+      pg = seiteNach(d.seite); if (!pg || !pg.redo.length) return;
+      pg.strokes.push(pg.redo.pop());
+    } else if (art === 'leeren') {
+      pg = seiteNach(d.seite); if (!pg) return;
+      if (pg.strokes.length) pg.snaps.push(pg.strokes);
+      pg.strokes = []; pg.redo.length = 0;
+    } else if (art === 'seite_neu') {
+      if (seiteNach(d.id)) return;
+      i = seiteIndex(d.nach);
+      pages.splice(i < 0 ? pages.length : i + 1, 0, newPage(d.bg || 'blank', d.id));
+      updateUI();
+      return;
+    } else if (art === 'hintergrund') {
+      pg = seiteNach(d.seite); if (!pg) return;
+      pg.bg = d.bg;
+      frischAuf(pg, true);
+      return;
+    } else {
+      return;
+    }
+    frischAuf(pg, false);
+  }
+
+  function sende(art, d) {
+    if (!live) return;
+    live.queue.push({ art: art, daten: d });
+    planeSenden();
+  }
+  function tun(art, d) { anwenden(art, d); sende(art, d); }
+
+  function planeSenden() {
+    if (!live || live.sendeId) return;
+    live.sendeId = setTimeout(senden, LIVE_SAMMEL);
+  }
+  function senden() {
+    if (!live) return;
+    live.sendeId = 0;
+    if (!live.queue.length) return;
+    var paket = live.queue.splice(0, 150), merk = live;
+    rpc('sitzung_senden', { p_code: live.code, p_geraet: live.geraet, p_ereignisse: paket }, false)
+      .then(function () {
+        if (live !== merk) return;
+        live.fehler = 0; live.meldung = '';
+        if (live.queue.length) planeSenden();
+        liveAnzeige();
+      })
+      .catch(function (e) {
+        if (live !== merk) return;
+        live.queue = paket.concat(live.queue);   // nichts verwerfen, beim naechsten Mal erneut
+        live.fehler++; live.meldung = e.message;
+        planeSenden();
+        liveAnzeige();
+      });
+  }
+
+  function takt() {
+    if (!live) return;
+    var merk = live;
+    rpc('sitzung_holen', { p_code: live.code, p_ab: live.letzteNr }, false)
+      .then(function (res) {
+        if (live !== merk) return;
+        var evs = (res && res.ereignisse) || [];
+        for (var i = 0; i < evs.length; i++) {
+          var e = evs[i];
+          if (e.nr > live.letzteNr) live.letzteNr = e.nr;
+          if (e.geraet === live.geraet) continue;   // eigene Ereignisse sind schon angewandt
+          anwenden(e.art, e.daten);
+        }
+        live.fehler = 0; live.meldung = '';
+        liveAnzeige();
+      })
+      .catch(function (e) {
+        if (live !== merk) return;
+        live.fehler++; live.meldung = e.message;
+        liveAnzeige();
+      });
+  }
+
+  function liveStart(code, geraet, letzteNr) {
+    live = { code: code, geraet: geraet, letzteNr: letzteNr || 0,
+             queue: [], sendeId: 0, fehler: 0, meldung: '' };
+    live.taktId = setInterval(takt, LIVE_TAKT);
+    liveAnzeige();
+  }
+
+  function liveStarten() {
+    var g = neueId();
+    return rpc('sitzung_starten', { p_geraet: g, p_anfang: { doc: serialize() } }, false)
+      .then(function (code) { liveStart(code, g, 0); return code; });
+  }
+
+  function liveBeitreten(code) {
+    var g = neueId();
+    return rpc('sitzung_beitreten', { p_code: code }, false).then(function (res) {
+      var evs = (res && res.ereignisse) || [], hoechste = 0;
+      for (var i = 0; i < evs.length; i++) {
+        anwenden(evs[i].art, evs[i].daten);
+        if (evs[i].nr > hoechste) hoechste = evs[i].nr;
+      }
+      liveStart(res.code, g, hoechste);
+      return res.code;
+    });
+  }
+
+  // Verlassen schickt bewusst kein Ereignis und ändert nichts am Tafelbild:
+  // weder hier noch auf den anderen Geräten.
+  function liveVerlassen() {
+    if (!live) return;
+    clearInterval(live.taktId);
+    if (live.sendeId) clearTimeout(live.sendeId);
+    live = null;
+    liveAnzeige();
+  }
+
+  function liveAnzeige() {
+    $('#shareBtn').classList.toggle('live', !!live);
+    var el = $('#lstatus');
+    if (el) {
+      el.textContent = !live ? '' :
+        (live.fehler ? 'Verbindung gestört: ' + live.meldung : 'verbunden, gleicht laufend ab');
+      el.className = 'msg ' + (live && live.fehler ? 'err' : 'ok');
+    }
   }
 
   // ============ Export ============
@@ -647,7 +832,9 @@
       '<p><b>Gerade:</b> Werkzeug wählen, aufsetzen, ziehen. Die Linie folgt bis zum Loslassen.</p>' +
       '<p><b>Handballen:</b> wirkt immer als Schwamm.</p>' +
       '<p><b>Blattformat:</b> Die Tafel hat ein festes Querformat, damit sie auf jedem Gerät und im PDF gleich aussieht.</p>' +
-      '<p><b>Teilen:</b> erzeugt einen Code für die Übergabe aufs iPad, speichert dauerhaft und erstellt PDFs.</p>' +
+      '<p><b>Live-Sitzung:</b> unter Teilen eine Sitzung starten und den Code am anderen Gerät eingeben. ' +
+      'Danach gleichen sich beide laufend ab, etwa im Zwei-Sekunden-Takt. Verlassen ändert nichts am Tafelbild.</p>' +
+      '<p><b>Teilen:</b> erzeugt daneben einen Code für die einmalige Übergabe, speichert dauerhaft und erstellt PDFs.</p>' +
       '<div class="acts"><button id="okBtn" class="primary">Verstanden</button></div>';
     veil.classList.add('show');
     tap('#okBtn', closeVeil);
@@ -660,10 +847,8 @@
     veil.classList.add('show');
     tap('#noBtn', closeVeil);
     tap('#yesBtn', function () {
-      var pg = pages[cur];
-      if (pg.strokes.length) pg.snaps.push(pg.strokes);
-      pg.strokes = []; pg.redo.length = 0;
-      redrawInk(); closeVeil(); updateUI();
+      tun('leeren', { seite: pages[cur].id });
+      closeVeil();
     });
   }
 
@@ -687,16 +872,36 @@
       '<div id="list" class="list"></div><div id="amsg" class="msg"></div></div>';
   }
 
+  function liveHTML() {
+    if (!live) {
+      return '<div class="card"><h3>Live-Sitzung</h3>' +
+        '<p class="hint">Beide Geräte gleichen sich danach laufend ab, ohne Teilen-Knopf.</p>' +
+        '<button id="liveStartBtn" class="primary wide">Sitzung starten</button>' +
+        '<div style="height:10px"></div>' +
+        '<input id="liveCode" class="code" maxlength="6" placeholder="ABC123" ' +
+        'autocapitalize="characters" autocomplete="off">' +
+        '<button id="liveJoinBtn" class="wide">Einer Sitzung beitreten</button>' +
+        '<div id="lstatus" class="msg"></div></div>';
+    }
+    return '<div class="card"><h3>Live-Sitzung läuft</h3>' +
+      '<div class="bigcode">' + esc(live.code) + '</div>' +
+      '<p class="hint" style="text-align:center">Diesen Code auf dem anderen Gerät eingeben.</p>' +
+      '<button id="liveStopBtn" class="danger wide">Sitzung verlassen</button>' +
+      '<p class="hint">Verlassen ändert nichts am Tafelbild, weder hier noch auf dem anderen Gerät.</p>' +
+      '<div id="lstatus" class="msg"></div></div>';
+  }
+
   function shareHTML() {
-    return '<h2>Teilen</h2><div class="cols">' +
-      '<div class="card"><h3>Code erzeugen</h3>' +
-      '<p class="hint">Stellt das aktuelle Tafelbild für 10 Minuten bereit.</p>' +
+    return '<h2>Teilen</h2><div class="cols">' + liveHTML() +
+      '<div class="card"><h3>Einmalige Übergabe</h3>' +
+      '<p class="hint">Ohne laufenden Abgleich: ein Code, ein Tafelbild.</p>' +
       '<button id="mkCode" class="primary wide">Code erzeugen</button>' +
-      '<div id="codeOut"></div><div id="smsg" class="msg"></div></div>' +
-      '<div class="card"><h3>Code eingeben</h3>' +
-      '<p class="hint">Holt ein bereitgestelltes Tafelbild.</p>' +
-      '<input id="codeIn" class="code" maxlength="6" placeholder="ABC123" autocapitalize="characters" autocomplete="off">' +
-      '<button id="getCode" class="primary wide">Laden</button><div id="rmsg" class="msg"></div></div>' +
+      '<div id="codeOut"></div>' +
+      '<div style="height:10px"></div>' +
+      '<input id="codeIn" class="code" maxlength="6" placeholder="ABC123" ' +
+      'autocapitalize="characters" autocomplete="off">' +
+      '<button id="getCode" class="wide">Übergabe laden</button>' +
+      '<div id="smsg" class="msg"></div><div id="rmsg" class="msg"></div></div>' +
       '</div><div class="sep"></div><div class="cols">' +
       '<div class="card"><h3>Als Datei</h3>' +
       '<p class="hint">PDF im Querformat, eine Tafelseite je Seite.</p>' +
@@ -710,6 +915,40 @@
     panel.innerHTML = shareHTML();
     veil.classList.add('show');
     tap('#closeBtn', closeVeil);
+    liveAnzeige();
+
+    tap('#liveStartBtn', function (btn) {
+      btn.disabled = true; msg('#lstatus', 'Sitzung wird angelegt …');
+      liveStarten()
+        .then(function () { showShare(); })
+        .catch(function (e) { msg('#lstatus', e.message, 'err'); btn.disabled = false; });
+    });
+
+    tap('#liveJoinBtn', function (btn) {
+      var code = ($('#liveCode').value || '').trim().toUpperCase();
+      if (code.length < 4) { msg('#lstatus', 'Bitte Code eingeben', 'err'); return; }
+      function los() {
+        btn.disabled = true; msg('#lstatus', 'Sitzung wird geladen …');
+        liveBeitreten(code)
+          .then(function () { showShare(); })
+          .catch(function (e) { msg('#lstatus', e.message, 'err'); btn.disabled = false; });
+      }
+      if (isEmpty()) { los(); return; }
+      panel.innerHTML = '<h2>Vorhandenes Tafelbild ersetzen?</h2>' +
+        '<p>Beim Beitreten übernimmt dieses Gerät den Stand der Sitzung. ' +
+        'Was hier steht, wird dabei ersetzt.</p>' +
+        '<div class="acts"><button id="jNo">Abbrechen</button>' +
+        '<button id="jYes" class="danger">Beitreten</button></div>';
+      tap('#jNo', showShare);
+      tap('#jYes', function () {
+        panel.innerHTML = '<h2>Sitzung wird geladen …</h2>';
+        liveBeitreten(code)
+          .then(function () { showShare(); })
+          .catch(function (e) { showShare(); msg('#lstatus', e.message, 'err'); });
+      });
+    });
+
+    tap('#liveStopBtn', function () { liveVerlassen(); showShare(); });
 
     tap('#mkCode', async function (btn) {
       btn.disabled = true; msg('#smsg', 'Wird hochgeladen …');
@@ -910,15 +1149,13 @@
 
   onTap($('#undo'), function () {
     var pg = pages[cur];
-    if (pg.strokes.length) pg.redo.push(pg.strokes.pop());
-    else if (pg.snaps.length) pg.strokes = pg.snaps.pop();
-    else return;
-    redrawInk(); updateUI();
+    if (!pg.strokes.length && !pg.snaps.length) return;
+    tun('zurueck', { seite: pg.id });
   });
   onTap($('#redo'), function () {
     var pg = pages[cur];
     if (!pg.redo.length) return;
-    var s = pg.redo.pop(); pg.strokes.push(s); strokePath(xInk, s); updateUI();
+    tun('vor', { seite: pg.id });
   });
   onTap($('#clearBtn'), askClear);
   onTap($('#infoBtn'), showInfo);
@@ -955,11 +1192,15 @@
   }
   onTap($('#prev'), function () { gotoPage(cur - 1); });
   onTap($('#next'), function () { gotoPage(cur + 1); });
-  onTap($('#addPage'), function () { pages.splice(cur + 1, 0, newPage(pages[cur].bg)); gotoPage(cur + 1); });
+  onTap($('#addPage'), function () {
+    var id = neueId();
+    tun('seite_neu', { id: id, nach: pages[cur].id, bg: pages[cur].bg });
+    var i = seiteIndex(id);
+    if (i >= 0) gotoPage(i);
+  });
   onTap($('#bgBtn'), function () {
     var pg = pages[cur];
-    pg.bg = BG_ORDER[(BG_ORDER.indexOf(pg.bg) + 1) % BG_ORDER.length];
-    drawBg(); updateUI();
+    tun('hintergrund', { seite: pg.id, bg: BG_ORDER[(BG_ORDER.indexOf(pg.bg) + 1) % BG_ORDER.length] });
   });
 
   function updateUI() {

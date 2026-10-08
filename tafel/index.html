@@ -267,6 +267,9 @@
   var PALM_ECHT  = 55;      // Gerät meldet für jeden Finger eine Fläche (iPad)
   var PALM_START = 45;      // solange noch keine Berührung ausgewertet wurde
   var PEN_SPERRE = 900;     // ms, so lange nach einem Stiftkontakt werden Finger ignoriert
+  // Erkennung eines verschluckten Absetzens: Pause und Ortswechsel zusammen
+  var SPRUNG_PAUSE = 120;   // ms ohne neuen Punkt
+  var SPRUNG_WEG = 6;       // Blatt-Einheiten, etwa 5 mm am Board
   var LONG_PRESS = 650;
   var GLATT_KEY = 'tafel-glaettung-v1';
   var PRESET_KEY = 'tafel-presets-v4';
@@ -471,16 +474,8 @@
   var penAktiv = 0, penZuletzt = 0;
   function stiftFuehrt() { return penAktiv > 0 || (Date.now() - penZuletzt) < PEN_SPERRE; }
 
-  cLive.addEventListener('pointerdown', function (e) {
-    if ($('#veil').classList.contains('show')) return;
-    e.preventDefault();
-    if (e.pointerType === 'pen') { penAktiv++; penZuletzt = Date.now(); }
-    else if (e.pointerType === 'touch') {
-      merkeBasis(e);
-      if (stiftFuehrt()) return;          // Handballen oder Finger neben dem Stift
-    }
-    try { cLive.setPointerCapture(e.pointerId); } catch (err) {}
-    var p = pt(e), s, c = colorById(state.color);
+  function macheStrich(e, p) {
+    var s, c = colorById(state.color);
     if (isPalm(e)) {
       s = { kind: 'erase', w: palmWidth(e), pts: [p.x, p.y] };
     } else if (state.tool === 'eraser') {
@@ -491,7 +486,20 @@
       s = { kind: state.tool, color: state.tool === 'marker' ? c.marker : c.pen,
             w: SIZES[state.tool][state.size[state.tool]], pts: [p.x, p.y] };
     }
-    s.gx = p.x; s.gy = p.y; s.rx = p.x; s.ry = p.y;
+    s.gx = p.x; s.gy = p.y; s.rx = p.x; s.ry = p.y; s.tLetzt = Date.now();
+    return s;
+  }
+
+  cLive.addEventListener('pointerdown', function (e) {
+    if ($('#veil').classList.contains('show')) return;
+    e.preventDefault();
+    if (e.pointerType === 'pen') { penAktiv++; penZuletzt = Date.now(); }
+    else if (e.pointerType === 'touch') {
+      merkeBasis(e);
+      if (stiftFuehrt()) return;          // Handballen oder Finger neben dem Stift
+    }
+    try { cLive.setPointerCapture(e.pointerId); } catch (err) {}
+    var s = macheStrich(e, pt(e));
     active.set(e.pointerId, s);
     if (s.kind === 'erase') strokePath(xInk, s); else requestLive();
   });
@@ -501,6 +509,28 @@
     else if (e.pointerType === 'touch') merkeBasis(e);
     var s = active.get(e.pointerId);
     if (!s) return;
+
+    // Ohne Kontakt ist buttons 0. Solche Punkte gehoeren nicht in den Strich.
+    if (e.pointerType === 'pen' && e.buttons === 0) { endStroke(e); return; }
+
+    // Das ActiveBoard meldet ein kurzes Abheben und Neuansetzen manchmal nicht
+    // als Ende und Anfang, sondern als Fortsetzung desselben Kontakts. Ohne
+    // diesen Riegel entstuende eine gerade Verbindung vom Abhebe- zum neuen
+    // Aufsetzpunkt: der schmale Zacken. Pause plus Ortswechsel verraten den Fall.
+    if (s.kind !== 'line') {
+      var pause = Date.now() - s.tLetzt;
+      if (pause > SPRUNG_PAUSE) {
+        var n = pt(e);
+        var dx = n.x - s.pts[s.pts.length - 2], dy = n.y - s.pts[s.pts.length - 1];
+        if (dx * dx + dy * dy > SPRUNG_WEG * SPRUNG_WEG) {
+          active['delete'](e.pointerId);
+          strichAbschliessen(s);
+          s = macheStrich(e, n);
+          active.set(e.pointerId, s);
+          if (s.kind === 'erase') strokePath(xInk, s); else requestLive();
+        }
+      }
+    }
 
     if (s.kind === 'line') {                 // Gerade: nur der Endpunkt wandert
       var q = pt(e);
@@ -519,7 +549,9 @@
     var list = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
     if (!list || !list.length) list = [e];
     var start = s.pts.length, a = alpha();
+    s.tLetzt = Date.now();
     for (var i = 0; i < list.length; i++) {
+      if (e.pointerType === 'pen' && list[i].buttons === 0) continue;
       var r = pt(list[i]);
       s.rx = r.x; s.ry = r.y;
       if (s.kind === 'erase' || a >= 1) {           // Radierer bleibt bewusst ungefiltert
@@ -535,17 +567,20 @@
     if (s.kind === 'erase') eraseIncrement(s, start); else requestLive();
   });
 
-  function endStroke(e) {
-    if (e.pointerType === 'pen') { penAktiv = Math.max(0, penAktiv - 1); penZuletzt = Date.now(); }
-    var s = active.get(e.pointerId);
-    if (!s) return;
-    active['delete'](e.pointerId);
+  function strichAbschliessen(s) {
     if (s.kind !== 'erase' && s.kind !== 'line' && alpha() < 1) nachlauf(s);
     if (s.kind !== 'erase') strokePath(xInk, s);
     var pg = pages[cur];
     pg.strokes.push(s); pg.redo.length = 0;
     sende('strich', { seite: pg.id, s: packStrich(s) });
     requestLive(); updateUI();
+  }
+  function endStroke(e) {
+    if (e.pointerType === 'pen') { penAktiv = Math.max(0, penAktiv - 1); penZuletzt = Date.now(); }
+    var s = active.get(e.pointerId);
+    if (!s) return;
+    active['delete'](e.pointerId);
+    strichAbschliessen(s);
   }
   cLive.addEventListener('pointerup', endStroke);
   cLive.addEventListener('pointercancel', endStroke);
@@ -594,7 +629,14 @@
   // Übertragen werden einzelne Ereignisse, nicht ganze Tafelbilder. Alle Geräte
   // spielen dieselbe Folge in derselben Reihenfolge nach und kommen damit auf
   // denselben Stand, ohne sich gegenseitig zu überschreiben.
-  var LIVE_TAKT = 2000;    // ms zwischen zwei Abfragen
+  // Der Abfragetakt richtet sich nach dem Betrieb: Kosten verursacht nicht die
+  // Datenmenge, sondern die Zahl der Anfragen. Passiert nichts, wird seltener
+  // gefragt; liegt die Seite im Hintergrund, gar nicht.
+  var LIVE_TAKT_AKTIV = 2000;
+  var LIVE_TAKT_RUHE = 5000;     // ab 15 s ohne Ereignis
+  var LIVE_TAKT_LANG = 10000;    // ab 60 s ohne Ereignis
+  var LIVE_TAKT_VERDECKT = 15000;
+  var LIVE_RUHE_1 = 15000, LIVE_RUHE_2 = 60000;
   var LIVE_SAMMEL = 600;   // ms, so lange werden eigene Ereignisse gebündelt
   var live = null;
 
@@ -657,6 +699,7 @@
   function sende(art, d) {
     if (!live) return;
     live.queue.push({ art: art, daten: d });
+    live.zuletztAktiv = Date.now();
     planeSenden();
   }
   function tun(art, d) { anwenden(art, d); sende(art, d); }
@@ -686,13 +729,29 @@
       });
   }
 
+  function taktDauer() {
+    if (document.hidden) return LIVE_TAKT_VERDECKT;
+    var ruhe = Date.now() - live.zuletztAktiv;
+    if (ruhe < LIVE_RUHE_1) return LIVE_TAKT_AKTIV;
+    if (ruhe < LIVE_RUHE_2) return LIVE_TAKT_RUHE;
+    return LIVE_TAKT_LANG;
+  }
+  function planeTakt() {
+    if (!live) return;
+    if (live.taktId) clearTimeout(live.taktId);
+    live.taktId = setTimeout(takt, taktDauer());
+  }
+
   function takt() {
     if (!live) return;
+    live.taktId = 0;
+    if (document.hidden) { planeTakt(); return; }   // im Hintergrund wird nicht gefragt
     var merk = live;
     rpc('sitzung_holen', { p_code: live.code, p_ab: live.letzteNr }, false)
       .then(function (res) {
         if (live !== merk) return;
         var evs = (res && res.ereignisse) || [];
+        if (evs.length) live.zuletztAktiv = Date.now();
         for (var i = 0; i < evs.length; i++) {
           var e = evs[i];
           if (e.nr > live.letzteNr) live.letzteNr = e.nr;
@@ -700,21 +759,27 @@
           anwenden(e.art, e.daten);
         }
         live.fehler = 0; live.meldung = '';
-        liveAnzeige();
+        liveAnzeige(); planeTakt();
       })
       .catch(function (e) {
         if (live !== merk) return;
         live.fehler++; live.meldung = e.message;
-        liveAnzeige();
+        liveAnzeige(); planeTakt();
       });
   }
 
   function liveStart(code, geraet, letzteNr) {
     live = { code: code, geraet: geraet, letzteNr: letzteNr || 0,
-             queue: [], sendeId: 0, fehler: 0, meldung: '' };
-    live.taktId = setInterval(takt, LIVE_TAKT);
+             queue: [], sendeId: 0, taktId: 0, fehler: 0, meldung: '',
+             zuletztAktiv: Date.now() };
+    planeTakt();
     liveAnzeige();
   }
+
+  // Beim Zurückkehren sofort nachholen statt auf den nächsten Takt zu warten
+  document.addEventListener('visibilitychange', function () {
+    if (live && !document.hidden) { live.zuletztAktiv = Date.now(); planeTakt(); takt(); }
+  });
 
   function liveStarten() {
     var g = neueId();
@@ -739,7 +804,7 @@
   // weder hier noch auf den anderen Geräten.
   function liveVerlassen() {
     if (!live) return;
-    clearInterval(live.taktId);
+    if (live.taktId) clearTimeout(live.taktId);
     if (live.sendeId) clearTimeout(live.sendeId);
     live = null;
     liveAnzeige();

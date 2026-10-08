@@ -113,6 +113,12 @@
   #vorhang .griff.l, #vorhang .griff.r { top: 50%; margin-top: -34px; width: 7px; height: 68px; }
   #vorhang .griff.o { top: 5px; } #vorhang .griff.u { bottom: 5px; }
   #vorhang .griff.l { left: 5px; } #vorhang .griff.r { right: 5px; }
+  #vorhang .griff.ecke { width: 30px; height: 30px; margin: 0; border-radius: 8px;
+    background: rgba(255,255,255,.26); }
+  #vorhang .griff.ol { left: 5px; top: 5px; }
+  #vorhang .griff.or { right: 5px; top: 5px; }
+  #vorhang .griff.ul { left: 5px; bottom: 5px; }
+  #vorhang .griff.ur { right: 5px; bottom: 5px; }
   #vorhang .zu { position: absolute; right: 8px; top: 8px; width: 34px; height: 34px;
     border-radius: 8px; border: 0; background: rgba(255,255,255,.18); color: #fff; font-size: 20px; }
 
@@ -190,7 +196,7 @@
     </div>
     <!-- Aufsätze: liegen über der Tafel, gehören nicht zum Tafelbild -->
     <svg id="spot" aria-hidden="true"><path id="spotPfad" fill-rule="evenodd"></path></svg>
-    <div id="vorhang"><span class="griff o"></span><span class="griff u"></span><span class="griff l"></span><span class="griff r"></span><button class="zu" title="Vorhang schließen">×</button></div>
+    <div id="vorhang"><span class="griff o"></span><span class="griff u"></span><span class="griff l"></span><span class="griff r"></span><span class="griff ecke ol"></span><span class="griff ecke or"></span><span class="griff ecke ul"></span><span class="griff ecke ur"></span><button class="zu" title="Vorhang schließen">×</button></div>
     <div id="timer">
       <div id="timerKopf"><span id="timerModus">Uhr</span><button class="zu" title="Timer schließen">×</button></div>
       <div id="timerZeit">00:00</div>
@@ -218,7 +224,7 @@
     </div>
     <div class="sec g3">
       <button id="fullBtn" title="Vollbild"></button>
-      <button id="ladeBtn" title="Weitere Werkzeuge"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg></button>
+      <button id="ladeBtn" title="Weitere Werkzeuge"><svg viewBox="0 0 24 24"><path d="M9 7.5V6a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 6v1.5"/><rect x="2.5" y="7.5" width="19" height="12" rx="2"/><path d="M2.5 13h19"/><path d="M10 13v2.2h4V13"/></svg></button>
       <button id="shareBtn" title="Teilen, Speichern, PDF"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.8 15.7 6.5M8.3 13.2l7.4 4.3"/></svg></button>
     </div>
 
@@ -1525,22 +1531,30 @@
       vorhangZeichne();
     });
 
-    function kante(name, fn) {
-      var el = vorhang.querySelector('.griff.' + name);
+    // Ein Anfasser kann eine Kante oder, an den Ecken, zwei Achsen zugleich ziehen
+    var MIN = 60;
+    function anfasser(sel, kanten) {
+      var el = vorhang.querySelector('.griff.' + sel);
       var anf = null;
       el.addEventListener('pointerdown', function () { anf = { x: vh.x, y: vh.y, w: vh.w, h: vh.h }; });
-      ziehbar(vorhang, el, function (dx, dy) { if (anf) { fn(anf, dx, dy, b()); vorhangZeichne(); } });
+      ziehbar(vorhang, el, function (dx, dy) {
+        if (!vh || !anf) return;
+        var g = b(), x, y;
+        if (kanten.indexOf('l') >= 0) {
+          x = Math.max(0, Math.min(anf.x + dx, anf.x + anf.w - MIN));
+          vh.w = anf.w + (anf.x - x); vh.x = x;
+        }
+        if (kanten.indexOf('r') >= 0) vh.w = Math.max(MIN, Math.min(anf.w + dx, g.width - anf.x));
+        if (kanten.indexOf('o') >= 0) {
+          y = Math.max(0, Math.min(anf.y + dy, anf.y + anf.h - MIN));
+          vh.h = anf.h + (anf.y - y); vh.y = y;
+        }
+        if (kanten.indexOf('u') >= 0) vh.h = Math.max(MIN, Math.min(anf.h + dy, g.height - anf.y));
+        vorhangZeichne();
+      });
     }
-    kante('o', function (a, dx, dy, g) {
-      var y = Math.max(0, Math.min(a.y + dy, a.y + a.h - 60));
-      vh.h = a.h + (a.y - y); vh.y = y;
-    });
-    kante('u', function (a, dx, dy, g) { vh.h = Math.max(60, Math.min(a.h + dy, g.height - a.y)); });
-    kante('l', function (a, dx, dy, g) {
-      var x = Math.max(0, Math.min(a.x + dx, a.x + a.w - 60));
-      vh.w = a.w + (a.x - x); vh.x = x;
-    });
-    kante('r', function (a, dx, dy, g) { vh.w = Math.max(60, Math.min(a.w + dx, g.width - a.x)); });
+    anfasser('o', 'o'); anfasser('u', 'u'); anfasser('l', 'l'); anfasser('r', 'r');
+    anfasser('ol', 'ol'); anfasser('or', 'or'); anfasser('ul', 'ul'); anfasser('ur', 'ur');
     vorhang.querySelector('.zu').addEventListener('pointerdown', function (e) {
       e.preventDefault(); e.stopPropagation(); vorhangAn(false);
     });

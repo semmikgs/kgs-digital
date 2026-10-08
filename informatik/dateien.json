@@ -1,6 +1,6 @@
 {
   "fachbereich": "informatik",
-  "aktualisiert": "2026-10-07",
+  "aktualisiert": "2026-10-08",
   "eintraege": [
     {
       "pfad": "tools/Scratchiope.html",
@@ -10,7 +10,7 @@
       "beschreibung": "Blockumgebung für den Calliope mini 3 im Scratch-Stil: läuft offline, simuliert das Board samt Sensoren und Funk und überträgt das Programm per USB.",
       "kategorie": "tools",
       "groesse": "1,8 MB",
-      "geaendert": "2026-10-07"
+      "geaendert": "2026-10-08"
     },
     {
       "pfad": "tools/binaer.html",
@@ -20,7 +20,7 @@
       "beschreibung": "",
       "kategorie": "tools",
       "groesse": "5 KB",
-      "geaendert": "2026-10-07"
+      "geaendert": "2026-10-08"
     }
   ]
 }

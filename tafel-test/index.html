@@ -90,8 +90,27 @@
   #sterne button.pressing::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px;
     background: var(--sel); animation: fill .65s linear forwards; }
 
+  /* ---- Bilder: Auswahlrahmen und Balken ---- */
+  #bildRahmen { position: absolute; display: none; border: 2px solid var(--sel);
+    box-shadow: 0 0 0 2px rgba(255,255,255,.75); pointer-events: none; z-index: 3; }
+  #bildRahmen.auf { display: block; }
+  #bildRahmen i { position: absolute; width: 22px; height: 22px; background: var(--face);
+    border: 2px solid var(--sel); border-radius: 5px; }
+  #bildRahmen i.ol { left: -12px; top: -12px; }
+  #bildRahmen i.or { right: -12px; top: -12px; }
+  #bildRahmen i.ul { left: -12px; bottom: -12px; }
+  #bildRahmen i.ur { right: -12px; bottom: -12px; }
+  #bildBalken { position: absolute; left: 50%; transform: translateX(-50%); top: 12px;
+    display: none; align-items: center; gap: 10px; z-index: 7; background: var(--face);
+    border: 1px solid var(--face-edge); border-radius: 999px; padding: 7px 10px 7px 18px;
+    box-shadow: 0 6px 20px rgba(20,28,36,.22); font-size: 14px; color: var(--muted); }
+  #bildBalken.auf { display: flex; }
+  #bildBalken button { height: 36px; padding: 0 14px; font-size: 14px; font-weight: 600; }
+  #bildBalken button.primary { background: var(--sel); color: #fff; border-color: var(--sel); }
+  #bildBalken button.danger { color: var(--warn); }
+
   /* ---- kurze Rueckmeldung mitten auf der Tafel ---- */
-  #toast { position: absolute; left: 50%; top: 16px; transform: translateX(-50%);
+  #toast { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%);
     display: none; align-items: center; gap: 10px; z-index: 7;
     background: rgba(28,36,46,.92); color: #fff; border-radius: 999px;
     padding: 9px 18px 9px 12px; font-size: 17px; font-weight: 600;
@@ -132,7 +151,6 @@
   #vorhang .griff.ecke { width: 30px; height: 30px; margin: 0; border-radius: 8px;
     background: rgba(255,255,255,.26); }
   #vorhang .griff.ol { left: 5px; top: 5px; }
-  #vorhang .griff.or { right: 5px; top: 5px; }
   #vorhang .griff.ul { left: 5px; bottom: 5px; }
   #vorhang .griff.ur { right: 5px; bottom: 5px; }
   #vorhang .zu { position: absolute; right: 8px; top: 8px; width: 34px; height: 34px;
@@ -212,7 +230,7 @@
     </div>
     <!-- Aufsätze: liegen über der Tafel, gehören nicht zum Tafelbild -->
     <svg id="spot" aria-hidden="true"><path id="spotPfad" fill-rule="evenodd"></path></svg>
-    <div id="vorhang"><span class="griff o"></span><span class="griff u"></span><span class="griff l"></span><span class="griff r"></span><span class="griff ecke ol"></span><span class="griff ecke or"></span><span class="griff ecke ul"></span><span class="griff ecke ur"></span><button class="zu" title="Vorhang schließen">×</button></div>
+    <div id="vorhang"><span class="griff o"></span><span class="griff u"></span><span class="griff l"></span><span class="griff r"></span><span class="griff ecke ol"></span><span class="griff ecke ul"></span><span class="griff ecke ur"></span><button class="zu" title="Vorhang schließen">×</button></div>
     <div id="timer">
       <div id="timerKopf"><span id="timerModus">Uhr</span><button class="zu" title="Timer schließen">×</button></div>
       <div id="timerZeit">00:00</div>
@@ -227,6 +245,12 @@
         erscheinen nicht im PDF und nicht auf dem anderen Gerät.</p>
     </div>
 
+    <div id="bildRahmen"></div>
+    <div id="bildBalken">
+      <span>Bild antippen, ziehen, an den Ecken größer ziehen</span>
+      <button id="bildWeg" class="danger">Löschen</button>
+      <button id="bildFertig" class="primary">Fertig</button>
+    </div>
     <div id="toast"></div>
     <div id="veil"><div id="panel"></div></div>
   </div>
@@ -408,7 +432,7 @@
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   }
   function newPage(bg, id) {
-    return { id: id || neueId(), strokes: [], redo: [], snaps: [], bg: bg };
+    return { id: id || neueId(), strokes: [], redo: [], snaps: [], bg: bg, bilder: [] };
   }
   function seiteNach(id) {
     for (var i = 0; i < pages.length; i++) if (pages[i].id === id) return pages[i];
@@ -486,10 +510,33 @@
     drawBg(); redrawInk(); requestLive();
   }
 
+  // Bilder liegen zwischen Hintergrund und Handschrift: man kann darauf schreiben,
+  // der Radierer loescht sie nicht.
+  var bildCache = {};
+  function bildHolen(src, fertig) {
+    var c = bildCache[src];
+    if (c) { if (fertig) fertig(c.ok ? c.img : null); return c; }
+    var img = new Image();
+    c = bildCache[src] = { img: img, ok: false, fehler: false };
+    img.crossOrigin = 'anonymous';   // sonst verdirbt das Bild die Flaeche fuer Export und Pipette
+    img.onload = function () { c.ok = true; drawBg(); if (fertig) fertig(img); };
+    img.onerror = function () { c.fehler = true; if (fertig) fertig(null); };
+    img.src = src;
+    return c;
+  }
+  function malBilder(ctx, pg) {
+    (pg.bilder || []).forEach(function (b) {
+      var c = bildCache[b.src];
+      if (c && c.ok) { try { ctx.drawImage(c.img, b.x, b.y, b.w, b.h); } catch (e) {} }
+      else if (!c) bildHolen(b.src);
+    });
+  }
+
   function drawBg() {
     xBg.fillStyle = '#fff';
     xBg.fillRect(0, 0, SHEET_W, SHEET_H);
     paintBg(xBg, pages[cur].bg);
+    malBilder(xBg, pages[cur]);
   }
 
   function strokePath(ctx, s) {
@@ -629,6 +676,11 @@
     if ($('#veil').classList.contains('show')) return;
     e.preventDefault();
     if (pipette) { pipetteNehmen(pt(e)); return; }
+    if (bildModus) {
+      try { cLive.setPointerCapture(e.pointerId); } catch (err) {}
+      bildGriff(e, pt(e));
+      return;
+    }
     if (e.pointerType === 'pen') { penAktiv++; penZuletzt = Date.now(); }
     else if (e.pointerType === 'touch') {
       merkeBasis(e);
@@ -651,6 +703,7 @@
   });
 
   cLive.addEventListener('pointermove', function (e) {
+    if (bildModus) { if (bildZug) bildBewege(pt(e)); return; }
     if (e.pointerType === 'pen') penZuletzt = Date.now();
     else if (e.pointerType === 'touch') merkeBasis(e);
 
@@ -734,6 +787,7 @@
     requestLive(); updateUI();
   }
   function endStroke(e) {
+    if (bildModus) { bildSchluss(); return; }
     if (gest && !gest.fertig) {
       for (var gi = 0; gi < gest.punkte.length; gi++) {
         var q = gest.punkte[gi];
@@ -772,9 +826,12 @@
     return o;
   }
   function serialize() {
-    return { v: 3, w: SHEET_W, h: SHEET_H,
+    return { v: 4, w: SHEET_W, h: SHEET_H,
       pages: pages.map(function (p) {
-        return { id: p.id, bg: p.bg, s: p.strokes.map(packStrich) };
+        return { id: p.id, bg: p.bg, s: p.strokes.map(packStrich),
+                 b: (p.bilder || []).map(function (q) {
+                   return { id: q.id, src: q.src, x: r1(q.x), y: r1(q.y), w: r1(q.w), h: r1(q.h) };
+                 }) };
       }) };
   }
   function deserialize(d) {
@@ -784,6 +841,10 @@
     return d.pages.map(function (p) {
       var pg = newPage(p.bg || 'blank', p.id);
       pg.strokes = (p.s || []).map(function (st) { return entpackStrich(st, sc); });
+      pg.bilder = (p.b || []).map(function (q) {
+        return { id: q.id || neueId(), src: q.src,
+                 x: q.x * sc, y: q.y * sc, w: q.w * sc, h: q.h * sc };
+      });
       return pg;
     });
   }
@@ -858,6 +919,28 @@
     } else if (art === 'hintergrund') {
       pg = seiteNach(d.seite); if (!pg) return;
       pg.bg = d.bg;
+      frischAuf(pg, true);
+      return;
+    } else if (art === 'bild_neu') {
+      pg = seiteNach(d.seite); if (!pg || !d.bild) return;
+      pg.bilder = pg.bilder || [];
+      for (i = 0; i < pg.bilder.length; i++) if (pg.bilder[i].id === d.bild.id) return;
+      pg.bilder.push(d.bild);
+      frischAuf(pg, true);
+      return;
+    } else if (art === 'bild_bewegt') {
+      pg = seiteNach(d.seite); if (!pg) return;
+      (pg.bilder || []).forEach(function (q) {
+        if (q.id !== d.id) return;
+        q.x = d.x; q.y = d.y; q.w = d.w; q.h = d.h;
+      });
+      frischAuf(pg, true);
+      return;
+    } else if (art === 'bild_weg') {
+      pg = seiteNach(d.seite); if (!pg || !pg.bilder) return;
+      for (i = 0; i < pg.bilder.length; i++) {
+        if (pg.bilder[i].id === d.id) { pg.bilder.splice(i, 1); break; }
+      }
       frischAuf(pg, true);
       return;
     } else {
@@ -1028,6 +1111,7 @@
     x.fillRect(0, 0, w, h);
     x.setTransform(scale, 0, 0, scale, 0, 0);
     paintBg(x, pg.bg);
+    malBilder(x, pg);
     x.setTransform(1, 0, 0, 1, 0, 0);
     x.drawImage(ink, 0, 0);
     return c;
@@ -1141,6 +1225,10 @@
       'der Lade abschalten.</p>' +
       '<p><b>Sternfarben:</b> die vier Sterne unter der Palette sind frei belegbar. Tippen w&auml;hlt, '+
       'gedr&uuml;ckt halten &ouml;ffnet die Farbauswahl.</p>' +
+      '<p><b>Bilder:</b> in der Lade einf&uuml;gen, per Link oder aus einer Datei. Der Link muss '+
+      'direkt auf die Bilddatei zeigen, also auf .jpg oder .png enden. Mit "Bilder bewegen" l&auml;sst '+
+      'sich ein Bild verschieben, an den Ecken gr&ouml;&szlig;er ziehen und l&ouml;schen; danach auf '+
+      '"Fertig" tippen. Geschrieben wird &uuml;ber dem Bild, der Radierer l&ouml;scht es nicht.</p>' +
       '<p><b>Weitere Werkzeuge:</b> der Werkzeugkasten oben &ouml;ffnet die Lade mit '+
       'Timer, Vorhang und Scheinwerfer. Diese Aufs&auml;tze liegen &uuml;ber der Tafel, geh&ouml;ren '+
       'aber nicht zum Tafelbild: sie erscheinen weder im PDF noch auf dem anderen Ger&auml;t.</p>' +
@@ -1581,7 +1669,9 @@
   function gotoPage(i) {
     if (i < 0 || i >= pages.length) return;
     active.clear(); cur = i;
+    bildWahl = null; bildZug = null;
     drawBg(); redrawInk(); requestLive(); updateUI();
+    rahmenZeichne();
   }
   onTap($('#prev'), function () { gotoPage(cur - 1); });
   onTap($('#next'), function () { gotoPage(cur + 1); });
@@ -1621,6 +1711,193 @@
     $('#redo').disabled = !pg.redo.length;
     $('#clearBtn').disabled = !pg.strokes.length;
     $('#bgBtn').innerHTML = ICON[pg.bg];
+  }
+
+  // ============ Bilder ============
+  var bildModus = false, bildWahl = null, bildZug = null;
+  var rahmen = $('#bildRahmen'), balken = $('#bildBalken');
+  var BILD_MAX = 1600;        // laengste Kante beim Hochladen
+  var BILD_ECKE = 26;         // Blatt-Einheiten, in denen eine Ecke greift
+
+  function bilderDer() { return pages[cur].bilder || (pages[cur].bilder = []); }
+  function bildNach(id) {
+    var l = bilderDer();
+    for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i];
+    return null;
+  }
+
+  function rahmenZeichne() {
+    var b = bildWahl ? bildNach(bildWahl) : null;
+    if (!b || !bildModus) { rahmen.classList.remove('auf'); return; }
+    var o = sheet.offsetLeft, t = sheet.offsetTop;
+    rahmen.style.left = (o + b.x * k) + 'px';
+    rahmen.style.top = (t + b.y * k) + 'px';
+    rahmen.style.width = (b.w * k) + 'px';
+    rahmen.style.height = (b.h * k) + 'px';
+    rahmen.innerHTML = '<i class="ol"></i><i class="or"></i><i class="ul"></i><i class="ur"></i>';
+    rahmen.classList.add('auf');
+  }
+
+  function bildModusAn(an) {
+    bildModus = !!an;
+    balken.classList.toggle('auf', bildModus);
+    if (!bildModus) bildWahl = null;
+    rahmenZeichne();
+    ladeZeichne();
+  }
+
+  function bildTreffer(p) {
+    var l = bilderDer();
+    for (var i = l.length - 1; i >= 0; i--) {
+      var b = l[i];
+      if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) return b;
+    }
+    return null;
+  }
+  function eckeTreffer(b, p) {
+    var e = BILD_ECKE;
+    if (Math.abs(p.x - b.x) < e && Math.abs(p.y - b.y) < e) return 'ol';
+    if (Math.abs(p.x - (b.x + b.w)) < e && Math.abs(p.y - b.y) < e) return 'or';
+    if (Math.abs(p.x - b.x) < e && Math.abs(p.y - (b.y + b.h)) < e) return 'ul';
+    if (Math.abs(p.x - (b.x + b.w)) < e && Math.abs(p.y - (b.y + b.h)) < e) return 'ur';
+    return null;
+  }
+
+  // Liefert true, wenn die Berührung zur Bildbearbeitung gehoert und nicht gezeichnet wird
+  function bildGriff(e, p) {
+    if (!bildModus) return false;
+    var gewaehlt = bildWahl ? bildNach(bildWahl) : null;
+    if (gewaehlt) {
+      var ecke = eckeTreffer(gewaehlt, p);
+      if (ecke) {
+        bildZug = { art: 'ecke', ecke: ecke, id: gewaehlt.id, p0: p,
+                    a: { x: gewaehlt.x, y: gewaehlt.y, w: gewaehlt.w, h: gewaehlt.h } };
+        return true;
+      }
+    }
+    var treffer = bildTreffer(p);
+    if (treffer) {
+      bildWahl = treffer.id;
+      bildZug = { art: 'zug', id: treffer.id, p0: p, a: { x: treffer.x, y: treffer.y } };
+      rahmenZeichne();
+      return true;
+    }
+    bildWahl = null; bildZug = null; rahmenZeichne();
+    return true;    // im Bildmodus wird grundsaetzlich nicht gezeichnet
+  }
+
+  function bildBewege(p) {
+    if (!bildZug) return;
+    var b = bildNach(bildZug.id);
+    if (!b) return;
+    var dx = p.x - bildZug.p0.x, dy = p.y - bildZug.p0.y, a = bildZug.a;
+    if (bildZug.art === 'zug') { b.x = a.x + dx; b.y = a.y + dy; }
+    else {
+      var vh = a.w / a.h, nw;
+      if (bildZug.ecke === 'ur' || bildZug.ecke === 'or') nw = a.w + dx; else nw = a.w - dx;
+      nw = Math.max(60, nw);
+      var nh = nw / vh;
+      if (bildZug.ecke === 'ol' || bildZug.ecke === 'ul') b.x = a.x + (a.w - nw);
+      if (bildZug.ecke === 'ol' || bildZug.ecke === 'or') b.y = a.y + (a.h - nh);
+      b.w = nw; b.h = nh;
+    }
+    drawBg(); rahmenZeichne();
+  }
+  function bildSchluss() {
+    if (!bildZug) return;
+    var b = bildNach(bildZug.id);
+    bildZug = null;
+    if (b) sende('bild_bewegt', { seite: pages[cur].id, id: b.id,
+                                  x: r1(b.x), y: r1(b.y), w: r1(b.w), h: r1(b.h) });
+  }
+
+  function bildEinfuegen(src) {
+    bildHolen(src, function (img) {
+      if (!img) {
+        zeigeToast('Bild konnte nicht geladen werden');
+        return;
+      }
+      var vh = img.naturalWidth / img.naturalHeight;
+      var w = Math.min(SHEET_W * 0.5, img.naturalWidth), h = w / vh;
+      if (h > SHEET_H * 0.7) { h = SHEET_H * 0.7; w = h * vh; }
+      var b = { id: neueId(), src: src,
+                x: Math.round((SHEET_W - w) / 2), y: Math.round((SHEET_H - h) / 2),
+                w: Math.round(w), h: Math.round(h) };
+      bilderDer().push(b);
+      bildWahl = b.id;
+      drawBg(); bildModusAn(true); updateUI();
+      sende('bild_neu', { seite: pages[cur].id, bild: b });
+      zeigeToast('Bild eingefügt');
+    });
+  }
+
+  function bildLoeschen() {
+    if (!bildWahl) { zeigeToast('Kein Bild ausgewählt'); return; }
+    var l = bilderDer();
+    for (var i = 0; i < l.length; i++) if (l[i].id === bildWahl) { l.splice(i, 1); break; }
+    sende('bild_weg', { seite: pages[cur].id, id: bildWahl });
+    bildWahl = null;
+    drawBg(); rahmenZeichne(); updateUI();
+  }
+
+  // Beim Hochladen verkleinern: ein Foto wiegt sonst schnell mehr, als eine
+  // Uebergabe oder eine Live-Sitzung tragen.
+  function dateiEinlesen(datei, fertig) {
+    var leser = new FileReader();
+    leser.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight;
+        var f = Math.min(1, BILD_MAX / Math.max(w, h));
+        var c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(w * f)); c.height = Math.max(1, Math.round(h * f));
+        var x = c.getContext('2d');
+        x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+        x.drawImage(img, 0, 0, c.width, c.height);
+        fertig(c.toDataURL('image/jpeg', 0.82));
+      };
+      img.onerror = function () { fertig(null); };
+      img.src = leser.result;
+    };
+    leser.onerror = function () { fertig(null); };
+    leser.readAsDataURL(datei);
+  }
+
+  function bildDialog() {
+    panel.innerHTML = '<h2>Bild einfügen</h2><div class="cols">' +
+      '<div class="card"><h3>Von einem Link</h3>' +
+      '<p class="hint">Der Link muss direkt auf die Bilddatei zeigen, also auf .jpg, .jpeg, .png, ' +
+      '.gif oder .webp enden. Ein Link auf eine Webseite, auf der das Bild zu sehen ist, reicht nicht. ' +
+      'Außerdem muss die Seite, auf der das Bild liegt, die Weiterverarbeitung erlauben; sonst meldet ' +
+      'die Tafel, dass das Bild nicht geladen werden kann.</p>' +
+      '<input id="bildUrl" type="url" placeholder="https://…/bild.jpg" autocomplete="off">' +
+      '<button id="bildUrlOk" class="primary wide">Vom Link einfügen</button></div>' +
+      '<div class="card"><h3>Aus einer Datei</h3>' +
+      '<p class="hint">Vom Gerät auswählen. Große Bilder werden beim Einfügen auf ' + BILD_MAX +
+      ' Pixel verkleinert, damit Übergabe und Live-Sitzung sie noch tragen.</p>' +
+      '<input id="bildDatei" type="file" accept="image/*" style="font-size:15px">' +
+      '<div id="bmsg" class="msg"></div></div></div>' +
+      '<div class="acts"><button id="bildZu">Schließen</button></div>';
+    veil.classList.add('show');
+    tap('#bildZu', closeVeil);
+    tap('#bildUrlOk', function () {
+      var u = ($('#bildUrl').value || '').trim();
+      if (!/^https?:\/\//i.test(u)) { msg('#bmsg', 'Bitte einen vollständigen Link eingeben', 'err'); return; }
+      if (!/\.(jpe?g|png|gif|webp)(\?|#|$)/i.test(u)) {
+        msg('#bmsg', 'Der Link endet nicht auf eine Bilddatei. Versuche es trotzdem …');
+      }
+      closeVeil(); bildEinfuegen(u);
+    });
+    var feld = $('#bildDatei');
+    feld.addEventListener('change', function () {
+      var d = feld.files && feld.files[0];
+      if (!d) return;
+      msg('#bmsg', 'Bild wird vorbereitet …');
+      dateiEinlesen(d, function (src) {
+        if (!src) { msg('#bmsg', 'Datei konnte nicht gelesen werden', 'err'); return; }
+        closeVeil(); bildEinfuegen(src);
+      });
+    });
   }
 
   // ============ Gesten ============
@@ -1806,7 +2083,8 @@
       });
     }
     anfasser('o', 'o'); anfasser('u', 'u'); anfasser('l', 'l'); anfasser('r', 'r');
-    anfasser('ol', 'ol'); anfasser('or', 'or'); anfasser('ul', 'ul'); anfasser('ur', 'ur');
+    // oben rechts bleibt frei: dort sitzt das Schliessen-Kreuz
+    anfasser('ol', 'ol'); anfasser('ul', 'ul'); anfasser('ur', 'ur');
     vorhang.querySelector('.zu').addEventListener('pointerdown', function (e) {
       e.preventDefault(); e.stopPropagation(); vorhangAn(false);
     });
@@ -2005,7 +2283,13 @@
       an: function () { return spot.classList.contains('auf'); }, schalt: function (v) { spotAn(v); } },
     { id: 'gesten', name: 'Gesten', zeile: '2 Finger vor, 3 Finger zurück, 5 Finger Pipette',
       sym: '<svg viewBox="0 0 24 24"><path d="M9 11V5.2a1.6 1.6 0 1 1 3.2 0V10"/><path d="M12.2 10V6.4a1.6 1.6 0 1 1 3.2 0V11"/><path d="M15.4 11V8.4a1.6 1.6 0 1 1 3.2 0V15a6 6 0 0 1-6 6h-1.4a5 5 0 0 1-3.9-1.9L5 15.4a1.6 1.6 0 0 1 2.5-2L9 15"/></svg>',
-      an: function () { return gesten; }, schalt: function (v) { gestenSchalt(v); } }
+      an: function () { return gesten; }, schalt: function (v) { gestenSchalt(v); } },
+    { id: 'bildneu', name: 'Bild einfügen', zeile: 'Von einem Link oder aus einer Datei',
+      sym: '<svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="m3.5 17 5-4.5 4 3.5 3-2.5 5 4"/></svg>',
+      an: function () { return false; }, schalt: function () { bildDialog(); } },
+    { id: 'bildmodus', name: 'Bilder bewegen', zeile: 'Verschieben, skalieren, löschen',
+      sym: '<svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="M12 8.5v7M8.5 12h7"/></svg>',
+      an: function () { return bildModus; }, schalt: function (v) { bildModusAn(v); } }
   ];
 
   function ladeZeichne() {
@@ -2033,9 +2317,13 @@
   onTap($('#ladeBtn'), function () { ladeAuf(!lade.classList.contains('auf')); });
   $('#ladeZu').addEventListener('pointerdown', function (e) { e.preventDefault(); ladeAuf(false); });
 
+  $('#bildWeg').addEventListener('pointerdown', function (e) { e.preventDefault(); bildLoeschen(); });
+  $('#bildFertig').addEventListener('pointerdown', function (e) { e.preventDefault(); bildModusAn(false); });
+
   window.addEventListener('resize', function () {
     if (sp) spotZeichne();
     if (vh) vorhangZeichne();
+    rahmenZeichne();
   });
   ladeZeichne();
 

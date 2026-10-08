@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>KGS-Tafel Werkstatt (Testversion)</title>
+<style>
+  :root {
+    color-scheme: only light;   /* Dunkelmodus des Browsers soll die Oberflaeche nicht umfaerben */
+    --rail: #eceff3; --rail-edge: #d3dae2; --face: #fff; --face-edge: #ccd5de;
+    --ink: #232d38; --muted: #6b7885; --sel: #232d38; --ok: #2e9d5b; --warn: #c62d20;
+    --b: 38px; --bp: 28px; --bc: 24px; --gap: 4px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #fff; touch-action: none;
+    -webkit-user-select: none; user-select: none; overscroll-behavior: none;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); }
+  #app { display: flex; height: 100%; }
+
+  /* Bühne = freier Platz, Blatt = festes 16:9 darin */
+  /* touch-action muss an der Zeichenflaeche selbst stehen. Safari auf dem iPad
+     wertet die Angabe am Seitenrahmen nicht streng genug aus und bricht sonst
+     laufende Striche ab, sobald ein zweiter Kontakt dazukommt. */
+  #stage { position: relative; flex: 1; overflow: hidden; background: #dfe4ea; touch-action: none; }
+  #sheet { position: absolute; background: #fff; touch-action: none;
+    box-shadow: 0 0 0 1px rgba(35,45,56,.16), 0 6px 20px rgba(20,28,36,.14); }
+  #sheet canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+    touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+
+  #bar { width: 130px; flex: none; background: linear-gradient(180deg, #f3f5f8 0%, var(--rail) 100%);
+    border-left: 1px solid var(--rail-edge);
+    display: flex; flex-direction: column; justify-content: space-evenly; padding: 6px 7px; }
+  .sec { display: grid; gap: var(--gap); }
+  .g2 { grid-template-columns: 1fr 1fr; }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  .rule { height: 1px; background: var(--rail-edge); margin: 0 3px; }
+
+  button { height: var(--b); border: 1px solid var(--face-edge); background: var(--face); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; padding: 0; color: var(--ink);
+    position: relative; overflow: hidden; box-shadow: 0 1px 1px rgba(35,45,56,.06);
+    -webkit-tap-highlight-color: transparent; outline: none; font: inherit; }
+  button svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2;
+    stroke-linecap: round; stroke-linejoin: round; }
+  button.on { background: var(--sel); color: #fff; border-color: var(--sel); box-shadow: none; }
+  button.pick.on { background: var(--face); color: var(--ink); border-color: var(--sel);
+    box-shadow: inset 0 0 0 2px var(--sel); }
+  button:disabled { opacity: .3; box-shadow: none; }
+  #clearBtn { color: var(--warn); }
+  #shareBtn { background: var(--sel); color: #fff; border-color: var(--sel); }
+  /* Glättungsregler: die Laufschiene zeigt selbst, worum es geht —
+     links eine zackige Linie, nach rechts läuft sie glatt aus. */
+  #glatt { padding: 0 1px; }
+  #glattReg { -webkit-appearance: none; appearance: none; width: 100%; height: 26px;
+    background: none; outline: none; margin: 0; }
+  #glattReg::-webkit-slider-runnable-track { height: 24px; border-radius: 6px;
+    border: 1px solid var(--face-edge);
+    background: var(--face) url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2024'%20preserveAspectRatio='none'%3E%3Cpath%20d='M0.0%208.6%20L2.0%2016.5%20L4.0%2011.0%20L6.0%2018.2%20L8.0%2012.5%20L10.0%2018.6%20L12.0%2012.3%20L14.0%2017.3%20L16.0%2010.7%20L18.0%2015.0%20L20.0%208.5%20L22.0%2012.5%20L24.0%206.7%20L26.0%2010.9%20L28.0%206.1%20L30.0%2010.9%20L32.0%207.2%20L34.0%2012.3%20L36.0%209.4%20L38.0%2014.6%20L40.0%2011.9%20L42.0%2016.5%20L44.0%2013.6%20L46.0%2017.2%20L48.0%2013.9%20L50.0%2016.4%20L52.0%2012.5%20L54.0%2014.3%20L56.0%2010.3%20L58.0%2011.7%20L60.0%208.3%20L62.0%209.9%20L64.0%207.3%20L66.0%209.5%20L68.0%208.0%20L70.0%2010.7%20L72.0%2010.0%20L74.0%2012.9%20L76.0%2012.5%20L78.0%2015.0%20L80.0%2014.4%20L82.0%2016.1%20L84.0%2015.0%20L86.0%2015.7%20L88.0%2014.0%20L90.0%2013.9%20L92.0%2011.9%20L94.0%2011.4%20L96.0%209.6%20L98.0%209.3%20L100.0%208.3%20L102.0%208.6%20L104.0%208.5%20L106.0%209.5%20L108.0%2010.2%20L110.0%2011.5%20L112.0%2012.6%20L114.0%2013.9%20L116.0%2014.7%20L118.0%2015.4%20L120.0%2015.6'%20fill='none'%20stroke='%23596a7a'%20stroke-width='2'%20stroke-linejoin='miter'%20stroke-linecap='round'/%3E%3C/svg%3E") center/100% 100% no-repeat; }
+  #glattReg::-moz-range-track { height: 24px; border-radius: 6px;
+    border: 1px solid var(--face-edge);
+    background: var(--face) url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2024'%20preserveAspectRatio='none'%3E%3Cpath%20d='M0.0%208.6%20L2.0%2016.5%20L4.0%2011.0%20L6.0%2018.2%20L8.0%2012.5%20L10.0%2018.6%20L12.0%2012.3%20L14.0%2017.3%20L16.0%2010.7%20L18.0%2015.0%20L20.0%208.5%20L22.0%2012.5%20L24.0%206.7%20L26.0%2010.9%20L28.0%206.1%20L30.0%2010.9%20L32.0%207.2%20L34.0%2012.3%20L36.0%209.4%20L38.0%2014.6%20L40.0%2011.9%20L42.0%2016.5%20L44.0%2013.6%20L46.0%2017.2%20L48.0%2013.9%20L50.0%2016.4%20L52.0%2012.5%20L54.0%2014.3%20L56.0%2010.3%20L58.0%2011.7%20L60.0%208.3%20L62.0%209.9%20L64.0%207.3%20L66.0%209.5%20L68.0%208.0%20L70.0%2010.7%20L72.0%2010.0%20L74.0%2012.9%20L76.0%2012.5%20L78.0%2015.0%20L80.0%2014.4%20L82.0%2016.1%20L84.0%2015.0%20L86.0%2015.7%20L88.0%2014.0%20L90.0%2013.9%20L92.0%2011.9%20L94.0%2011.4%20L96.0%209.6%20L98.0%209.3%20L100.0%208.3%20L102.0%208.6%20L104.0%208.5%20L106.0%209.5%20L108.0%2010.2%20L110.0%2011.5%20L112.0%2012.6%20L114.0%2013.9%20L116.0%2014.7%20L118.0%2015.4%20L120.0%2015.6'%20fill='none'%20stroke='%23596a7a'%20stroke-width='2'%20stroke-linejoin='miter'%20stroke-linecap='round'/%3E%3C/svg%3E") center/100% 100% no-repeat; }
+  #glattReg::-webkit-slider-thumb { -webkit-appearance: none; appearance: none;
+    width: 8px; height: 26px; margin-top: -1px; border-radius: 4px;
+    background: var(--sel); border: 2px solid var(--face); box-shadow: 0 1px 3px rgba(35,45,56,.45); }
+  #glattReg::-moz-range-thumb { width: 8px; height: 26px; border-radius: 4px;
+    background: var(--sel); border: 2px solid var(--face); box-shadow: 0 1px 3px rgba(35,45,56,.45); }
+  #testband { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    text-align: center; color: #8a3b12; background: #ffe3c9; border: 1px solid #f0b282;
+    border-radius: 6px; padding: 3px 0; }
+  #shareBtn.live::after { content: ""; position: absolute; right: 5px; top: 5px; width: 8px; height: 8px;
+    border-radius: 50%; background: #45d07a; box-shadow: 0 0 0 2px var(--sel); }
+  #shareBtn.live { flex-direction: column; gap: 1px; }
+  #shareBtn.live svg { width: 15px; height: 15px; }
+  #shareBtn .livetext { font-size: 9px; font-weight: 800; letter-spacing: .1em;
+    text-transform: uppercase; line-height: 1; color: #8df0b4; }
+  #presets button { height: var(--bp); }
+  #colors button { height: var(--bc); border-radius: 5px; border-color: rgba(35,45,56,.22); }
+  #colors button.on { box-shadow: inset 0 0 0 2px #fff, 0 0 0 2px var(--sel); border-color: var(--sel); }
+  #pageLabel { display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
+    font-variant-numeric: tabular-nums; color: var(--muted); }
+  #presets button.pressing::after { content: ""; position: absolute; left: 0; bottom: 0; height: 4px;
+    background: var(--sel); animation: fill .65s linear forwards; }
+  #presets button.saved { border-color: var(--ok); box-shadow: inset 0 0 0 2px var(--ok); }
+  @keyframes fill { from { width: 0; } to { width: 100%; } }
+
+  /* ---- Werkzeuglade ---- */
+  #lade { position: absolute; right: 8px; top: 8px; bottom: 8px; width: 270px; display: none;
+    flex-direction: column; background: var(--face); border: 1px solid var(--face-edge);
+    border-radius: 12px; box-shadow: 0 10px 30px rgba(20,28,36,.22); overflow: hidden; z-index: 6; }
+  #lade.auf { display: flex; }
+  .ladekopf { display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px; font-size: 16px; font-weight: 700; border-bottom: 1px solid #e6ebf0; }
+  .ladekopf button { width: 30px; height: 30px; font-size: 20px; line-height: 1; border: 0;
+    background: none; box-shadow: none; color: var(--muted); }
+  .ladegruppe { padding: 12px 14px 4px; font-size: 11px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted); }
+  .ladeliste { flex: 1; overflow-y: auto; padding: 0 10px 10px; }
+  .ladeliste button { width: 100%; height: auto; justify-content: flex-start; gap: 10px;
+    padding: 11px 12px; margin-bottom: 7px; border-radius: 9px; text-align: left; }
+  .ladeliste button.an { border-color: var(--sel); box-shadow: inset 0 0 0 2px var(--sel); }
+  .ladeliste svg { width: 22px; height: 22px; flex: none; }
+  .ladeliste .t { display: block; font-size: 15px; font-weight: 600; }
+  .ladeliste .u { display: block; font-size: 12px; color: var(--muted); font-weight: 400; margin-top: 1px; }
+  .ladehinweis { margin: 0; padding: 10px 14px 14px; font-size: 12px; line-height: 1.4;
+    color: var(--muted); border-top: 1px solid #e6ebf0; }
+
+  /* ---- Vorhang ---- */
+  #vorhang { position: absolute; display: none; background: #3c4756; z-index: 4;
+    box-shadow: 0 2px 14px rgba(20,28,36,.35); }
+  #vorhang.auf { display: block; }
+  #vorhang .griff { position: absolute; background: rgba(255,255,255,.22); border-radius: 3px; }
+  #vorhang .griff.o, #vorhang .griff.u { left: 50%; margin-left: -34px; width: 68px; height: 7px; }
+  #vorhang .griff.l, #vorhang .griff.r { top: 50%; margin-top: -34px; width: 7px; height: 68px; }
+  #vorhang .griff.o { top: 5px; } #vorhang .griff.u { bottom: 5px; }
+  #vorhang .griff.l { left: 5px; } #vorhang .griff.r { right: 5px; }
+  #vorhang .zu { position: absolute; right: 8px; top: 8px; width: 34px; height: 34px;
+    border-radius: 8px; border: 0; background: rgba(255,255,255,.18); color: #fff; font-size: 20px; }
+
+  /* ---- Scheinwerfer: der dunkle Teil faengt Berührungen, das helle Loch nicht ---- */
+  #spot { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: none; z-index: 4; }
+  #spot.auf { display: block; }
+  #spotPfad { fill: rgba(18,24,32,.78); }
+
+  /* ---- Timer ---- */
+  #timer { position: absolute; display: none; z-index: 5; background: var(--face);
+    border: 1px solid var(--face-edge); border-radius: 12px; box-shadow: 0 8px 26px rgba(20,28,36,.26);
+    padding: 8px 12px 12px; min-width: 210px; text-align: center; }
+  #timer.auf { display: block; }
+  #timer.alarm { background: #ffe0dd; border-color: #e08a80; animation: pulsen .7s ease-in-out infinite; }
+  @keyframes pulsen { 0%,100% { box-shadow: 0 8px 26px rgba(20,28,36,.26); }
+                      50% { box-shadow: 0 0 0 6px rgba(198,45,32,.35), 0 8px 26px rgba(20,28,36,.26); } }
+  #timerKopf { display: flex; align-items: center; justify-content: space-between;
+    cursor: move; font-size: 12px; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--muted); }
+  #timerKopf .zu { width: 26px; height: 26px; border: 0; background: none; box-shadow: none;
+    font-size: 18px; color: var(--muted); }
+  #timerZeit { font-variant-numeric: tabular-nums; font-weight: 800; line-height: 1;
+    padding: 4px 0 10px; letter-spacing: .02em; }
+  #timerKnoepfe { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  #timerKnoepfe button { height: 34px; padding: 0 10px; font-size: 14px; font-weight: 600; }
+  #timerKnoepfe button.stark { background: var(--sel); color: #fff; border-color: var(--sel); }
+
+  /* Dialog */
+  #veil { position: absolute; left: 0; top: 0; right: 0; bottom: 0; display: none;
+    align-items: center; justify-content: center; background: rgba(24,32,40,.38); }
+  #veil.show { display: flex; }
+  #panel { background: #fff; border-radius: 14px; padding: 20px 24px; width: min(94%, 860px);
+    max-height: 92%; overflow-y: auto; box-shadow: 0 18px 44px rgba(20,28,36,.3);
+    -webkit-user-select: text; user-select: text; }
+  #panel h2 { margin: 0 0 12px; font-size: 21px; }
+  #panel h3 { margin: 0 0 6px; font-size: 16px; }
+  #panel p, #panel li { font-size: 15px; line-height: 1.45; margin: 5px 0; color: #38444f; }
+  #panel ul { margin: 5px 0 0; padding-left: 20px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .card { border: 1px solid #dbe2e9; border-radius: 10px; padding: 14px 16px; }
+  .sep { height: 1px; background: #e2e8ee; margin: 14px 0; }
+  #panel input { font: inherit; font-size: 16px; padding: 10px 12px; border: 1px solid #c3ccd5;
+    border-radius: 8px; width: 100%; margin: 4px 0 8px; background: #fff; color: var(--ink); }
+  #panel input.code { font-size: 26px; letter-spacing: .16em; text-align: center;
+    text-transform: uppercase; font-weight: 700; }
+  #panel button { display: inline-flex; height: 42px; padding: 0 16px; font-size: 15px;
+    font-weight: 600; width: auto; vertical-align: middle; }
+  #panel button.wide { width: 100%; }
+  #panel button.primary { background: var(--sel); color: #fff; border-color: var(--sel); }
+  #panel button.danger { color: var(--warn); }
+  #panel button.link { height: auto; padding: 2px 0; border: 0; background: none; box-shadow: none;
+    color: var(--muted); font-weight: 600; font-size: 14px; text-decoration: underline; }
+  .acts { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+  .bigcode { font-size: 42px; font-weight: 800; letter-spacing: .14em; text-align: center;
+    padding: 10px 0 2px; font-variant-numeric: tabular-nums; }
+  .hint { font-size: 13px; color: var(--muted); }
+  .list { margin-top: 10px; max-height: 230px; overflow-y: auto; }
+  .row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #eaeff4; }
+  .row .t { flex: 1; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row button { height: 34px; padding: 0 10px; font-size: 14px; }
+  .msg { font-size: 14px; margin-top: 8px; min-height: 18px; }
+  .msg.err { color: var(--warn); }
+  .msg.ok { color: var(--ok); }
+  .fold { display: none; }
+  .fold.open { display: block; }
+  @media (max-width: 820px) { .cols { grid-template-columns: 1fr; } }
+  @media (max-height: 600px) { :root { --b: 33px; --bp: 25px; --bc: 21px; --gap: 3px; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <div id="sheet">
+      <canvas id="bg"></canvas><canvas id="ink"></canvas><canvas id="live"></canvas>
+    </div>
+    <!-- Aufsätze: liegen über der Tafel, gehören nicht zum Tafelbild -->
+    <svg id="spot" aria-hidden="true"><path id="spotPfad" fill-rule="evenodd"></path></svg>
+    <div id="vorhang"><span class="griff o"></span><span class="griff u"></span><span class="griff l"></span><span class="griff r"></span><button class="zu" title="Vorhang schließen">×</button></div>
+    <div id="timer">
+      <div id="timerKopf"><span id="timerModus">Uhr</span><button class="zu" title="Timer schließen">×</button></div>
+      <div id="timerZeit">00:00</div>
+      <div id="timerKnoepfe"></div>
+    </div>
+
+    <div id="lade">
+      <div class="ladekopf">Weitere Werkzeuge<button id="ladeZu" title="Schließen">×</button></div>
+      <div class="ladegruppe">Unterricht</div>
+      <div class="ladeliste" id="ladeliste"></div>
+      <p class="ladehinweis">Diese Aufsätze liegen über der Tafel. Sie werden nicht mitgespeichert,
+        erscheinen nicht im PDF und nicht auf dem anderen Gerät.</p>
+    </div>
+
+    <div id="veil"><div id="panel"></div></div>
+  </div>
+
+  <nav id="bar">
+    <div id="testband">Testversion</div>
+    <div class="sec g2">
+      <button id="undo" title="Rückgängig"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+      <button id="redo" title="Wiederholen"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+      <button id="clearBtn" title="Seite löschen"><svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9.5 7V4.5h5V7"/><path d="M6.5 7l1 13h9l1-13"/><path d="M10.5 10.5v6M13.5 10.5v6"/></svg></button>
+      <button id="infoBtn" title="Hilfe"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6v.2"/></svg></button>
+    </div>
+    <div class="sec g3">
+      <button id="fullBtn" title="Vollbild"></button>
+      <button id="ladeBtn" title="Weitere Werkzeuge"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg></button>
+      <button id="shareBtn" title="Teilen, Speichern, PDF"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.8 15.7 6.5M8.3 13.2l7.4 4.3"/></svg></button>
+    </div>
+
+    <div class="rule"></div>
+    <div class="sec g2" id="presets"></div>
+    <div class="rule"></div>
+
+    <div class="sec g4" id="tools">
+      <button data-tool="pen" title="Stift"></button>
+      <button data-tool="marker" title="Textmarker"></button>
+      <button data-tool="line" title="Gerade"></button>
+      <button data-tool="eraser" title="Radierer"></button>
+    </div>
+    <div class="sec g4" id="sizes">
+      <button class="pick" data-size="0" title="Sehr dünn"><i class="sample"></i></button>
+      <button class="pick" data-size="1" title="Dünn"><i class="sample"></i></button>
+      <button class="pick" data-size="2" title="Mittel"><i class="sample"></i></button>
+      <button class="pick" data-size="3" title="Dick"><i class="sample"></i></button>
+    </div>
+    <div class="sec" id="glatt">
+      <input id="glattReg" type="range" min="0" max="100" step="5" value="45"
+             title="Glättung der Schrift: links kantig und direkt, rechts weich">
+    </div>
+
+    <div class="sec g4" id="colors"></div>
+
+    <div class="rule"></div>
+    <div class="sec g3">
+      <button id="prev" title="Vorherige Seite"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+      <span id="pageLabel">1 / 1</span>
+      <button id="next" title="Nächste Seite"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+    </div>
+    <div class="sec g2">
+      <button id="addPage" title="Neue Seite"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button id="bgBtn" title="Hintergrund wechseln"></button>
+    </div>
+  </nav>
+</div>
+
+<script>
+'use strict';
+(function () {
+  // ============ Blattmaß ============
+  // Alle Striche werden in diesem festen Raster gespeichert, unabhängig vom Gerät.
+  var SHEET_W = 1920, SHEET_H = 1080;
+
+  // ============ Supabase ============
+  var SB_URL = 'https://xzhxqbyobdlyqkyyjcxc.supabase.co';
+  var SB_KEY = 'sb_publishable_TlasNLd2Yxq8nxrkgHMnlA_J5-IezYg';
+  var SESSION_KEY = 'tafel-session-v1';
+  var session = null;
+
+  function loadSession() {
+    try { session = JSON.parse(localStorage.getItem(SESSION_KEY)) || null; } catch (e) { session = null; }
+  }
+  function storeSession(s) {
+    session = s;
+    try { s ? localStorage.setItem(SESSION_KEY, JSON.stringify(s)) : localStorage.removeItem(SESSION_KEY); } catch (e) {}
+  }
+  function authBody(json) {
+    return { method: 'POST', headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+             body: JSON.stringify(json) };
+  }
+  async function login(email, password) {
+    var r = await fetch(SB_URL + '/auth/v1/token?grant_type=password', authBody({ email: email, password: password }));
+    var d = await r.json();
+    if (!r.ok) throw new Error(d.error_description || d.msg || d.message || 'Anmeldung fehlgeschlagen');
+    storeSession({ at: d.access_token, rt: d.refresh_token, exp: Date.now() + (d.expires_in - 60) * 1000,
+                   email: d.user && d.user.email, uid: d.user && d.user.id });
+    return session;
+  }
+  async function refresh() {
+    if (!session) throw new Error('Nicht angemeldet');
+    var r = await fetch(SB_URL + '/auth/v1/token?grant_type=refresh_token', authBody({ refresh_token: session.rt }));
+    var d = await r.json();
+    if (!r.ok) { storeSession(null); throw new Error('Sitzung abgelaufen, bitte neu anmelden'); }
+    storeSession({ at: d.access_token, rt: d.refresh_token, exp: Date.now() + (d.expires_in - 60) * 1000,
+                   email: (d.user && d.user.email) || session.email, uid: (d.user && d.user.id) || session.uid });
+    return session;
+  }
+  async function token() {
+    if (!session) return null;
+    if (Date.now() > session.exp) await refresh();
+    return session.at;
+  }
+  async function api(path, opts, needAuth) {
+    opts = opts || {};
+    var h = { 'apikey': SB_KEY, 'Content-Type': 'application/json' };
+    var t = needAuth ? await token() : null;
+    h['Authorization'] = 'Bearer ' + (t || SB_KEY);
+    if (opts.prefer) h['Prefer'] = opts.prefer;
+    var r = await fetch(SB_URL + path, { method: opts.method || 'GET', headers: h,
+      body: opts.body ? JSON.stringify(opts.body) : undefined });
+    var txt = await r.text();
+    var d = txt ? JSON.parse(txt) : null;
+    if (!r.ok) throw new Error((d && (d.message || d.error_description || d.hint)) || ('Fehler ' + r.status));
+    return d;
+  }
+  function rpc(fn, args, needAuth) { return api('/rest/v1/rpc/' + fn, { method: 'POST', body: args }, needAuth); }
+
+  // ============ Konfiguration ============
+  var COLORS = [
+    { id: 'black',  name: 'Schwarz',    pen: '#1b1b1b', marker: '#8d8d8d' },
+    { id: 'gray',   name: 'Grau',       pen: '#5a6672', marker: '#aab4bf' },
+    { id: 'brown',  name: 'Braun',      pen: '#7c4a1e', marker: '#c98c4f' },
+    { id: 'purple', name: 'Violett',    pen: '#7b1fa2', marker: '#c07ae0' },
+    { id: 'navy',   name: 'Dunkelblau', pen: '#123a8f', marker: '#5f86e0' },
+    { id: 'blue',   name: 'Blau',       pen: '#1459c7', marker: '#4d94ff' },
+    { id: 'sky',    name: 'Hellblau',   pen: '#0a86c4', marker: '#4fc8f5' },
+    { id: 'teal',   name: 'Türkis',     pen: '#0d8378', marker: '#3fd3c0' },
+    { id: 'dgreen', name: 'Dunkelgrün', pen: '#146b2c', marker: '#4fae67' },
+    { id: 'green',  name: 'Grün',       pen: '#1f8a3b', marker: '#4cd46a' },
+    { id: 'lime',   name: 'Hellgrün',   pen: '#66a80f', marker: '#a8e63c' },
+    { id: 'olive',  name: 'Oliv',       pen: '#8a7a12', marker: '#ccc04a' },
+    { id: 'yellow', name: 'Gelb',       pen: '#c29600', marker: '#ffe400' },
+    { id: 'orange', name: 'Orange',     pen: '#e8660c', marker: '#ffa233' },
+    { id: 'red',    name: 'Rot',        pen: '#d0261d', marker: '#ff5a5a' },
+    { id: 'pink',   name: 'Pink',       pen: '#c2185b', marker: '#ff7ab8' }
+  ];
+  // Werte in Blatt-Einheiten (1920 breit)
+  var SIZES = { pen: [2, 4, 8, 16], marker: [18, 30, 48, 74], eraser: [30, 60, 110, 190] };
+  var MARKER_ALPHA = 0.4;
+  // Handballen-Schwellen als Kontaktbreite in CSS-Pixeln, je nach Bauart des Geräts
+  var PALM_BOARD = 30;      // Gerät meldet für Finger keine Fläche (ActiveBoard)
+  var PALM_ECHT  = 55;      // Gerät meldet für jeden Finger eine Fläche (iPad)
+  var PALM_START = 45;      // solange noch keine Berührung ausgewertet wurde
+  var PEN_SPERRE = 900;     // ms, so lange nach einem Stiftkontakt werden Finger ignoriert
+  // Erkennung eines verschluckten Absetzens: Pause und Ortswechsel zusammen
+  var SPRUNG_PAUSE = 120;   // ms ohne neuen Punkt
+  var SPRUNG_WEG = 6;       // Blatt-Einheiten, etwa 5 mm am Board
+  var LONG_PRESS = 650;
+  var GLATT_KEY = 'tafel-glaettung-v1';
+  var PRESET_KEY = 'tafel-presets-v4';
+  var DEFAULT_PRESETS = [
+    { tool: 'pen', color: 'black', size: 2 }, { tool: 'pen', color: 'blue', size: 2 },
+    { tool: 'pen', color: 'red', size: 2 },   { tool: 'pen', color: 'green', size: 2 },
+    { tool: 'marker', color: 'yellow', size: 3 }, { tool: 'marker', color: 'green', size: 3 },
+    { tool: 'marker', color: 'blue', size: 3 },   { tool: 'marker', color: 'red', size: 3 }
+  ];
+
+  var ICON = {
+    pen: '<svg viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>',
+    marker: '<svg viewBox="0 0 24 24"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>',
+    line: '<svg viewBox="0 0 24 24"><path d="M4 20 20 4"/><circle cx="4" cy="20" r="1.9"/><circle cx="20" cy="4" r="1.9"/></svg>',
+    eraser: '<svg viewBox="0 0 24 24"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>',
+    blank: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>',
+    grid: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9.3h16M4 14.7h16M9.3 4v16M14.7 4v16"/></svg>',
+    lines: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h10"/></svg>',
+    full: '<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+    unfull: '<svg viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>'
+  };
+  var BG_ORDER = ['blank', 'grid', 'lines'];
+
+  // ============ Zustand ============
+  var state = { tool: 'pen', color: 'black', size: { pen: 2, marker: 3, eraser: 1 } };
+  var pages = [newPage('blank')], cur = 0;
+  var active = new Map();
+  var presets = loadPresets();
+
+  // Seiten tragen eine feste Kennung. Nur so landet ein Strich auch dann auf der
+  // richtigen Seite, wenn auf dem anderen Geraet gleichzeitig eine Seite entsteht.
+  function neueId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+  function newPage(bg, id) {
+    return { id: id || neueId(), strokes: [], redo: [], snaps: [], bg: bg };
+  }
+  function seiteNach(id) {
+    for (var i = 0; i < pages.length; i++) if (pages[i].id === id) return pages[i];
+    return null;
+  }
+  function seiteIndex(id) {
+    for (var i = 0; i < pages.length; i++) if (pages[i].id === id) return i;
+    return -1;
+  }
+  function colorById(id) { for (var i = 0; i < COLORS.length; i++) if (COLORS[i].id === id) return COLORS[i]; return COLORS[0]; }
+  function sizeKey(t) { return t === 'line' ? 'pen' : t; }
+  function $(s) { return document.querySelector(s); }
+  function $$(s) { return Array.prototype.slice.call(document.querySelectorAll(s)); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+
+  // ============ Blatt und Canvas ============
+  var stage = $('#stage'), sheet = $('#sheet');
+  var cBg = $('#bg'), cInk = $('#ink'), cLive = $('#live');
+  var xBg = cBg.getContext('2d'), xInk = cInk.getContext('2d'), xLive = cLive.getContext('2d');
+  var k = 1;          // CSS-Pixel pro Blatt-Einheit
+  var sRect = null;
+
+  function layout() {
+    var availW = stage.clientWidth, availH = stage.clientHeight;
+    var pad = Math.min(availW, availH) > 420 ? 10 : 0;
+    var w = availW - pad * 2, h = availH - pad * 2;
+    var sw = w, sh = w * SHEET_H / SHEET_W;
+    if (sh > h) { sh = h; sw = h * SHEET_W / SHEET_H; }
+    sheet.style.width = sw + 'px';
+    sheet.style.height = sh + 'px';
+    sheet.style.left = Math.round((availW - sw) / 2) + 'px';
+    sheet.style.top = Math.round((availH - sh) / 2) + 'px';
+
+    k = sw / SHEET_W;
+    var dpr = window.devicePixelRatio || 1;
+    var px = Math.round(sw * dpr), py = Math.round(sh * dpr);
+    [cBg, cInk, cLive].forEach(function (c) { c.width = px; c.height = py; });
+    var m = (px / SHEET_W);
+    [xBg, xInk, xLive].forEach(function (x) { x.setTransform(m, 0, 0, m, 0, 0); });
+
+    sRect = sheet.getBoundingClientRect();
+    drawBg(); redrawInk(); requestLive();
+  }
+
+  function drawBg() {
+    xBg.fillStyle = '#fff';
+    xBg.fillRect(0, 0, SHEET_W, SHEET_H);
+    paintBg(xBg, pages[cur].bg);
+  }
+
+  function strokePath(ctx, s) {
+    var p = s.pts, n = p.length / 2;
+    ctx.save();
+    if (s.kind === 'erase') {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.strokeStyle = ctx.fillStyle = '#000';
+    } else {
+      ctx.strokeStyle = ctx.fillStyle = s.color;
+      ctx.globalAlpha = s.kind === 'marker' ? MARKER_ALPHA : 1;
+    }
+    ctx.lineWidth = s.w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    if (n === 1) {
+      ctx.arc(p[0], p[1], s.w / 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (s.kind === 'line' || n === 2) {
+      ctx.moveTo(p[0], p[1]);
+      ctx.lineTo(p[2 * n - 2], p[2 * n - 1]);
+      ctx.stroke();
+    } else {
+      ctx.moveTo(p[0], p[1]);
+      for (var i = 1; i < n - 1; i++) {
+        var x = p[2 * i], y = p[2 * i + 1];
+        ctx.quadraticCurveTo(x, y, (x + p[2 * i + 2]) / 2, (y + p[2 * i + 3]) / 2);
+      }
+      ctx.lineTo(p[2 * n - 2], p[2 * n - 1]);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function eraseIncrement(s, from) {
+    var p = s.pts;
+    xInk.save();
+    xInk.globalCompositeOperation = 'destination-out';
+    xInk.strokeStyle = '#000'; xInk.lineWidth = s.w; xInk.lineCap = 'round'; xInk.lineJoin = 'round';
+    xInk.beginPath(); xInk.moveTo(p[from - 2], p[from - 1]);
+    for (var i = from; i < p.length; i += 2) xInk.lineTo(p[i], p[i + 1]);
+    xInk.stroke(); xInk.restore();
+  }
+
+  function redrawInk() {
+    xInk.clearRect(0, 0, SHEET_W, SHEET_H);
+    pages[cur].strokes.forEach(function (s) { strokePath(xInk, s); });
+  }
+
+  var livePending = false;
+  function requestLive() {
+    if (livePending) return;
+    livePending = true;
+    requestAnimationFrame(function () {
+      livePending = false;
+      xLive.clearRect(0, 0, SHEET_W, SHEET_H);
+      active.forEach(function (s) { if (s.kind !== 'erase') strokePath(xLive, s); });
+    });
+  }
+
+  // ============ Zeichnen ============
+  function pt(e) { return { x: (e.clientX - sRect.left) / k, y: (e.clientY - sRect.top) / k }; }
+  function contact(e) { return Math.max(e.width || 0, e.height || 0); }
+
+  // Jedes Gerät meldet Kontaktflächen anders: das ActiveBoard liefert für einen
+  // Finger 0, das iPad realistische Werte. Die Schwelle wird deshalb aus der
+  // schmalsten je beobachteten Berührung abgeleitet statt fest gesetzt.
+  // Geräte melden Kontaktflächen sehr unterschiedlich. Das ActiveBoard gibt für
+  // einen Finger 0 an und nur für den Handballen echte Werte; das iPad meldet für
+  // jeden Finger realistische 30 bis 50. Eine feste Schwelle kann daher nicht für
+  // beide stimmen, deshalb erkennt die Tafel die Bauart an den gemeldeten Werten.
+  var sahNull = false, sahEcht = false;
+  function merkeBasis(e) {
+    if (e.pointerType !== 'touch') return;
+    if (contact(e) < 5) sahNull = true; else sahEcht = true;
+  }
+  function palmSchwelle() {
+    if (sahNull) return PALM_BOARD;   // Board: nur der Handballen meldet überhaupt eine Fläche
+    if (sahEcht) return PALM_ECHT;    // Tablet: Finger melden ebenfalls Flächen
+    return PALM_START;                // noch keine Berührung gesehen
+  }
+  function isPalm(e) { return e.pointerType !== 'mouse' && contact(e) >= palmSchwelle(); }
+  function palmWidth(e) { return Math.max(60, (contact(e) * 1.6) / k); }
+
+  // Glättung: Stift und Finger melden leicht zittrige Punkte. Statt sie direkt zu
+  // zeichnen, wandert ein geglätteter Punkt der Spitze hinterher. Je stärker die
+  // Glättung, desto weicher die Linie, aber desto träger folgt sie auch.
+  var glaettung = (function () {
+    var v = parseFloat(localStorage.getItem(GLATT_KEY));
+    return (isFinite(v) && v >= 0 && v <= 1) ? v : 0.45;
+  })();
+  // Nicht linear: im unteren Bereich soll der Regler schon spürbar wirken,
+  // ohne dass das obere Ende unbrauchbar träge wird.
+  function alpha() { return 0.12 + Math.pow(1 - glaettung, 1.8) * 0.88; }
+  function schiebe(s, x, y) {
+    var lx = s.pts[s.pts.length - 2], ly = s.pts[s.pts.length - 1];
+    if (Math.abs(x - lx) + Math.abs(y - ly) < 1.2) return false;
+    s.pts.push(x, y);
+    return true;
+  }
+  // Am Strichende holt die geglättete Spur die echte Stiftposition ein,
+  // sonst bliebe der Strich kurz vor dem Absetzpunkt stehen.
+  function nachlauf(s) {
+    if (s.rx === undefined) return false;
+    var neu = false;
+    for (var i = 0; i < 3; i++) {
+      s.gx += (s.rx - s.gx) * 0.5;
+      s.gy += (s.ry - s.gy) * 0.5;
+      if (schiebe(s, s.gx, s.gy)) neu = true;
+    }
+    if (schiebe(s, s.rx, s.ry)) neu = true;
+    return neu;
+  }
+
+  // Vorrang für den Stift: solange der Pencil zeichnet und kurz danach werden
+  // Fingerkontakte vollständig verworfen, damit die aufliegende Hand den Strich
+  // nicht unterbricht.
+  var penAktiv = 0, penZuletzt = 0;
+  function stiftFuehrt() { return penAktiv > 0 || (Date.now() - penZuletzt) < PEN_SPERRE; }
+
+  function macheStrich(e, p) {
+    var s, c = colorById(state.color);
+    if (isPalm(e)) {
+      s = { kind: 'erase', w: palmWidth(e), pts: [p.x, p.y] };
+    } else if (state.tool === 'eraser') {
+      s = { kind: 'erase', w: SIZES.eraser[state.size.eraser], pts: [p.x, p.y] };
+    } else if (state.tool === 'line') {
+      s = { kind: 'line', color: c.pen, w: SIZES.pen[state.size.pen], pts: [p.x, p.y, p.x, p.y] };
+    } else {
+      s = { kind: state.tool, color: state.tool === 'marker' ? c.marker : c.pen,
+            w: SIZES[state.tool][state.size[state.tool]], pts: [p.x, p.y] };
+    }
+    s.gx = p.x; s.gy = p.y; s.rx = p.x; s.ry = p.y; s.tLetzt = Date.now();
+    return s;
+  }
+
+  cLive.addEventListener('pointerdown', function (e) {
+    if ($('#veil').classList.contains('show')) return;
+    e.preventDefault();
+    if (e.pointerType === 'pen') { penAktiv++; penZuletzt = Date.now(); }
+    else if (e.pointerType === 'touch') {
+      merkeBasis(e);
+      if (stiftFuehrt()) return;          // Handballen oder Finger neben dem Stift
+    }
+    try { cLive.setPointerCapture(e.pointerId); } catch (err) {}
+    var s = macheStrich(e, pt(e));
+    active.set(e.pointerId, s);
+    if (s.kind === 'erase') strokePath(xInk, s); else requestLive();
+  });
+
+  cLive.addEventListener('pointermove', function (e) {
+    if (e.pointerType === 'pen') penZuletzt = Date.now();
+    else if (e.pointerType === 'touch') merkeBasis(e);
+    var s = active.get(e.pointerId);
+    if (!s) return;
+
+    // Ohne Kontakt ist buttons 0. Solche Punkte gehoeren nicht in den Strich.
+    if (e.pointerType === 'pen' && e.buttons === 0) { endStroke(e); return; }
+
+    // Das ActiveBoard meldet ein kurzes Abheben und Neuansetzen manchmal nicht
+    // als Ende und Anfang, sondern als Fortsetzung desselben Kontakts. Ohne
+    // diesen Riegel entstuende eine gerade Verbindung vom Abhebe- zum neuen
+    // Aufsetzpunkt: der schmale Zacken. Pause plus Ortswechsel verraten den Fall.
+    if (s.kind !== 'line') {
+      var pause = Date.now() - s.tLetzt;
+      if (pause > SPRUNG_PAUSE) {
+        var n = pt(e);
+        var dx = n.x - s.pts[s.pts.length - 2], dy = n.y - s.pts[s.pts.length - 1];
+        if (dx * dx + dy * dy > SPRUNG_WEG * SPRUNG_WEG) {
+          active['delete'](e.pointerId);
+          strichAbschliessen(s);
+          s = macheStrich(e, n);
+          active.set(e.pointerId, s);
+          if (s.kind === 'erase') strokePath(xInk, s); else requestLive();
+        }
+      }
+    }
+
+    if (s.kind === 'line') {                 // Gerade: nur der Endpunkt wandert
+      var q = pt(e);
+      s.pts[2] = q.x; s.pts[3] = q.y;
+      requestLive();
+      return;
+    }
+    if (isPalm(e)) {
+      if (s.kind !== 'erase') {
+        s.kind = 'erase'; delete s.color; s.w = palmWidth(e);
+        strokePath(xInk, s); requestLive();
+      } else {
+        s.w = Math.max(s.w, palmWidth(e));
+      }
+    }
+    var list = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+    if (!list || !list.length) list = [e];
+    var start = s.pts.length, a = alpha();
+    s.tLetzt = Date.now();
+    for (var i = 0; i < list.length; i++) {
+      if (e.pointerType === 'pen' && list[i].buttons === 0) continue;
+      var r = pt(list[i]);
+      s.rx = r.x; s.ry = r.y;
+      if (s.kind === 'erase' || a >= 1) {           // Radierer bleibt bewusst ungefiltert
+        s.gx = r.x; s.gy = r.y;
+        schiebe(s, r.x, r.y);
+      } else {
+        s.gx += (r.x - s.gx) * a;
+        s.gy += (r.y - s.gy) * a;
+        schiebe(s, s.gx, s.gy);
+      }
+    }
+    if (s.pts.length === start) return;
+    if (s.kind === 'erase') eraseIncrement(s, start); else requestLive();
+  });
+
+  function strichAbschliessen(s) {
+    if (s.kind !== 'erase' && s.kind !== 'line' && alpha() < 1) nachlauf(s);
+    if (s.kind !== 'erase') strokePath(xInk, s);
+    var pg = pages[cur];
+    pg.strokes.push(s); pg.redo.length = 0;
+    sende('strich', { seite: pg.id, s: packStrich(s) });
+    requestLive(); updateUI();
+  }
+  function endStroke(e) {
+    if (e.pointerType === 'pen') { penAktiv = Math.max(0, penAktiv - 1); penZuletzt = Date.now(); }
+    var s = active.get(e.pointerId);
+    if (!s) return;
+    active['delete'](e.pointerId);
+    strichAbschliessen(s);
+  }
+  cLive.addEventListener('pointerup', endStroke);
+  cLive.addEventListener('pointercancel', endStroke);
+  document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+  // Safari erkennt auf der Zeichenflaeche sonst eigene Gesten und bricht Striche ab
+  ['touchstart', 'touchmove', 'touchend'].forEach(function (ev) {
+    cLive.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false });
+  });
+
+  // ============ Speicherformat ============
+  function r1(n) { return Math.round(n * 10) / 10; }
+  function packStrich(st) {
+    return { k: st.kind, c: st.color || null, w: r1(st.w), p: st.pts.map(r1) };
+  }
+  function entpackStrich(st, sc) {
+    var o = { kind: st.k, w: st.w * sc, pts: st.p.map(function (n) { return n * sc; }) };
+    if (st.c) o.color = st.c;
+    return o;
+  }
+  function serialize() {
+    return { v: 3, w: SHEET_W, h: SHEET_H,
+      pages: pages.map(function (p) {
+        return { id: p.id, bg: p.bg, s: p.strokes.map(packStrich) };
+      }) };
+  }
+  function deserialize(d) {
+    if (!d || !d.pages) throw new Error('Unbekanntes Format');
+    // Ältere Tafelbilder lagen in Bildschirmpixeln vor und werden hochgerechnet.
+    var sc = d.v >= 2 ? 1 : (SHEET_W / (d.w || SHEET_W));
+    return d.pages.map(function (p) {
+      var pg = newPage(p.bg || 'blank', p.id);
+      pg.strokes = (p.s || []).map(function (st) { return entpackStrich(st, sc); });
+      return pg;
+    });
+  }
+  function isEmpty() { return pages.length === 1 && !pages[0].strokes.length; }
+  function applyPages(np) {
+    if (!np.length) return;
+    if (isEmpty()) { pages = np; cur = 0; }
+    else { var at = pages.length; pages = pages.concat(np); cur = at; }
+    active.clear(); drawBg(); redrawInk(); requestLive(); updateUI();
+  }
+
+  // ============ Live-Sitzung ============
+  // Übertragen werden einzelne Ereignisse, nicht ganze Tafelbilder. Alle Geräte
+  // spielen dieselbe Folge in derselben Reihenfolge nach und kommen damit auf
+  // denselben Stand, ohne sich gegenseitig zu überschreiben.
+  // Der Abfragetakt richtet sich nach dem Betrieb: Kosten verursacht nicht die
+  // Datenmenge, sondern die Zahl der Anfragen. Passiert nichts, wird seltener
+  // gefragt; liegt die Seite im Hintergrund, gar nicht.
+  var LIVE_TAKT_AKTIV = 2000;
+  var LIVE_TAKT_RUHE = 5000;     // ab 15 s ohne Ereignis
+  var LIVE_TAKT_LANG = 10000;    // ab 60 s ohne Ereignis
+  var LIVE_TAKT_VERDECKT = 15000;
+  var LIVE_RUHE_1 = 15000, LIVE_RUHE_2 = 60000;
+  var LIVE_SAMMEL = 600;   // ms, so lange werden eigene Ereignisse gebündelt
+  var live = null;
+
+  function frischAuf(pg, auchBg) {
+    if (pg && pages[cur] && pg.id === pages[cur].id) {
+      if (auchBg) drawBg();
+      redrawInk(); requestLive();
+    }
+    updateUI();
+  }
+
+  // Wendet ein Ereignis auf den lokalen Zustand an, ohne es weiterzuschicken.
+  function anwenden(art, d) {
+    var pg, i;
+    d = d || {};
+    if (art === 'start') {
+      var np = deserialize(d.doc || {});
+      if (!np.length) return;
+      pages = np; cur = 0;
+      active.clear(); drawBg(); redrawInk(); requestLive(); updateUI();
+      return;
+    }
+    if (art === 'strich') {
+      pg = seiteNach(d.seite); if (!pg || !d.s) return;
+      var s = entpackStrich(d.s, 1);
+      pg.strokes.push(s); pg.redo.length = 0;
+      if (pages[cur] && pg.id === pages[cur].id) { strokePath(xInk, s); requestLive(); }
+      updateUI();
+      return;
+    }
+    if (art === 'zurueck') {
+      pg = seiteNach(d.seite); if (!pg) return;
+      if (pg.strokes.length) pg.redo.push(pg.strokes.pop());
+      else if (pg.snaps.length) pg.strokes = pg.snaps.pop();
+      else return;
+    } else if (art === 'vor') {
+      pg = seiteNach(d.seite); if (!pg || !pg.redo.length) return;
+      pg.strokes.push(pg.redo.pop());
+    } else if (art === 'leeren') {
+      pg = seiteNach(d.seite); if (!pg) return;
+      if (pg.strokes.length) pg.snaps.push(pg.strokes);
+      pg.strokes = []; pg.redo.length = 0;
+    } else if (art === 'seite_neu') {
+      if (seiteNach(d.id)) return;
+      i = seiteIndex(d.nach);
+      pages.splice(i < 0 ? pages.length : i + 1, 0, newPage(d.bg || 'blank', d.id));
+      updateUI();
+      return;
+    } else if (art === 'hintergrund') {
+      pg = seiteNach(d.seite); if (!pg) return;
+      pg.bg = d.bg;
+      frischAuf(pg, true);
+      return;
+    } else {
+      return;
+    }
+    frischAuf(pg, false);
+  }
+
+  function sende(art, d) {
+    if (!live) return;
+    live.queue.push({ art: art, daten: d });
+    live.zuletztAktiv = Date.now();
+    planeSenden();
+  }
+  function tun(art, d) { anwenden(art, d); sende(art, d); }
+
+  function planeSenden() {
+    if (!live || live.sendeId) return;
+    live.sendeId = setTimeout(senden, LIVE_SAMMEL);
+  }
+  function senden() {
+    if (!live) return;
+    live.sendeId = 0;
+    if (!live.queue.length) return;
+    var paket = live.queue.splice(0, 150), merk = live;
+    rpc('sitzung_senden', { p_code: live.code, p_geraet: live.geraet, p_ereignisse: paket }, false)
+      .then(function () {
+        if (live !== merk) return;
+        live.fehler = 0; live.meldung = '';
+        if (live.queue.length) planeSenden();
+        liveAnzeige();
+      })
+      .catch(function (e) {
+        if (live !== merk) return;
+        live.queue = paket.concat(live.queue);   // nichts verwerfen, beim naechsten Mal erneut
+        live.fehler++; live.meldung = e.message;
+        planeSenden();
+        liveAnzeige();
+      });
+  }
+
+  function taktDauer() {
+    if (document.hidden) return LIVE_TAKT_VERDECKT;
+    var ruhe = Date.now() - live.zuletztAktiv;
+    if (ruhe < LIVE_RUHE_1) return LIVE_TAKT_AKTIV;
+    if (ruhe < LIVE_RUHE_2) return LIVE_TAKT_RUHE;
+    return LIVE_TAKT_LANG;
+  }
+  function planeTakt() {
+    if (!live) return;
+    if (live.taktId) clearTimeout(live.taktId);
+    live.taktId = setTimeout(takt, taktDauer());
+  }
+
+  function takt() {
+    if (!live) return;
+    live.taktId = 0;
+    if (document.hidden) { planeTakt(); return; }   // im Hintergrund wird nicht gefragt
+    var merk = live;
+    rpc('sitzung_holen', { p_code: live.code, p_ab: live.letzteNr }, false)
+      .then(function (res) {
+        if (live !== merk) return;
+        var evs = (res && res.ereignisse) || [];
+        if (evs.length) live.zuletztAktiv = Date.now();
+        for (var i = 0; i < evs.length; i++) {
+          var e = evs[i];
+          if (e.nr > live.letzteNr) live.letzteNr = e.nr;
+          if (e.geraet === live.geraet) continue;   // eigene Ereignisse sind schon angewandt
+          anwenden(e.art, e.daten);
+        }
+        live.fehler = 0; live.meldung = '';
+        liveAnzeige(); planeTakt();
+      })
+      .catch(function (e) {
+        if (live !== merk) return;
+        live.fehler++; live.meldung = e.message;
+        liveAnzeige(); planeTakt();
+      });
+  }
+
+  function liveStart(code, geraet, letzteNr) {
+    live = { code: code, geraet: geraet, letzteNr: letzteNr || 0,
+             queue: [], sendeId: 0, taktId: 0, fehler: 0, meldung: '',
+             zuletztAktiv: Date.now() };
+    planeTakt();
+    liveAnzeige();
+  }
+
+  // Beim Zurückkehren sofort nachholen statt auf den nächsten Takt zu warten
+  document.addEventListener('visibilitychange', function () {
+    if (live && !document.hidden) { live.zuletztAktiv = Date.now(); planeTakt(); takt(); }
+  });
+
+  function liveStarten() {
+    var g = neueId();
+    return rpc('sitzung_starten', { p_geraet: g, p_anfang: { doc: serialize() } }, false)
+      .then(function (code) { liveStart(code, g, 0); return code; });
+  }
+
+  function liveBeitreten(code) {
+    var g = neueId();
+    return rpc('sitzung_beitreten', { p_code: code }, false).then(function (res) {
+      var evs = (res && res.ereignisse) || [], hoechste = 0;
+      for (var i = 0; i < evs.length; i++) {
+        anwenden(evs[i].art, evs[i].daten);
+        if (evs[i].nr > hoechste) hoechste = evs[i].nr;
+      }
+      liveStart(res.code, g, hoechste);
+      return res.code;
+    });
+  }
+
+  // Verlassen schickt bewusst kein Ereignis und ändert nichts am Tafelbild:
+  // weder hier noch auf den anderen Geräten.
+  function liveVerlassen() {
+    if (!live) return;
+    if (live.taktId) clearTimeout(live.taktId);
+    if (live.sendeId) clearTimeout(live.sendeId);
+    live = null;
+    liveAnzeige();
+  }
+
+  var ICON_TEILEN = null;
+  function liveAnzeige() {
+    var sb = $('#shareBtn');
+    if (ICON_TEILEN === null) ICON_TEILEN = sb.innerHTML;
+    sb.classList.toggle('live', !!live);
+    sb.innerHTML = live ? ICON_TEILEN + '<span class="livetext">Live</span>' : ICON_TEILEN;
+    sb.title = live ? 'Live-Sitzung läuft – Teilen, Speichern, PDF' : 'Teilen, Speichern, PDF';
+    var el = $('#lstatus');
+    if (el) {
+      el.textContent = !live ? '' :
+        (live.fehler ? 'Verbindung gestört: ' + live.meldung : 'verbunden, gleicht laufend ab');
+      el.className = 'msg ' + (live && live.fehler ? 'err' : 'ok');
+    }
+  }
+
+  // ============ Export ============
+  function paintBg(ctx, bg) {
+    ctx.lineWidth = 1.4; ctx.beginPath();
+    if (bg === 'grid') {
+      ctx.strokeStyle = '#d6dee7';
+      for (var x = 64; x < SHEET_W; x += 64) { ctx.moveTo(x, 0); ctx.lineTo(x, SHEET_H); }
+      for (var y = 64; y < SHEET_H; y += 64) { ctx.moveTo(0, y); ctx.lineTo(SHEET_W, y); }
+    } else if (bg === 'lines') {
+      ctx.strokeStyle = '#c5d3e0';
+      for (var y2 = 90; y2 < SHEET_H; y2 += 90) { ctx.moveTo(0, y2); ctx.lineTo(SHEET_W, y2); }
+    }
+    ctx.stroke();
+  }
+
+  // Striche kommen auf eine eigene, durchsichtige Ebene und werden erst danach auf
+  // Weiss gelegt. Sonst wuerde der Radierer Loecher durch den Hintergrund stanzen,
+  // die im Export schwarz erscheinen.
+  function pageCanvas(pg, scale) {
+    var w = Math.round(SHEET_W * scale), h = Math.round(SHEET_H * scale);
+
+    var ink = document.createElement('canvas');
+    ink.width = w; ink.height = h;
+    var xi = ink.getContext('2d');
+    xi.setTransform(scale, 0, 0, scale, 0, 0);
+    pg.strokes.forEach(function (s) { strokePath(xi, s); });
+
+    var c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    var x = c.getContext('2d');
+    x.fillStyle = '#fff';
+    x.fillRect(0, 0, w, h);
+    x.setTransform(scale, 0, 0, scale, 0, 0);
+    paintBg(x, pg.bg);
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.drawImage(ink, 0, 0);
+    return c;
+  }
+
+  function stamp() {
+    var d = new Date(), z = function (n) { return (n < 10 ? '0' : '') + n; };
+    return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + '_' + z(d.getHours()) + z(d.getMinutes());
+  }
+  function download(url, name) {
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { document.body.removeChild(a); }, 0);
+  }
+
+  // Minimaler PDF-Schreiber: bettet je Seite ein JPEG ein (DCTDecode, ohne Umkodierung).
+  // Bewusst ohne externe Bibliothek, damit nichts aus dem Netz nachgeladen werden muss.
+  function dataUrlToBytes(url) {
+    var bin = atob(url.slice(url.indexOf(',') + 1));
+    var a = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
+    return a;
+  }
+
+  function buildPDF(imgs, pw, ph, box) {
+    var parts = [], len = 0, off = [];
+    function raw(s) {
+      var a = new Uint8Array(s.length);
+      for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i) & 0xff;
+      return a;
+    }
+    function put(x) { var a = (typeof x === 'string') ? raw(x) : x; parts.push(a); len += a.length; }
+    function obj(n, dict, stream) {
+      off[n] = len;
+      put(n + ' 0 obj\n' + dict + '\n');
+      if (stream) { put('stream\n'); put(stream); put('\nendstream\n'); }
+      put('endobj\n');
+    }
+    function f(v) { return (Math.round(v * 100) / 100).toString(); }
+
+    var N = imgs.length, kids = [], i;
+    for (i = 0; i < N; i++) kids.push((3 + i * 3) + ' 0 R');
+
+    put('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+    obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+    obj(2, '<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + N + ' >>');
+
+    for (i = 0; i < N; i++) {
+      var pn = 3 + i * 3, im = pn + 1, ct = pn + 2, g = imgs[i];
+      var content = 'q ' + f(box.w) + ' 0 0 ' + f(box.h) + ' ' + f(box.x) + ' ' + f(box.y) + ' cm /Im0 Do Q';
+      obj(pn, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + f(pw) + ' ' + f(ph) +
+        '] /Resources << /XObject << /Im0 ' + im + ' 0 R >> >> /Contents ' + ct + ' 0 R >>');
+      obj(im, '<< /Type /XObject /Subtype /Image /Width ' + g.w + ' /Height ' + g.h +
+        ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + g.data.length + ' >>', g.data);
+      obj(ct, '<< /Length ' + content.length + ' >>', content);
+    }
+
+    var max = 2 + N * 3, xref = len, rows = '';
+    for (i = 1; i <= max; i++) rows += ('0000000000' + off[i]).slice(-10) + ' 00000 n \n';
+    put('xref\n0 ' + (max + 1) + '\n0000000000 65535 f \n' + rows);
+    put('trailer\n<< /Size ' + (max + 1) + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF\n');
+
+    return new Blob(parts, { type: 'application/pdf' });
+  }
+
+  function exportPDF() {
+    // A4 quer in Punkten (1 pt = 1/72 Zoll)
+    var pw = 841.89, ph = 595.28, margin = 14;
+    var iw = pw - margin * 2, ih = iw * SHEET_H / SHEET_W;
+    var box = { w: iw, h: ih, x: margin, y: (ph - ih) / 2 };
+    var imgs = pages.map(function (pg) {
+      var c = pageCanvas(pg, 2);
+      return { w: c.width, h: c.height, data: dataUrlToBytes(c.toDataURL('image/jpeg', 0.9)) };
+    });
+    var url = URL.createObjectURL(buildPDF(imgs, pw, ph, box));
+    download(url, 'Tafelbild_' + stamp() + '.pdf');
+    setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
+  }
+
+  function exportPNG() {
+    pageCanvas(pages[cur], 2).toBlob(function (b) {
+      var u = URL.createObjectURL(b);
+      download(u, 'Tafelbild_' + stamp() + '_S' + (cur + 1) + '.png');
+      setTimeout(function () { URL.revokeObjectURL(u); }, 20000);
+    }, 'image/png');
+  }
+
+  // ============ Dialog ============
+  var veil = $('#veil'), panel = $('#panel');
+  function closeVeil() { veil.classList.remove('show'); panel.innerHTML = ''; }
+  veil.addEventListener('pointerdown', function (e) { if (e.target === veil) closeVeil(); });
+  function tap(sel, fn) {
+    var el = $(sel);
+    if (el) el.addEventListener('pointerdown', function (e) { e.preventDefault(); if (!el.disabled) fn(el); });
+  }
+  function msg(sel, text, cls) {
+    var el = $(sel);
+    if (el) { el.textContent = text || ''; el.className = 'msg ' + (cls || ''); }
+  }
+
+  function showInfo() {
+    panel.innerHTML =
+      '<h2>Werkstatt &ndash; Kurzanleitung</h2>' +
+      '<p style="background:#ffe3c9;border:1px solid #f0b282;border-radius:8px;padding:10px 12px">'+
+      '<b>Testversion.</b> Hier werden neue Werkzeuge erprobt; sie kann sich jederzeit &auml;ndern. '+
+      'F&uuml;r den Unterricht bitte die <b>KGS-Tafel</b> verwenden.</p>' +
+      '<p><b>Weitere Werkzeuge:</b> der Knopf mit den vier Feldern oben &ouml;ffnet die Lade mit '+
+      'Timer, Vorhang und Scheinwerfer. Diese Aufs&auml;tze liegen &uuml;ber der Tafel, geh&ouml;ren '+
+      'aber nicht zum Tafelbild: sie erscheinen weder im PDF noch auf dem anderen Ger&auml;t.</p>' +
+      '<p><b>Favoriten:</b> Kurz tippen wählt das Werkzeug. Zum Neubelegen erst unten Werkzeug, Dicke und Farbe einstellen, dann den Favoriten etwa eine Sekunde gedrückt halten.</p>' +
+      '<p><b>Gerade:</b> Werkzeug wählen, aufsetzen, ziehen. Die Linie folgt bis zum Loslassen.</p>' +
+      '<p><b>Handballen:</b> wirkt immer als Schwamm.</p>' +
+      '<p><b>Glättung:</b> der Schieberegler unter den Strichstärken. Nach links folgt die Linie ' +
+      'unmittelbar und zeigt jede Ecke, nach rechts wird sie weicher, läuft dafür etwas nach. ' +
+      'Der Radierer bleibt davon unberührt.</p>' +
+      '<p><b>Blattformat:</b> Die Tafel hat ein festes Querformat, damit sie auf jedem Gerät und im PDF gleich aussieht.</p>' +
+      '<p><b>Live-Sitzung:</b> unter Teilen eine Sitzung starten und den Code am anderen Gerät eingeben. ' +
+      'Danach gleichen sich beide laufend ab, etwa im Zwei-Sekunden-Takt. Verlassen ändert nichts am Tafelbild.</p>' +
+      '<p><b>Teilen:</b> erzeugt daneben einen Code für die einmalige Übergabe, speichert dauerhaft und erstellt PDFs.</p>' +
+      '<div class="acts"><button id="okBtn" class="primary">Verstanden</button></div>';
+    veil.classList.add('show');
+    tap('#okBtn', closeVeil);
+  }
+
+  function askClear() {
+    panel.innerHTML =
+      '<h2>Seite löschen?</h2><p>Alle Inhalte dieser Seite werden entfernt. Mit Rückgängig holst du sie zurück.</p>' +
+      '<div class="acts"><button id="noBtn">Abbrechen</button><button id="yesBtn" class="danger">Löschen</button></div>';
+    veil.classList.add('show');
+    tap('#noBtn', closeVeil);
+    tap('#yesBtn', function () {
+      tun('leeren', { seite: pages[cur].id });
+      closeVeil();
+    });
+  }
+
+  function accountHTML() {
+    if (!session) {
+      return '<div class="card"><h3>Konto</h3>' +
+        '<p class="hint">Nur für dauerhaftes Speichern nötig. Für Live-Sitzung, Übergabe und PDF ' +
+        'braucht es kein Konto. Melde dich nur auf deinem eigenen Gerät an, nicht am ActiveBoard: ' +
+        'dort arbeiten alle mit demselben Zugang, die Anmeldung bliebe für die nächste Lehrkraft stehen.</p>' +
+        '<button id="showLogin" class="link">Anmelden …</button>' +
+        '<div id="loginFold" class="fold">' +
+        '<input id="mail" type="email" placeholder="E-Mail" autocomplete="username">' +
+        '<input id="pw" type="password" placeholder="Passwort" autocomplete="current-password">' +
+        '<button id="loginBtn" class="primary wide">Anmelden</button></div>' +
+        '<div id="amsg" class="msg"></div></div>';
+    }
+    return '<div class="card"><h3>Meine Tafelbilder</h3>' +
+      '<p class="hint">Angemeldet als ' + esc(session.email) +
+      '. Am Ende der Stunde abmelden, wenn das Gerät nicht dir allein gehört.</p>' +
+      '<input id="titel" placeholder="Titel für das aktuelle Tafelbild">' +
+      '<button id="saveBtn" class="primary">Aktuelles speichern</button> ' +
+      '<button id="reloadBtn">Liste laden</button> ' +
+      '<button id="logoutBtn" class="link">Abmelden</button>' +
+      '<div id="list" class="list"></div><div id="amsg" class="msg"></div></div>';
+  }
+
+  function liveHTML() {
+    if (!live) {
+      return '<div class="card"><h3>Live-Sitzung</h3>' +
+        '<p class="hint">ActiveBoard und iPad laufen danach synchron: Was auf dem einen Gerät ' +
+        'geschrieben wird, erscheint kurz darauf auch auf dem anderen. Ohne Teilen-Knopf, ' +
+        'in beide Richtungen.</p>' +
+        '<button id="liveStartBtn" class="primary wide">Sitzung starten</button>' +
+        '<div style="height:10px"></div>' +
+        '<input id="liveCode" class="code" maxlength="6" placeholder="ABC123" ' +
+        'autocapitalize="characters" autocomplete="off">' +
+        '<button id="liveJoinBtn" class="wide">Einer Sitzung beitreten</button>' +
+        '<div id="lstatus" class="msg"></div></div>';
+    }
+    return '<div class="card"><h3>Live-Sitzung läuft</h3>' +
+      '<div class="bigcode">' + esc(live.code) + '</div>' +
+      '<p class="hint" style="text-align:center">ActiveBoard und iPad laufen synchron.<br>' +
+      'Diesen Code auf dem anderen Gerät eingeben, um es dazuzuholen.</p>' +
+      '<button id="liveStopBtn" class="danger wide">Sitzung verlassen</button>' +
+      '<p class="hint">Verlassen ändert nichts am Tafelbild, weder hier noch auf dem anderen Gerät.</p>' +
+      '<div id="lstatus" class="msg"></div></div>';
+  }
+
+  function shareHTML() {
+    return '<h2>Teilen</h2><div class="cols">' + liveHTML() +
+      '<div class="card"><h3>Einmalige Übergabe</h3>' +
+      '<p class="hint">Ohne laufenden Abgleich: ein Code, ein Tafelbild.</p>' +
+      '<button id="mkCode" class="primary wide">Code erzeugen</button>' +
+      '<div id="codeOut"></div>' +
+      '<div style="height:10px"></div>' +
+      '<input id="codeIn" class="code" maxlength="6" placeholder="ABC123" ' +
+      'autocapitalize="characters" autocomplete="off">' +
+      '<button id="getCode" class="wide">Übergabe laden</button>' +
+      '<div id="smsg" class="msg"></div><div id="rmsg" class="msg"></div></div>' +
+      '</div><div class="sep"></div><div class="cols">' +
+      '<div class="card"><h3>Als Datei</h3>' +
+      '<p class="hint">PDF im Querformat, eine Tafelseite je Seite.</p>' +
+      '<button id="pdfBtn" class="primary">PDF, alle Seiten</button> ' +
+      '<button id="pngBtn">Bild dieser Seite</button><div id="emsg" class="msg"></div></div>' +
+      accountHTML() + '</div>' +
+      '<div class="acts"><button id="closeBtn">Schließen</button></div>';
+  }
+
+  function showShare() {
+    panel.innerHTML = shareHTML();
+    veil.classList.add('show');
+    tap('#closeBtn', closeVeil);
+    liveAnzeige();
+
+    tap('#liveStartBtn', function (btn) {
+      btn.disabled = true; msg('#lstatus', 'Sitzung wird angelegt …');
+      liveStarten()
+        .then(function () { showShare(); })
+        .catch(function (e) { msg('#lstatus', e.message, 'err'); btn.disabled = false; });
+    });
+
+    tap('#liveJoinBtn', function (btn) {
+      var code = ($('#liveCode').value || '').trim().toUpperCase();
+      if (code.length < 4) { msg('#lstatus', 'Bitte Code eingeben', 'err'); return; }
+      function los() {
+        btn.disabled = true; msg('#lstatus', 'Sitzung wird geladen …');
+        liveBeitreten(code)
+          .then(function () { showShare(); })
+          .catch(function (e) { msg('#lstatus', e.message, 'err'); btn.disabled = false; });
+      }
+      if (isEmpty()) { los(); return; }
+      panel.innerHTML = '<h2>Vorhandenes Tafelbild ersetzen?</h2>' +
+        '<p>Beim Beitreten übernimmt dieses Gerät den Stand der Sitzung. ' +
+        'Was hier steht, wird dabei ersetzt.</p>' +
+        '<div class="acts"><button id="jNo">Abbrechen</button>' +
+        '<button id="jYes" class="danger">Beitreten</button></div>';
+      tap('#jNo', showShare);
+      tap('#jYes', function () {
+        panel.innerHTML = '<h2>Sitzung wird geladen …</h2>';
+        liveBeitreten(code)
+          .then(function () { showShare(); })
+          .catch(function (e) { showShare(); msg('#lstatus', e.message, 'err'); });
+      });
+    });
+
+    tap('#liveStopBtn', function () { liveVerlassen(); showShare(); });
+
+    tap('#mkCode', async function (btn) {
+      btn.disabled = true; msg('#smsg', 'Wird hochgeladen …');
+      try {
+        var code = await rpc('uebergabe_ablegen', { p_daten: serialize(), p_titel: 'Tafelbild' }, false);
+        $('#codeOut').innerHTML = '<div class="bigcode">' + esc(code) + '</div>' +
+          '<p class="hint" style="text-align:center">10 Minuten gültig, einmal verwendbar</p>';
+        msg('#smsg', '');
+      } catch (e) { msg('#smsg', e.message, 'err'); }
+      btn.disabled = false;
+    });
+
+    tap('#getCode', async function (btn) {
+      var code = ($('#codeIn').value || '').trim().toUpperCase();
+      if (code.length < 4) { msg('#rmsg', 'Bitte Code eingeben', 'err'); return; }
+      btn.disabled = true; msg('#rmsg', 'Wird geladen …');
+      try {
+        var res = await rpc('uebergabe_abholen', { p_code: code }, false);
+        applyPages(deserialize(res.daten));
+        closeVeil();
+      } catch (e) { msg('#rmsg', e.message, 'err'); btn.disabled = false; }
+    });
+
+    tap('#pdfBtn', function (btn) {
+      btn.disabled = true; msg('#emsg', 'PDF wird erzeugt …');
+      setTimeout(function () {
+        try { exportPDF(); msg('#emsg', 'Fertig, siehe Downloads', 'ok'); }
+        catch (e) { msg('#emsg', e.message, 'err'); }
+        btn.disabled = false;
+      }, 30);
+    });
+    tap('#pngBtn', function () {
+      try { exportPNG(); msg('#emsg', 'Fertig, siehe Downloads', 'ok'); }
+      catch (e) { msg('#emsg', e.message, 'err'); }
+    });
+
+    if (!session) {
+      tap('#showLogin', function (btn) {
+        $('#loginFold').classList.add('open');
+        btn.style.display = 'none';
+        var m = $('#mail'); if (m) m.focus();
+      });
+      tap('#loginBtn', async function (btn) {
+        btn.disabled = true; msg('#amsg', 'Anmeldung läuft …');
+        try { await login($('#mail').value.trim(), $('#pw').value); showShare(); }
+        catch (e) { msg('#amsg', e.message, 'err'); btn.disabled = false; }
+      });
+    } else {
+      tap('#logoutBtn', function () { storeSession(null); showShare(); });
+      tap('#reloadBtn', loadList);
+      tap('#saveBtn', async function (btn) {
+        btn.disabled = true; msg('#amsg', 'Wird gespeichert …');
+        try {
+          await api('/rest/v1/tafelbilder', { method: 'POST', prefer: 'return=minimal', body: {
+            besitzer: session.uid, titel: ($('#titel').value || '').trim() || 'Ohne Titel',
+            daten: serialize(), seiten: pages.length } }, true);
+          msg('#amsg', 'Gespeichert', 'ok'); loadList();
+        } catch (e) { msg('#amsg', e.message, 'err'); }
+        btn.disabled = false;
+      });
+      loadList();
+    }
+  }
+
+  async function loadList() {
+    var el = $('#list');
+    if (!el) return;
+    el.innerHTML = '<p class="hint">Wird geladen …</p>';
+    try {
+      var rows = await api('/rest/v1/tafelbilder?select=id,titel,seiten,updated_at&order=updated_at.desc&limit=50', {}, true);
+      if (!rows.length) { el.innerHTML = '<p class="hint">Noch keine Tafelbilder gespeichert.</p>'; return; }
+      el.innerHTML = rows.map(function (r) {
+        var d = new Date(r.updated_at);
+        return '<div class="row"><span class="t">' + esc(r.titel) + ' <span class="hint">· ' +
+          r.seiten + ' S. · ' + d.toLocaleDateString('de-DE') + '</span></span>' +
+          '<button data-open="' + r.id + '">Öffnen</button>' +
+          '<button data-send="' + r.id + '">Code</button>' +
+          '<button data-del="' + r.id + '" class="danger">Löschen</button></div>';
+      }).join('');
+      $$('#list button').forEach(function (b) {
+        b.addEventListener('pointerdown', async function (e) {
+          e.preventDefault();
+          var id = b.dataset.open || b.dataset.send || b.dataset.del;
+          b.disabled = true;
+          try {
+            if (b.dataset.open) {
+              var ra = await api('/rest/v1/tafelbilder?id=eq.' + id + '&select=daten', {}, true);
+              applyPages(deserialize(ra[0].daten)); closeVeil();
+            } else if (b.dataset.send) {
+              var rb = await api('/rest/v1/tafelbilder?id=eq.' + id + '&select=titel,daten', {}, true);
+              var code = await rpc('uebergabe_ablegen', { p_daten: rb[0].daten, p_titel: rb[0].titel }, true);
+              $('#codeOut').innerHTML = '<div class="bigcode">' + esc(code) + '</div>' +
+                '<p class="hint" style="text-align:center">am Board eingeben, 10 Minuten gültig</p>';
+              msg('#amsg', 'Code oben erzeugt', 'ok');
+            } else {
+              await api('/rest/v1/tafelbilder?id=eq.' + id, { method: 'DELETE', prefer: 'return=minimal' }, true);
+              loadList();
+            }
+          } catch (err) { msg('#amsg', err.message, 'err'); }
+          b.disabled = false;
+        });
+      });
+    } catch (e) { el.innerHTML = '<p class="hint">' + esc(e.message) + '</p>'; }
+  }
+
+  // ============ Leiste ============
+  function onTap(el, fn) {
+    el.addEventListener('pointerdown', function (e) { e.preventDefault(); if (!el.disabled) fn(); });
+  }
+  $$('#tools button').forEach(function (b) {
+    b.innerHTML = ICON[b.dataset.tool];
+    onTap(b, function () { state.tool = b.dataset.tool; updateUI(); });
+  });
+  var colorsEl = $('#colors');
+  COLORS.forEach(function (c) {
+    var b = document.createElement('button');
+    b.className = 'pick'; b.dataset.color = c.id; b.title = c.name; b.style.background = c.pen;
+    onTap(b, function () { state.color = c.id; if (state.tool === 'eraser') state.tool = 'pen'; updateUI(); });
+    colorsEl.appendChild(b);
+  });
+  $$('#sizes button').forEach(function (b) {
+    onTap(b, function () { state.size[sizeKey(state.tool)] = +b.dataset.size; updateUI(); });
+  });
+
+  var glattReg = $('#glattReg');
+  glattReg.value = Math.round(glaettung * 100);
+  glattReg.addEventListener('input', function () {
+    glaettung = (+glattReg.value) / 100;
+    try { localStorage.setItem(GLATT_KEY, String(glaettung)); } catch (e) {}
+  });
+  // Der Regler soll die Zeichenfläche nicht mitbedienen
+  ['pointerdown', 'pointermove', 'pointerup', 'touchstart', 'touchmove'].forEach(function (ev) {
+    glattReg.addEventListener(ev, function (e) { e.stopPropagation(); });
+  });
+
+  function styleSample(el, tool, col, i) {
+    var d;
+    if (tool === 'pen' || tool === 'line') {
+      // Balken statt Punkt: der Dickenunterschied ist so deutlich besser zu sehen
+      d = [2, 3.5, 6, 10][i];
+      el.style.cssText = 'width:22px;height:' + d + 'px;border-radius:' + d +
+        'px;background:' + col.pen + ';box-shadow:0 0 0 1px rgba(35,45,56,.18)';
+    } else if (tool === 'marker') {
+      d = [5, 8, 12, 17][i];
+      el.style.cssText = 'width:20px;height:' + d + 'px;border-radius:2px;opacity:.62;background:' + col.marker;
+    } else {
+      d = [7, 11, 15, 19][i];
+      el.style.cssText = 'width:' + d + 'px;height:' + d + 'px;border-radius:50%;border:2px solid #52606d';
+    }
+  }
+
+  function loadPresets() {
+    try {
+      var v = JSON.parse(localStorage.getItem(PRESET_KEY));
+      if (Object.prototype.toString.call(v) === '[object Array]' && v.length === DEFAULT_PRESETS.length) return v;
+    } catch (e) {}
+    return DEFAULT_PRESETS.map(function (o) { return { tool: o.tool, color: o.color, size: o.size }; });
+  }
+  function savePresets() { try { localStorage.setItem(PRESET_KEY, JSON.stringify(presets)); } catch (e) {} }
+  function presetMatches(p) {
+    if (p.tool !== state.tool || p.size !== state.size[sizeKey(state.tool)]) return false;
+    return p.tool === 'eraser' || p.color === state.color;
+  }
+  function renderPreset(b, p) {
+    if (p.tool === 'eraser') { b.innerHTML = ICON.eraser; return; }
+    var col = colorById(p.color);
+    if (p.tool === 'marker') {
+      var hm = [6, 9, 13, 18][p.size];
+      b.innerHTML = '<span style="display:block;width:72%;height:' + hm +
+        'px;border-radius:3px;opacity:.6;background:' + col.marker + '"></span>';
+      return;
+    }
+    var h = [2, 3, 5, 8][p.size];
+    var w = p.tool === 'line' ? 72 : 62;
+    b.innerHTML = '<span style="display:block;width:' + w + '%;height:' + h + 'px;border-radius:' +
+      h + 'px;background:' + col.pen + (p.tool === 'line' ? ';transform:rotate(-12deg)' : '') + '"></span>';
+  }
+
+  var presetsEl = $('#presets'), presetBtns = [];
+  presets.forEach(function (p, i) {
+    var b = document.createElement('button');
+    b.className = 'pick'; b.title = 'Favorit ' + (i + 1) + ' – lange drücken zum Speichern';
+    presetsEl.appendChild(b); presetBtns.push(b);
+    var timer = null;
+    function cancel() { if (timer) { clearTimeout(timer); timer = null; } b.classList.remove('pressing'); }
+    b.addEventListener('pointerdown', function (e) {
+      e.preventDefault(); cancel(); b.classList.add('pressing');
+      timer = setTimeout(function () {
+        timer = null; b.classList.remove('pressing');
+        presets[i] = { tool: state.tool, color: state.color, size: state.size[sizeKey(state.tool)] };
+        savePresets(); updateUI();
+        b.classList.add('saved');
+        setTimeout(function () { b.classList.remove('saved'); }, 700);
+      }, LONG_PRESS);
+    });
+    b.addEventListener('pointerup', function () {
+      if (timer) {
+        var q = presets[i];
+        state.tool = q.tool;
+        if (q.tool !== 'eraser') state.color = q.color;
+        state.size[sizeKey(q.tool)] = q.size;
+        updateUI();
+      }
+      cancel();
+    });
+    b.addEventListener('pointerleave', cancel);
+    b.addEventListener('pointercancel', cancel);
+  });
+
+  onTap($('#undo'), function () {
+    var pg = pages[cur];
+    if (!pg.strokes.length && !pg.snaps.length) return;
+    tun('zurueck', { seite: pg.id });
+  });
+  onTap($('#redo'), function () {
+    var pg = pages[cur];
+    if (!pg.redo.length) return;
+    tun('vor', { seite: pg.id });
+  });
+  onTap($('#clearBtn'), askClear);
+  onTap($('#infoBtn'), showInfo);
+  onTap($('#shareBtn'), showShare);
+
+  // ---- Vollbild ----
+  var root = document.documentElement;
+  var fullBtn = $('#fullBtn');
+  var canFull = !!(root.requestFullscreen || root.webkitRequestFullscreen);
+  function inFull() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+  function paintFull() {
+    fullBtn.innerHTML = inFull() ? ICON.unfull : ICON.full;
+    fullBtn.title = inFull() ? 'Vollbild beenden' : 'Vollbild';
+  }
+  if (!canFull) {
+    fullBtn.style.display = 'none';
+  } else {
+    paintFull();
+    onTap(fullBtn, function () {
+      try {
+        if (inFull()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        else (root.requestFullscreen || root.webkitRequestFullscreen).call(root);
+      } catch (e) {}
+    });
+    ['fullscreenchange', 'webkitfullscreenchange'].forEach(function (ev) {
+      document.addEventListener(ev, function () { paintFull(); setTimeout(layout, 120); });
+    });
+  }
+
+  function gotoPage(i) {
+    if (i < 0 || i >= pages.length) return;
+    active.clear(); cur = i;
+    drawBg(); redrawInk(); requestLive(); updateUI();
+  }
+  onTap($('#prev'), function () { gotoPage(cur - 1); });
+  onTap($('#next'), function () { gotoPage(cur + 1); });
+  onTap($('#addPage'), function () {
+    var id = neueId();
+    tun('seite_neu', { id: id, nach: pages[cur].id, bg: pages[cur].bg });
+    var i = seiteIndex(id);
+    if (i >= 0) gotoPage(i);
+  });
+  onTap($('#bgBtn'), function () {
+    var pg = pages[cur];
+    tun('hintergrund', { seite: pg.id, bg: BG_ORDER[(BG_ORDER.indexOf(pg.bg) + 1) % BG_ORDER.length] });
+  });
+
+  function updateUI() {
+    var col = colorById(state.color);
+    $$('#tools button').forEach(function (b) { b.classList.toggle('on', b.dataset.tool === state.tool); });
+    $$('#colors button').forEach(function (b) {
+      b.classList.toggle('on', state.tool !== 'eraser' && b.dataset.color === state.color);
+    });
+    $$('#sizes button').forEach(function (b, i) {
+      b.classList.toggle('on', state.size[sizeKey(state.tool)] === i);
+      styleSample(b.firstElementChild, state.tool, col, i);
+    });
+    presetBtns.forEach(function (b, i) {
+      renderPreset(b, presets[i]);
+      b.classList.toggle('on', presetMatches(presets[i]));
+    });
+    var pg = pages[cur];
+    $('#pageLabel').textContent = (cur + 1) + ' / ' + pages.length;
+    $('#prev').disabled = cur === 0;
+    $('#next').disabled = cur === pages.length - 1;
+    $('#undo').disabled = !pg.strokes.length && !pg.snaps.length;
+    $('#redo').disabled = !pg.redo.length;
+    $('#clearBtn').disabled = !pg.strokes.length;
+    $('#bgBtn').innerHTML = ICON[pg.bg];
+  }
+
+  // ============ Werkzeuglade und Aufsätze ============
+  // Aufsätze liegen über der Tafel: sie gehören nicht zum Tafelbild, wandern
+  // nicht in den Export und nicht in die Live-Sitzung.
+  var lade = $('#lade'), stageEl = $('#stage');
+
+  function ziehbar(el, griff, bewege) {
+    griff.addEventListener('pointerdown', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var r = stageEl.getBoundingClientRect();
+      var start = { x: e.clientX, y: e.clientY };
+      try { griff.setPointerCapture(e.pointerId); } catch (err) {}
+      function zug(ev) {
+        bewege(ev.clientX - start.x, ev.clientY - start.y, ev.clientX - r.left, ev.clientY - r.top);
+      }
+      function schluss() {
+        griff.removeEventListener('pointermove', zug);
+        griff.removeEventListener('pointerup', schluss);
+        griff.removeEventListener('pointercancel', schluss);
+      }
+      griff.addEventListener('pointermove', zug);
+      griff.addEventListener('pointerup', schluss);
+      griff.addEventListener('pointercancel', schluss);
+    });
+  }
+
+  // ---------- Vorhang ----------
+  var vorhang = $('#vorhang'), vh = null;
+  function vorhangZeichne() {
+    if (!vh) return;
+    vorhang.style.left = vh.x + 'px'; vorhang.style.top = vh.y + 'px';
+    vorhang.style.width = vh.w + 'px'; vorhang.style.height = vh.h + 'px';
+  }
+  function vorhangAn(an) {
+    if (an && !vh) {
+      var b = stageEl.getBoundingClientRect();
+      vh = { x: 0, y: 0, w: b.width, h: Math.round(b.height * 0.55) };
+      vorhangZeichne();
+    }
+    vorhang.classList.toggle('auf', !!an);
+    if (!an) vh = null;
+    ladeZeichne();
+  }
+  (function () {
+    var b = function () { return stageEl.getBoundingClientRect(); };
+
+    // Verschieben: der Bezug ist immer der Stand beim Aufsetzen, sonst
+    // addieren sich die Verschiebungen bei jedem Zug auf.
+    var anfK = null;
+    vorhang.addEventListener('pointerdown', function () {
+      if (vh) anfK = { x: vh.x, y: vh.y };
+    });
+    ziehbar(vorhang, vorhang, function (dx, dy) {
+      if (!vh || !anfK) return;
+      var g = b();
+      vh.x = Math.max(0, Math.min(anfK.x + dx, g.width - vh.w));
+      vh.y = Math.max(0, Math.min(anfK.y + dy, g.height - vh.h));
+      vorhangZeichne();
+    });
+
+    function kante(name, fn) {
+      var el = vorhang.querySelector('.griff.' + name);
+      var anf = null;
+      el.addEventListener('pointerdown', function () { anf = { x: vh.x, y: vh.y, w: vh.w, h: vh.h }; });
+      ziehbar(vorhang, el, function (dx, dy) { if (anf) { fn(anf, dx, dy, b()); vorhangZeichne(); } });
+    }
+    kante('o', function (a, dx, dy, g) {
+      var y = Math.max(0, Math.min(a.y + dy, a.y + a.h - 60));
+      vh.h = a.h + (a.y - y); vh.y = y;
+    });
+    kante('u', function (a, dx, dy, g) { vh.h = Math.max(60, Math.min(a.h + dy, g.height - a.y)); });
+    kante('l', function (a, dx, dy, g) {
+      var x = Math.max(0, Math.min(a.x + dx, a.x + a.w - 60));
+      vh.w = a.w + (a.x - x); vh.x = x;
+    });
+    kante('r', function (a, dx, dy, g) { vh.w = Math.max(60, Math.min(a.w + dx, g.width - a.x)); });
+    vorhang.querySelector('.zu').addEventListener('pointerdown', function (e) {
+      e.preventDefault(); e.stopPropagation(); vorhangAn(false);
+    });
+  })();
+
+  // ---------- Scheinwerfer ----------
+  var spot = $('#spot'), spotPfad = $('#spotPfad'), sp = null;
+  function spotZeichne() {
+    if (!sp) return;
+    var b = stageEl.getBoundingClientRect();
+    spot.setAttribute('viewBox', '0 0 ' + Math.round(b.width) + ' ' + Math.round(b.height));
+    var r = Math.round(sp.r), x = Math.round(sp.x), y = Math.round(sp.y);
+    // Aussenrechteck plus Kreis, mit evenodd ergibt das ein Loch
+    spotPfad.setAttribute('d',
+      'M0 0H' + Math.round(b.width) + 'V' + Math.round(b.height) + 'H0Z ' +
+      'M' + (x - r) + ' ' + y +
+      ' a' + r + ' ' + r + ' 0 1 0 ' + (2 * r) + ' 0' +
+      ' a' + r + ' ' + r + ' 0 1 0 ' + (-2 * r) + ' 0 Z');
+  }
+  function spotAn(an) {
+    if (an && !sp) {
+      var b = stageEl.getBoundingClientRect();
+      sp = { x: Math.round(b.width / 2), y: Math.round(b.height / 2),
+             r: Math.round(Math.min(b.width, b.height) * 0.22) };
+      spotZeichne();
+    }
+    spot.classList.toggle('auf', !!an);
+    if (!an) sp = null;
+    ladeZeichne();
+  }
+  spot.addEventListener('pointerdown', function (e) {
+    if (!sp) return;
+    e.preventDefault();
+    var b = stageEl.getBoundingClientRect();
+    try { spot.setPointerCapture(e.pointerId); } catch (err) {}
+    var zwei = false;
+    function zug(ev) { sp.x = ev.clientX - b.left; sp.y = ev.clientY - b.top; spotZeichne(); }
+    function schluss() {
+      spot.removeEventListener('pointermove', zug);
+      spot.removeEventListener('pointerup', schluss);
+      spot.removeEventListener('pointercancel', schluss);
+    }
+    spot.addEventListener('pointermove', zug);
+    spot.addEventListener('pointerup', schluss);
+    spot.addEventListener('pointercancel', schluss);
+    zug(e);
+  });
+  spot.addEventListener('wheel', function (e) {
+    if (!sp) return;
+    e.preventDefault();
+    sp.r = Math.max(50, Math.min(sp.r + (e.deltaY < 0 ? 14 : -14), 900));
+    spotZeichne();
+  }, { passive: false });
+
+  // ---------- Timer ----------
+  var timer = $('#timer'), tz = $('#timerZeit'), tk = $('#timerKnoepfe'), tm = $('#timerModus');
+  var uhr = { an: false, modus: 'uhr', laeuft: false, rest: 300000, start: 0, verbraucht: 0,
+              gross: 1, pos: null, alarm: false, ton: null };
+  var GROESSEN = [40, 58, 84];
+
+  function tonGeben() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!uhr.ton) uhr.ton = new AC();
+      var ctx = uhr.ton, t0 = ctx.currentTime;
+      for (var i = 0; i < 3; i++) {
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.value = 880; o.connect(g); g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.0001, t0 + i * 0.45);
+        g.gain.exponentialRampToValueAtTime(0.25, t0 + i * 0.45 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + i * 0.45 + 0.3);
+        o.start(t0 + i * 0.45); o.stop(t0 + i * 0.45 + 0.32);
+      }
+    } catch (e) {}
+  }
+
+  function zweistellig(n) { return (n < 10 ? '0' : '') + n; }
+  function alsZeit(ms, mitStunden) {
+    if (ms < 0) ms = 0;
+    var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    s = s % 60;
+    return (mitStunden || h ? zweistellig(h) + ':' : '') + zweistellig(m) + ':' + zweistellig(s);
+  }
+
+  function timerKnoepfe() {
+    var h = '';
+    if (uhr.modus === 'count') {
+      h = '<button data-t="minus">−1 min</button>' +
+          '<button data-t="plus">+1 min</button>' +
+          '<button data-t="start" class="stark">' + (uhr.laeuft ? 'Pause' : 'Start') + '</button>' +
+          '<button data-t="null">Zurück</button>';
+    } else if (uhr.modus === 'stop') {
+      h = '<button data-t="start" class="stark">' + (uhr.laeuft ? 'Pause' : 'Start') + '</button>' +
+          '<button data-t="null">Zurück</button>';
+    }
+    h += '<button data-t="modus">' +
+         (uhr.modus === 'uhr' ? 'Countdown' : uhr.modus === 'count' ? 'Stoppuhr' : 'Uhrzeit') +
+         '</button><button data-t="gross">Größe</button>';
+    tk.innerHTML = h;
+    Array.prototype.forEach.call(tk.querySelectorAll('button'), function (b) {
+      b.addEventListener('pointerdown', function (e) {
+        e.preventDefault(); e.stopPropagation(); timerTat(b.dataset.t);
+      });
+    });
+  }
+
+  function timerTat(was) {
+    if (was === 'modus') {
+      uhr.modus = uhr.modus === 'uhr' ? 'count' : uhr.modus === 'count' ? 'stop' : 'uhr';
+      uhr.laeuft = false; uhr.verbraucht = 0; uhr.rest = 300000; uhr.alarm = false;
+      timer.classList.remove('alarm');
+    } else if (was === 'gross') {
+      uhr.gross = (uhr.gross + 1) % GROESSEN.length;
+    } else if (was === 'start') {
+      if (uhr.laeuft) {
+        if (uhr.modus === 'count') uhr.rest = Math.max(0, uhr.rest - (Date.now() - uhr.start));
+        else uhr.verbraucht += Date.now() - uhr.start;
+        uhr.laeuft = false;
+      } else {
+        uhr.start = Date.now(); uhr.laeuft = true;
+        uhr.alarm = false; timer.classList.remove('alarm');
+      }
+    } else if (was === 'null') {
+      uhr.laeuft = false; uhr.verbraucht = 0; uhr.rest = 300000;
+      uhr.alarm = false; timer.classList.remove('alarm');
+    } else if (was === 'plus' || was === 'minus') {
+      var d = (was === 'plus' ? 60000 : -60000);
+      if (uhr.laeuft) { uhr.rest = Math.max(0, uhr.rest - (Date.now() - uhr.start)); uhr.start = Date.now(); }
+      uhr.rest = Math.max(0, Math.min(uhr.rest + d, 7200000));
+      uhr.alarm = false; timer.classList.remove('alarm');
+    }
+    timerKnoepfe(); timerZeichne();
+  }
+
+  function timerZeichne() {
+    tz.style.fontSize = GROESSEN[uhr.gross] + 'px';
+    tm.textContent = uhr.modus === 'uhr' ? 'Uhrzeit' : uhr.modus === 'count' ? 'Countdown' : 'Stoppuhr';
+    if (uhr.modus === 'uhr') {
+      var d = new Date();
+      tz.textContent = zweistellig(d.getHours()) + ':' + zweistellig(d.getMinutes()) + ':' + zweistellig(d.getSeconds());
+      return;
+    }
+    if (uhr.modus === 'count') {
+      var rest = uhr.rest - (uhr.laeuft ? Date.now() - uhr.start : 0);
+      if (rest <= 0) {
+        rest = 0;
+        if (uhr.laeuft) { uhr.laeuft = false; uhr.rest = 0; uhr.alarm = true;
+          timer.classList.add('alarm'); tonGeben(); timerKnoepfe(); }
+      }
+      tz.textContent = alsZeit(rest);
+    } else {
+      tz.textContent = alsZeit(uhr.verbraucht + (uhr.laeuft ? Date.now() - uhr.start : 0));
+    }
+  }
+
+  function timerAn(an) {
+    uhr.an = !!an;
+    timer.classList.toggle('auf', uhr.an);
+    if (uhr.an) {
+      if (!uhr.pos) {
+        var b = stageEl.getBoundingClientRect();
+        uhr.pos = { x: Math.round(b.width - 280), y: 24 };
+      }
+      timer.style.left = uhr.pos.x + 'px'; timer.style.top = uhr.pos.y + 'px';
+      timerKnoepfe(); timerZeichne();
+    }
+    ladeZeichne();
+  }
+  (function () {
+    var kopf = $('#timerKopf'), anf = null;
+    kopf.addEventListener('pointerdown', function () { anf = { x: uhr.pos.x, y: uhr.pos.y }; });
+    ziehbar(timer, kopf, function (dx, dy) {
+      if (!anf) return;
+      var b = stageEl.getBoundingClientRect();
+      uhr.pos.x = Math.max(0, Math.min(anf.x + dx, b.width - timer.offsetWidth));
+      uhr.pos.y = Math.max(0, Math.min(anf.y + dy, b.height - timer.offsetHeight));
+      timer.style.left = uhr.pos.x + 'px'; timer.style.top = uhr.pos.y + 'px';
+    });
+    kopf.querySelector('.zu').addEventListener('pointerdown', function (e) {
+      e.preventDefault(); e.stopPropagation(); timerAn(false);
+    });
+  })();
+  setInterval(function () { if (uhr.an) timerZeichne(); }, 250);
+
+  // ---------- Lade ----------
+  var WERKZEUGE = [
+    { id: 'timer', name: 'Timer', zeile: 'Uhrzeit, Countdown oder Stoppuhr',
+      sym: '<svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>',
+      an: function () { return uhr.an; }, schalt: function (v) { timerAn(v); } },
+    { id: 'vorhang', name: 'Vorhang', zeile: 'Teile der Tafel abdecken',
+      sym: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="8" rx="1.5"/><path d="M3 14h18M3 18h18" stroke-dasharray="3 3"/></svg>',
+      an: function () { return vorhang.classList.contains('auf'); }, schalt: function (v) { vorhangAn(v); } },
+    { id: 'spot', name: 'Scheinwerfer', zeile: 'Nur einen Ausschnitt zeigen',
+      sym: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.4 1.4M17.6 17.6 19 19M19 5l-1.4 1.4M6.4 17.6 5 19"/></svg>',
+      an: function () { return spot.classList.contains('auf'); }, schalt: function (v) { spotAn(v); } }
+  ];
+
+  function ladeZeichne() {
+    var ziel = $('#ladeliste');
+    ziel.innerHTML = WERKZEUGE.map(function (w) {
+      return '<button data-w="' + w.id + '"' + (w.an() ? ' class="an"' : '') + '>' + w.sym +
+        '<span><span class="t">' + w.name + '</span><span class="u">' + w.zeile + '</span></span></button>';
+    }).join('');
+    Array.prototype.forEach.call(ziel.querySelectorAll('button'), function (b) {
+      b.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        var w = WERKZEUGE.filter(function (x) { return x.id === b.dataset.w; })[0];
+        if (!w) return;
+        w.schalt(!w.an());
+        ladeAuf(false);
+      });
+    });
+    var einAn = WERKZEUGE.some(function (w) { return w.an(); });
+    $('#ladeBtn').classList.toggle('on', einAn);
+  }
+  function ladeAuf(auf) {
+    lade.classList.toggle('auf', !!auf);
+    if (auf) ladeZeichne();
+  }
+  onTap($('#ladeBtn'), function () { ladeAuf(!lade.classList.contains('auf')); });
+  $('#ladeZu').addEventListener('pointerdown', function (e) { e.preventDefault(); ladeAuf(false); });
+
+  window.addEventListener('resize', function () {
+    if (sp) spotZeichne();
+    if (vh) vorhangZeichne();
+  });
+  ladeZeichne();
+
+  loadSession();
+  window.addEventListener('resize', layout);
+  window.addEventListener('orientationchange', function () { setTimeout(layout, 250); });
+  layout();
+  updateUI();
+})();
+</script>
+</body>
+</html>

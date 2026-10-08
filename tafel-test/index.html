@@ -83,6 +83,22 @@
   #presets button.saved { border-color: var(--ok); box-shadow: inset 0 0 0 2px var(--ok); }
   @keyframes fill { from { width: 0; } to { width: 100%; } }
 
+  /* ---- Sternfarben: vier frei belegbare Plaetze ---- */
+  #sterne button { height: var(--bc); border-radius: 5px; }
+  #sterne button.on { box-shadow: inset 0 0 0 2px var(--sel); border-color: var(--sel); }
+  #sterne svg { width: 20px; height: 20px; stroke-width: 1; stroke: rgba(35,45,56,.5); }
+  #sterne button.pressing::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px;
+    background: var(--sel); animation: fill .65s linear forwards; }
+
+  /* ---- kurze Rueckmeldung mitten auf der Tafel ---- */
+  #toast { position: absolute; left: 50%; top: 16px; transform: translateX(-50%);
+    display: none; align-items: center; gap: 10px; z-index: 7;
+    background: rgba(28,36,46,.92); color: #fff; border-radius: 999px;
+    padding: 9px 18px 9px 12px; font-size: 17px; font-weight: 600;
+    box-shadow: 0 6px 20px rgba(20,28,36,.3); pointer-events: none; }
+  #toast.auf { display: flex; }
+  #toast .tupfen { width: 20px; height: 20px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255,255,255,.35); }
+
   /* ---- Werkzeuglade ---- */
   #lade { position: absolute; right: 8px; top: 8px; bottom: 8px; width: 270px; display: none;
     flex-direction: column; background: var(--face); border: 1px solid var(--face-edge);
@@ -211,6 +227,7 @@
         erscheinen nicht im PDF und nicht auf dem anderen Gerät.</p>
     </div>
 
+    <div id="toast"></div>
     <div id="veil"><div id="panel"></div></div>
   </div>
 
@@ -250,6 +267,7 @@
     </div>
 
     <div class="sec g4" id="colors"></div>
+    <div class="sec g4" id="sterne"></div>
 
     <div class="rule"></div>
     <div class="sec g3">
@@ -400,7 +418,39 @@
     for (var i = 0; i < pages.length; i++) if (pages[i].id === id) return i;
     return -1;
   }
-  function colorById(id) { for (var i = 0; i < COLORS.length; i++) if (COLORS[i].id === id) return COLORS[i]; return COLORS[0]; }
+  // Vier frei belegbare Sternfarben neben der festen Palette. Die Markervariante
+  // wird aus der gewaehlten Farbe aufgehellt, damit sie wie die uebrigen wirkt.
+  var STERN_KEY = 'tafel-sterne-v1';
+  var STERN_STANDARD = ['#7a3cff', '#00a39b', '#e0157f', '#6b4423'];
+  var sternHex = (function () {
+    try {
+      var v = JSON.parse(localStorage.getItem(STERN_KEY));
+      if (Object.prototype.toString.call(v) === '[object Array]' && v.length === 4) return v;
+    } catch (e) {}
+    return STERN_STANDARD.slice();
+  })();
+  function aufhellen(hex, anteil) {
+    var n = parseInt(hex.slice(1), 16);
+    var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    r = Math.round(r + (255 - r) * anteil);
+    g = Math.round(g + (255 - g) * anteil);
+    b = Math.round(b + (255 - b) * anteil);
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+  function sternFarbe(i) {
+    return { id: 'stern' + i, name: 'Sternfarbe ' + (i + 1),
+             pen: sternHex[i], marker: aufhellen(sternHex[i], 0.52) };
+  }
+  function alleFarben() {
+    var l = COLORS.slice();
+    for (var i = 0; i < 4; i++) l.push(sternFarbe(i));
+    return l;
+  }
+  function colorById(id) {
+    var l = alleFarben();
+    for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i];
+    return COLORS[0];
+  }
   function sizeKey(t) { return t === 'line' ? 'pen' : t; }
   function $(s) { return document.querySelector(s); }
   function $$(s) { return Array.prototype.slice.call(document.querySelectorAll(s)); }
@@ -578,10 +628,21 @@
   cLive.addEventListener('pointerdown', function (e) {
     if ($('#veil').classList.contains('show')) return;
     e.preventDefault();
+    if (pipette) { pipetteNehmen(pt(e)); return; }
     if (e.pointerType === 'pen') { penAktiv++; penZuletzt = Date.now(); }
     else if (e.pointerType === 'touch') {
       merkeBasis(e);
       if (stiftFuehrt()) return;          // Handballen oder Finger neben dem Stift
+      if (gesten && state.tool !== 'eraser' && !isPalm(e)) {
+        var jetzt = Date.now(), p0 = pt(e);
+        if (!gest || gest.fertig || jetzt - gest.t0 > GESTE_FENSTER) {
+          gest = { t0: jetzt, n: 0, offen: 0, punkte: [], aus: false, abbruch: false, fertig: false };
+        }
+        gest.n++; gest.offen++;
+        gest.punkte.push({ id: e.pointerId, x: p0.x, y: p0.y, jx: p0.x, jy: p0.y, auf: true });
+        if (gest.n >= 2 && !gest.aus) gesteUebernimmt();
+        if (gest.aus) return;             // dieser Finger zeichnet nicht
+      }
     }
     try { cLive.setPointerCapture(e.pointerId); } catch (err) {}
     var s = macheStrich(e, pt(e));
@@ -592,6 +653,18 @@
   cLive.addEventListener('pointermove', function (e) {
     if (e.pointerType === 'pen') penZuletzt = Date.now();
     else if (e.pointerType === 'touch') merkeBasis(e);
+
+    // Wandern die Finger einer begonnenen Geste zu weit, war es doch Zeichnen
+    if (gest && gest.aus && !gest.abbruch) {
+      for (var gi = 0; gi < gest.punkte.length; gi++) {
+        var q = gest.punkte[gi];
+        if (q.id !== e.pointerId) continue;
+        var pm = pt(e); q.jx = pm.x; q.jy = pm.y;
+        if (Math.abs(pm.x - q.x) + Math.abs(pm.y - q.y) > GESTE_WEG) gesteAbbrechen(e);
+        break;
+      }
+    }
+
     var s = active.get(e.pointerId);
     if (!s) return;
 
@@ -661,6 +734,18 @@
     requestLive(); updateUI();
   }
   function endStroke(e) {
+    if (gest && !gest.fertig) {
+      for (var gi = 0; gi < gest.punkte.length; gi++) {
+        var q = gest.punkte[gi];
+        if (q.id !== e.pointerId || !q.auf) continue;
+        q.auf = false; gest.offen--;
+        if (gest.offen <= 0) {
+          if (gest.aus) gesteAuswerten();
+          gest.fertig = true;
+        }
+        break;
+      }
+    }
     if (e.pointerType === 'pen') { penAktiv = Math.max(0, penAktiv - 1); penZuletzt = Date.now(); }
     var s = active.get(e.pointerId);
     if (!s) return;
@@ -1050,7 +1135,13 @@
       '<p style="background:#ffe3c9;border:1px solid #f0b282;border-radius:8px;padding:10px 12px">'+
       '<b>Testversion.</b> Hier werden neue Werkzeuge erprobt; sie kann sich jederzeit &auml;ndern. '+
       'F&uuml;r den Unterricht bitte die <b>KGS-Tafel</b> verwenden.</p>' +
-      '<p><b>Weitere Werkzeuge:</b> der Knopf mit den vier Feldern oben &ouml;ffnet die Lade mit '+
+      '<p><b>Gesten:</b> zwei Finger kurz auftippen w&auml;hlt die n&auml;chste Farbe des aktiven '+
+      'Werkzeugs, drei Finger die vorherige, f&uuml;nf Finger starten die Pipette: dann auf eine '+
+      'Farbe auf der Tafel tippen. Sollen mehrere Sch&uuml;ler gleichzeitig schreiben, Gesten in '+
+      'der Lade abschalten.</p>' +
+      '<p><b>Sternfarben:</b> die vier Sterne unter der Palette sind frei belegbar. Tippen w&auml;hlt, '+
+      'gedr&uuml;ckt halten &ouml;ffnet die Farbauswahl.</p>' +
+      '<p><b>Weitere Werkzeuge:</b> der Werkzeugkasten oben &ouml;ffnet die Lade mit '+
       'Timer, Vorhang und Scheinwerfer. Diese Aufs&auml;tze liegen &uuml;ber der Tafel, geh&ouml;ren '+
       'aber nicht zum Tafelbild: sie erscheinen weder im PDF noch auf dem anderen Ger&auml;t.</p>' +
       '<p><b>Favoriten:</b> Kurz tippen wählt das Werkzeug. Zum Neubelegen erst unten Werkzeug, Dicke und Farbe einstellen, dann den Favoriten etwa eine Sekunde gedrückt halten.</p>' +
@@ -1303,6 +1394,63 @@
     onTap(b, function () { state.color = c.id; if (state.tool === 'eraser') state.tool = 'pen'; updateUI(); });
     colorsEl.appendChild(b);
   });
+  // ---- Sternfarben: tippen waehlt, gedrueckt halten belegt neu ----
+  var sterneEl = $('#sterne'), sternKnoepfe = [];
+  function sternZeichne() {
+    sternKnoepfe.forEach(function (b, i) {
+      // Die Farbe muss direkt am Pfad stehen: die allgemeine Symbolregel setzt
+      // fill auf none und würde ein Attribut überstimmen.
+      b.innerHTML = '<svg viewBox="0 0 24 24"><path style="fill:' + sternHex[i] + '" ' +
+        'd="M12 2.6l2.75 5.8 6.35.9-4.6 4.45 1.1 6.3L12 17.1l-5.6 2.95 1.1-6.3-4.6-4.45 6.35-.9z"/></svg>';
+      b.title = 'Sternfarbe ' + (i + 1) + ' – gedrückt halten zum Ändern';
+    });
+  }
+  function sternWaehlen(i) {
+    panel.innerHTML = '<h2>Sternfarbe ' + (i + 1) + ' festlegen</h2>' +
+      '<p>Tippe auf das Feld und wähle eine Farbe aus.</p>' +
+      '<p style="text-align:center;margin:18px 0">' +
+      '<input type="color" id="farbFeld" value="' + sternHex[i] + '" ' +
+      'style="width:150px;height:110px;padding:0;border:1px solid #c3ccd5;border-radius:12px;background:none">' +
+      '</p>' +
+      '<div class="acts"><button id="fAb">Abbrechen</button>' +
+      '<button id="fOk" class="primary">Übernehmen</button></div>';
+    veil.classList.add('show');
+    tap('#fAb', closeVeil);
+    tap('#fOk', function () {
+      var v = ($('#farbFeld').value || '').trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+        sternHex[i] = v.toLowerCase();
+        try { localStorage.setItem(STERN_KEY, JSON.stringify(sternHex)); } catch (e) {}
+        state.color = 'stern' + i;
+        if (state.tool === 'eraser') state.tool = 'pen';
+        sternZeichne(); updateUI();
+      }
+      closeVeil();
+    });
+  }
+  for (var si = 0; si < 4; si++) (function (i) {
+    var b = document.createElement('button');
+    b.className = 'pick'; b.dataset.stern = String(i);
+    sterneEl.appendChild(b); sternKnoepfe.push(b);
+    var uhrId = null;
+    function ab() { if (uhrId) { clearTimeout(uhrId); uhrId = null; } b.classList.remove('pressing'); }
+    b.addEventListener('pointerdown', function (e) {
+      e.preventDefault(); ab(); b.classList.add('pressing');
+      uhrId = setTimeout(function () { uhrId = null; b.classList.remove('pressing'); sternWaehlen(i); }, LONG_PRESS);
+    });
+    b.addEventListener('pointerup', function () {
+      if (uhrId) {
+        state.color = 'stern' + i;
+        if (state.tool === 'eraser') state.tool = 'pen';
+        updateUI();
+      }
+      ab();
+    });
+    b.addEventListener('pointerleave', ab);
+    b.addEventListener('pointercancel', ab);
+  })(si);
+  sternZeichne();
+
   $$('#sizes button').forEach(function (b) {
     onTap(b, function () { state.size[sizeKey(state.tool)] = +b.dataset.size; updateUI(); });
   });
@@ -1451,6 +1599,9 @@
   function updateUI() {
     var col = colorById(state.color);
     $$('#tools button').forEach(function (b) { b.classList.toggle('on', b.dataset.tool === state.tool); });
+    sternKnoepfe.forEach(function (b, i) {
+      b.classList.toggle('on', state.tool !== 'eraser' && state.color === 'stern' + i);
+    });
     $$('#colors button').forEach(function (b) {
       b.classList.toggle('on', state.tool !== 'eraser' && b.dataset.color === state.color);
     });
@@ -1470,6 +1621,107 @@
     $('#redo').disabled = !pg.redo.length;
     $('#clearBtn').disabled = !pg.strokes.length;
     $('#bgBtn').innerHTML = ICON[pg.bg];
+  }
+
+  // ============ Gesten ============
+  // Zwei Finger tippen: nächste Farbe des aktiven Werkzeugs, drei Finger: vorherige,
+  // fünf Finger: Pipette. Erkannt wird beim Aufsetzen, damit keine Punkte entstehen;
+  // wer mit mehreren Schülern gleichzeitig schreiben lässt, schaltet Gesten ab.
+  var GESTE_KEY = 'tafel-gesten-v1';
+  var GESTE_FENSTER = 150;   // ms, in denen weitere Finger als zur Geste gehörig gelten
+  var GESTE_HALT = 900;      // ms, länger gilt es nicht mehr als Tippen
+  var GESTE_WEG = 30;        // Blatt-Einheiten; mehr Bewegung bedeutet zeichnen
+  var gesten = (function () {
+    try { return localStorage.getItem(GESTE_KEY) !== 'aus'; } catch (e) { return true; }
+  })();
+  function gestenSchalt(an) {
+    gesten = !!an;
+    try { localStorage.setItem(GESTE_KEY, gesten ? 'an' : 'aus'); } catch (e) {}
+    if (!gesten) { gest = null; pipette = false; }
+    ladeZeichne(); zeigeToast(gesten ? 'Gesten eingeschaltet' : 'Gesten aus — mehrere können schreiben');
+  }
+  var gest = null, pipette = false;
+
+  var toast = $('#toast'), toastId = 0;
+  function zeigeToast(text, farbe) {
+    toast.innerHTML = (farbe ? '<span class="tupfen" style="background:' + farbe + '"></span>' : '') +
+      '<span></span>';
+    toast.lastChild.textContent = text;
+    toast.classList.add('auf');
+    clearTimeout(toastId);
+    toastId = setTimeout(function () { toast.classList.remove('auf'); }, 1400);
+  }
+
+  // Farben der vier Favoriten des gerade aktiven Werkzeugs, in deren Reihenfolge
+  function favFarben() {
+    var art = (state.tool === 'marker') ? 'marker' : 'pen', l = [];
+    presets.forEach(function (p) {
+      if (p.tool === art && l.indexOf(p.color) < 0) l.push(p.color);
+    });
+    return l;
+  }
+  function farbeWeiter(d) {
+    var l = favFarben();
+    if (!l.length) return;
+    var i = l.indexOf(state.color);
+    i = (i < 0) ? (d > 0 ? 0 : l.length - 1) : (i + d + l.length) % l.length;
+    state.color = l[i];
+    if (state.tool === 'eraser') state.tool = 'pen';
+    updateUI();
+    var c = colorById(state.color);
+    zeigeToast(c.name, state.tool === 'marker' ? c.marker : c.pen);
+  }
+
+  function pipetteAn() {
+    pipette = true;
+    zeigeToast('Pipette: auf eine Farbe tippen');
+  }
+  // Nimmt die Farbe unter dem Finger und waehlt die naechstgelegene aus Palette
+  // und Sternfarben. Eine eigene Farbverwaltung braucht es dafuer nicht.
+  function pipetteNehmen(p) {
+    pipette = false;
+    var px = Math.round(p.x * (cInk.width / SHEET_W)), py = Math.round(p.y * (cInk.height / SHEET_H));
+    if (px < 0 || py < 0 || px >= cInk.width || py >= cInk.height) { zeigeToast('Daneben getippt'); return; }
+    var d = xInk.getImageData(px, py, 1, 1).data;
+    if (d[3] < 40) { zeigeToast('Dort ist keine Farbe'); return; }
+    var beste = null, abstand = 1e9;
+    alleFarben().forEach(function (c) {
+      [c.pen, c.marker].forEach(function (hex) {
+        var n = parseInt(hex.slice(1), 16);
+        var dr = ((n >> 16) & 255) - d[0], dg = ((n >> 8) & 255) - d[1], db = (n & 255) - d[2];
+        var w = dr * dr + dg * dg + db * db;
+        if (w < abstand) { abstand = w; beste = c; }
+      });
+    });
+    if (!beste) return;
+    state.color = beste.id;
+    if (state.tool === 'eraser') state.tool = 'pen';
+    updateUI();
+    zeigeToast(beste.name + ' übernommen', state.tool === 'marker' ? beste.marker : beste.pen);
+  }
+
+  function gesteAuswerten() {
+    if (!gest || gest.abbruch) return;
+    if (Date.now() - gest.t0 > GESTE_HALT) return;
+    if (gest.n === 2) farbeWeiter(1);
+    else if (gest.n === 3) farbeWeiter(-1);
+    else if (gest.n >= 5) pipetteAn();
+  }
+  // Striche, die beim ersten Finger schon begonnen haben, wieder verwerfen
+  function gesteUebernimmt() {
+    gest.aus = true;
+    gest.punkte.forEach(function (q) { active['delete'](q.id); });
+    requestLive();
+  }
+  // Wird doch gezeichnet, beginnen die noch liegenden Finger einen neuen Strich
+  function gesteAbbrechen(e) {
+    gest.abbruch = true;
+    gest.punkte.forEach(function (q) {
+      if (!q.auf || active.has(q.id)) return;
+      var s = macheStrich(e, { x: q.jx, y: q.jy });
+      active.set(q.id, s);
+    });
+    requestLive();
   }
 
   // ============ Werkzeuglade und Aufsätze ============
@@ -1750,7 +2002,10 @@
       an: function () { return vorhang.classList.contains('auf'); }, schalt: function (v) { vorhangAn(v); } },
     { id: 'spot', name: 'Scheinwerfer', zeile: 'Nur einen Ausschnitt zeigen',
       sym: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.4 1.4M17.6 17.6 19 19M19 5l-1.4 1.4M6.4 17.6 5 19"/></svg>',
-      an: function () { return spot.classList.contains('auf'); }, schalt: function (v) { spotAn(v); } }
+      an: function () { return spot.classList.contains('auf'); }, schalt: function (v) { spotAn(v); } },
+    { id: 'gesten', name: 'Gesten', zeile: '2 Finger vor, 3 Finger zurück, 5 Finger Pipette',
+      sym: '<svg viewBox="0 0 24 24"><path d="M9 11V5.2a1.6 1.6 0 1 1 3.2 0V10"/><path d="M12.2 10V6.4a1.6 1.6 0 1 1 3.2 0V11"/><path d="M15.4 11V8.4a1.6 1.6 0 1 1 3.2 0V15a6 6 0 0 1-6 6h-1.4a5 5 0 0 1-3.9-1.9L5 15.4a1.6 1.6 0 0 1 2.5-2L9 15"/></svg>',
+      an: function () { return gesten; }, schalt: function (v) { gestenSchalt(v); } }
   ];
 
   function ladeZeichne() {

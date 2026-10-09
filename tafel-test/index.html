@@ -194,8 +194,15 @@
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .card { border: 1px solid #dbe2e9; border-radius: 10px; padding: 14px 16px; }
   .sep { height: 1px; background: #e2e8ee; margin: 14px 0; }
+  /* touch-action und Textauswahl muessen hier ausdruecklich zurueckgeholt werden, sonst
+     verschluckt die Regel an html/body unter Android das Langdruck-Menue zum Einfuegen */
   #panel input { font: inherit; font-size: 16px; padding: 10px 12px; border: 1px solid #c3ccd5;
-    border-radius: 8px; width: 100%; margin: 4px 0 8px; background: #fff; color: var(--ink); }
+    border-radius: 8px; width: 100%; margin: 4px 0 8px; background: #fff; color: var(--ink);
+    touch-action: auto; -webkit-user-select: text; user-select: text;
+    -webkit-touch-callout: default; }
+  .zeile { display: flex; gap: 8px; align-items: flex-start; }
+  .zeile input { flex: 1; min-width: 0; }
+  .zeile button { flex: none; margin: 4px 0 8px; }
   #panel input.code { font-size: 26px; letter-spacing: .16em; text-align: center;
     text-transform: uppercase; font-weight: 700; }
   #panel button { display: inline-flex; height: 42px; padding: 0 16px; font-size: 15px;
@@ -826,7 +833,13 @@
   }
   cLive.addEventListener('pointerup', endStroke);
   cLive.addEventListener('pointercancel', endStroke);
-  document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  // In Eingabefeldern bleibt das Langdruck-Menue erlaubt: unter Android ist genau das
+  // der Einfuegen-Befehl. Ueberall sonst stoert es beim Schreiben.
+  document.addEventListener('contextmenu', function (e) {
+    var t = e.target, n = t && t.tagName;
+    if (n === 'INPUT' || n === 'TEXTAREA') return;
+    e.preventDefault();
+  });
 
   // Safari erkennt auf der Zeichenflaeche sonst eigene Gesten und bricht Striche ab
   ['touchstart', 'touchmove', 'touchend'].forEach(function (ev) {
@@ -1236,9 +1249,30 @@
     var el = $(sel);
     if (el) el.addEventListener('pointerdown', function (e) { e.preventDefault(); if (!el.disabled) fn(el); });
   }
+  // Bewusst 'click': ein Zugriff auf die Zwischenablage gilt nur dann als Nutzeraktion.
+  function klick(sel, fn) {
+    var el = $(sel);
+    if (el) el.addEventListener('click', function () { if (!el.disabled) fn(el); });
+  }
   function msg(sel, text, cls) {
     var el = $(sel);
     if (el) { el.textContent = text || ''; el.className = 'msg ' + (cls || ''); }
+  }
+
+  // Liest die Zwischenablage. Der Browser darf das verweigern, deshalb kommt der
+  // Grund als zweites Argument zurueck und wird im Dialog genannt.
+  function ausZwischenablage(fertig) {
+    var cb = navigator.clipboard;
+    if (!cb || !cb.readText) {
+      fertig(null, 'Dieser Browser gibt die Zwischenablage nicht frei');
+      return;
+    }
+    var abgelehnt = function () {
+      fertig(null, 'Die Zwischenablage wurde nicht freigegeben');
+    };
+    try {
+      cb.readText().then(function (t) { fertig((t || '').trim(), null); }, abgelehnt);
+    } catch (e) { abgelehnt(); }
   }
 
   function showInfo() {
@@ -1934,16 +1968,25 @@
       '.gif oder .webp enden. Ein Link auf eine Webseite, auf der das Bild zu sehen ist, reicht nicht. ' +
       'Außerdem muss die Seite, auf der das Bild liegt, die Weiterverarbeitung erlauben; sonst meldet ' +
       'die Tafel, dass das Bild nicht geladen werden kann.</p>' +
-      '<input id="bildUrl" type="url" placeholder="https://…/bild.jpg" autocomplete="off">' +
+      '<div class="zeile"><input id="bildUrl" type="url" placeholder="https://…/bild.jpg" ' +
+      'autocomplete="off"><button id="bildEinf">Einfügen</button></div>' +
       '<button id="bildUrlOk" class="primary wide">Vom Link einfügen</button></div>' +
       '<div class="card"><h3>Aus einer Datei</h3>' +
       '<p class="hint">Vom Gerät auswählen. Große Bilder werden beim Einfügen auf ' + BILD_MAX +
       ' Pixel verkleinert, damit Übergabe und Live-Sitzung sie noch tragen.</p>' +
       '<input id="bildDatei" type="file" accept="image/*" style="font-size:15px">' +
-      '<div id="bmsg" class="msg"></div></div></div>' +
+      '</div></div><div id="bmsg" class="msg"></div>' +
       '<div class="acts"><button id="bildZu">Schließen</button></div>';
     veil.classList.add('show');
     tap('#bildZu', closeVeil);
+    klick('#bildEinf', function () {
+      ausZwischenablage(function (text, fehler) {
+        if (fehler) { msg('#bmsg', fehler + ' — den Link bitte von Hand eintippen', 'err'); return; }
+        if (!text) { msg('#bmsg', 'In der Zwischenablage steht kein Text', 'err'); return; }
+        $('#bildUrl').value = text;
+        msg('#bmsg', 'Eingefügt — jetzt auf „Vom Link einfügen“ tippen');
+      });
+    });
     tap('#bildUrlOk', function () {
       var u = ($('#bildUrl').value || '').trim();
       if (!/^https?:\/\//i.test(u)) { msg('#bmsg', 'Bitte einen vollständigen Link eingeben', 'err'); return; }

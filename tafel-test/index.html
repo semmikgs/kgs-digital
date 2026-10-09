@@ -515,12 +515,24 @@
   var bildCache = {};
   function bildHolen(src, fertig) {
     var c = bildCache[src];
-    if (c) { if (fertig) fertig(c.ok ? c.img : null); return c; }
+    if (c) {
+      // Noch am Laden: anstellen, statt voreilig einen Fehler zu melden
+      if (c.ok) { if (fertig) fertig(c.img); }
+      else if (c.fehler) { if (fertig) fertig(null); }
+      else if (fertig) c.warten.push(fertig);
+      return c;
+    }
     var img = new Image();
-    c = bildCache[src] = { img: img, ok: false, fehler: false };
+    c = bildCache[src] = { img: img, ok: false, fehler: false, warten: fertig ? [fertig] : [] };
     img.crossOrigin = 'anonymous';   // sonst verdirbt das Bild die Flaeche fuer Export und Pipette
-    img.onload = function () { c.ok = true; drawBg(); if (fertig) fertig(img); };
-    img.onerror = function () { c.fehler = true; if (fertig) fertig(null); };
+    img.onload = function () {
+      c.ok = true; drawBg();
+      c.warten.splice(0).forEach(function (f) { f(img); });
+    };
+    img.onerror = function () {
+      c.fehler = true;
+      c.warten.splice(0).forEach(function (f) { f(null); });
+    };
     img.src = src;
     return c;
   }
@@ -1811,12 +1823,41 @@
                                   x: r1(b.x), y: r1(b.y), w: r1(b.w), h: r1(b.h) });
   }
 
+  // Scheitert ein Bild, liegt es fast immer daran, dass die fremde Seite die
+  // Weiterverarbeitung nicht erlaubt. Ohne diese Erlaubnis liesse sich das
+  // Tafelbild nicht mehr als PDF ausgeben, deshalb lehnt der Browser ab.
+  function bildFehler(src) {
+    var netz = /^https?:\/\//i.test(src);
+    panel.innerHTML = '<h2>Das Bild lässt sich nicht einfügen</h2>' +
+      (netz
+        ? '<p>Entweder zeigt der Link nicht direkt auf eine Bilddatei, oder die Seite, auf der ' +
+          'das Bild liegt, erlaubt keine Weiterverarbeitung. Ohne diese Erlaubnis könnte die Tafel ' +
+          'das Bild zwar anzeigen, aber kein PDF mehr daraus erzeugen — deshalb lehnt der Browser ab. ' +
+          'An der Tafel liegt es nicht.</p>' +
+          '<p><b>So klappt es trotzdem:</b> Bild unten öffnen, mit langem Antippen oder Rechtsklick ' +
+          'speichern und anschließend über <b>Aus einer Datei</b> einfügen.</p>' +
+          '<p class="hint" style="word-break:break-all">' + esc(src) + '</p>' +
+          '<div class="acts">' +
+          '<a id="bildAuf" href="' + esc(src) + '" target="_blank" rel="noopener" ' +
+          'style="display:inline-flex;align-items:center;height:42px;padding:0 16px;font-size:15px;' +
+          'font-weight:600;border:1px solid var(--face-edge);border-radius:9px;text-decoration:none;' +
+          'color:var(--ink)">Bild öffnen</a>' +
+          '<button id="bildNochmal" class="primary">Datei auswählen</button>' +
+          '<button id="bildFehlerZu">Schließen</button></div>'
+        : '<p>Die Datei konnte nicht gelesen werden. Möglicherweise ist es kein Bild oder das Format ' +
+          'wird nicht unterstützt. Gängig sind JPG, PNG, GIF und WEBP.</p>' +
+          '<div class="acts"><button id="bildNochmal" class="primary">Noch einmal versuchen</button>' +
+          '<button id="bildFehlerZu">Schließen</button></div>');
+    veil.classList.add('show');
+    tap('#bildFehlerZu', closeVeil);
+    tap('#bildNochmal', function () { bildDialog(); });
+  }
+
   function bildEinfuegen(src) {
+    // Ein frueher gescheitertes Bild darf erneut versucht werden
+    if (bildCache[src] && bildCache[src].fehler) delete bildCache[src];
     bildHolen(src, function (img) {
-      if (!img) {
-        zeigeToast('Bild konnte nicht geladen werden');
-        return;
-      }
+      if (!img) { bildFehler(src); return; }
       var vh = img.naturalWidth / img.naturalHeight;
       var w = Math.min(SHEET_W * 0.5, img.naturalWidth), h = w / vh;
       if (h > SHEET_H * 0.7) { h = SHEET_H * 0.7; w = h * vh; }

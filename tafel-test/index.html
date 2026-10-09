@@ -513,7 +513,10 @@
   // Bilder liegen zwischen Hintergrund und Handschrift: man kann darauf schreiben,
   // der Radierer loescht sie nicht.
   var bildCache = {};
-  function bildHolen(src, fertig) {
+  // ohneCors: das Bild wird ohne Erlaubnis der fremden Seite geladen. Es ist dann
+  // sichtbar, verdirbt aber die Flaeche, auf die es gemalt wird. Deshalb bleibt es
+  // beim Export aussen vor.
+  function bildHolen(src, fertig, ohneCors) {
     var c = bildCache[src];
     if (c) {
       // Noch am Laden: anstellen, statt voreilig einen Fehler zu melden
@@ -523,8 +526,9 @@
       return c;
     }
     var img = new Image();
-    c = bildCache[src] = { img: img, ok: false, fehler: false, warten: fertig ? [fertig] : [] };
-    img.crossOrigin = 'anonymous';   // sonst verdirbt das Bild die Flaeche fuer Export und Pipette
+    c = bildCache[src] = { img: img, ok: false, fehler: false, unsicher: !!ohneCors,
+                           warten: fertig ? [fertig] : [] };
+    if (!ohneCors) img.crossOrigin = 'anonymous';
     img.onload = function () {
       c.ok = true; drawBg();
       c.warten.splice(0).forEach(function (f) { f(img); });
@@ -536,11 +540,13 @@
     img.src = src;
     return c;
   }
-  function malBilder(ctx, pg) {
+  var exportUebersprungen = 0;
+  function malBilder(ctx, pg, fuerExport) {
     (pg.bilder || []).forEach(function (b) {
+      if (fuerExport && b.unsicher) { exportUebersprungen++; return; }
       var c = bildCache[b.src];
       if (c && c.ok) { try { ctx.drawImage(c.img, b.x, b.y, b.w, b.h); } catch (e) {} }
-      else if (!c) bildHolen(b.src);
+      else if (!c) bildHolen(b.src, null, b.unsicher);
     });
   }
 
@@ -842,7 +848,9 @@
       pages: pages.map(function (p) {
         return { id: p.id, bg: p.bg, s: p.strokes.map(packStrich),
                  b: (p.bilder || []).map(function (q) {
-                   return { id: q.id, src: q.src, x: r1(q.x), y: r1(q.y), w: r1(q.w), h: r1(q.h) };
+                   var o = { id: q.id, src: q.src, x: r1(q.x), y: r1(q.y), w: r1(q.w), h: r1(q.h) };
+                   if (q.unsicher) o.u = 1;
+                   return o;
                  }) };
       }) };
   }
@@ -854,7 +862,7 @@
       var pg = newPage(p.bg || 'blank', p.id);
       pg.strokes = (p.s || []).map(function (st) { return entpackStrich(st, sc); });
       pg.bilder = (p.b || []).map(function (q) {
-        return { id: q.id || neueId(), src: q.src,
+        return { id: q.id || neueId(), src: q.src, unsicher: !!q.u,
                  x: q.x * sc, y: q.y * sc, w: q.w * sc, h: q.h * sc };
       });
       return pg;
@@ -1123,7 +1131,7 @@
     x.fillRect(0, 0, w, h);
     x.setTransform(scale, 0, 0, scale, 0, 0);
     paintBg(x, pg.bg);
-    malBilder(x, pg);
+    malBilder(x, pg, true);
     x.setTransform(1, 0, 0, 1, 0, 0);
     x.drawImage(ink, 0, 0);
     return c;
@@ -1190,7 +1198,14 @@
     return new Blob(parts, { type: 'application/pdf' });
   }
 
+  function exportHinweis() {
+    if (!exportUebersprungen) return 'Fertig, siehe Downloads';
+    return 'Fertig, siehe Downloads — ' + exportUebersprungen +
+      (exportUebersprungen === 1 ? ' Bild wurde' : ' Bilder wurden') + ' weggelassen';
+  }
+
   function exportPDF() {
+    exportUebersprungen = 0;
     // A4 quer in Punkten (1 pt = 1/72 Zoll)
     var pw = 841.89, ph = 595.28, margin = 14;
     var iw = pw - margin * 2, ih = iw * SHEET_H / SHEET_W;
@@ -1205,6 +1220,7 @@
   }
 
   function exportPNG() {
+    exportUebersprungen = 0;
     pageCanvas(pages[cur], 2).toBlob(function (b) {
       var u = URL.createObjectURL(b);
       download(u, 'Tafelbild_' + stamp() + '_S' + (cur + 1) + '.png');
@@ -1400,13 +1416,13 @@
     tap('#pdfBtn', function (btn) {
       btn.disabled = true; msg('#emsg', 'PDF wird erzeugt …');
       setTimeout(function () {
-        try { exportPDF(); msg('#emsg', 'Fertig, siehe Downloads', 'ok'); }
+        try { exportPDF(); msg('#emsg', exportHinweis(), 'ok'); }
         catch (e) { msg('#emsg', e.message, 'err'); }
         btn.disabled = false;
       }, 30);
     });
     tap('#pngBtn', function () {
-      try { exportPNG(); msg('#emsg', 'Fertig, siehe Downloads', 'ok'); }
+      try { exportPNG(); msg('#emsg', exportHinweis(), 'ok'); }
       catch (e) { msg('#emsg', e.message, 'err'); }
     });
 
@@ -1837,11 +1853,15 @@
           '<p><b>So klappt es trotzdem:</b> Bild unten öffnen, mit langem Antippen oder Rechtsklick ' +
           'speichern und anschließend über <b>Aus einer Datei</b> einfügen.</p>' +
           '<p class="hint" style="word-break:break-all">' + esc(src) + '</p>' +
+          '<p class="hint">Brauchst du kein PDF, kannst du das Bild auch so einfügen. Es ist dann ' +
+          'auf der Tafel und auf dem zweiten Gerät zu sehen, bleibt beim Export aber weg; der Rest ' +
+          'der Seite wird normal ausgegeben.</p>' +
           '<div class="acts">' +
           '<a id="bildAuf" href="' + esc(src) + '" target="_blank" rel="noopener" ' +
           'style="display:inline-flex;align-items:center;height:42px;padding:0 16px;font-size:15px;' +
           'font-weight:600;border:1px solid var(--face-edge);border-radius:9px;text-decoration:none;' +
           'color:var(--ink)">Bild öffnen</a>' +
+          '<button id="bildTrotzdem">Ohne PDF einfügen</button>' +
           '<button id="bildNochmal" class="primary">Datei auswählen</button>' +
           '<button id="bildFehlerZu">Schließen</button></div>'
         : '<p>Die Datei konnte nicht gelesen werden. Möglicherweise ist es kein Bild oder das Format ' +
@@ -1851,25 +1871,28 @@
     veil.classList.add('show');
     tap('#bildFehlerZu', closeVeil);
     tap('#bildNochmal', function () { bildDialog(); });
+    tap('#bildTrotzdem', function () { closeVeil(); bildEinfuegen(src, true); });
   }
 
-  function bildEinfuegen(src) {
+  function bildEinfuegen(src, ohneCors) {
     // Ein frueher gescheitertes Bild darf erneut versucht werden
     if (bildCache[src] && bildCache[src].fehler) delete bildCache[src];
     bildHolen(src, function (img) {
       if (!img) { bildFehler(src); return; }
+      if (ohneCors && bildCache[src]) bildCache[src].unsicher = true;
       var vh = img.naturalWidth / img.naturalHeight;
       var w = Math.min(SHEET_W * 0.5, img.naturalWidth), h = w / vh;
       if (h > SHEET_H * 0.7) { h = SHEET_H * 0.7; w = h * vh; }
       var b = { id: neueId(), src: src,
                 x: Math.round((SHEET_W - w) / 2), y: Math.round((SHEET_H - h) / 2),
                 w: Math.round(w), h: Math.round(h) };
+      if (ohneCors) b.unsicher = true;
       bilderDer().push(b);
       bildWahl = b.id;
       drawBg(); bildModusAn(true); updateUI();
       sende('bild_neu', { seite: pages[cur].id, bild: b });
-      zeigeToast('Bild eingefügt');
-    });
+      zeigeToast(ohneCors ? 'Eingefügt – erscheint nicht im PDF' : 'Bild eingefügt');
+    }, ohneCors);
   }
 
   function bildLoeschen() {

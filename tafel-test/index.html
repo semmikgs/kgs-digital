@@ -655,6 +655,15 @@
   // Nicht linear: im unteren Bereich soll der Regler schon spürbar wirken,
   // ohne dass das obere Ende unbrauchbar träge wird.
   function alpha() { return 0.12 + Math.pow(1 - glaettung, 1.8) * 0.88; }
+  // Die Glättung blendet über die ersten Punkte ein. Ohne das startet die
+  // geglättete Spur am Aufsetzpunkt und holt die Spitze erst nach und nach ein;
+  // bei kurzen Strichen - etwa einem Index - ist der Strich vorbei, bevor sie
+  // angekommen ist. Punkt 0 wird ungefiltert gesetzt, danach wächst die
+  // Filterwirkung linear bis zum eingestellten Wert.
+  var GLATT_EINLAUF = 6;
+  function alphaEin(a, n) {
+    return (n >= GLATT_EINLAUF) ? a : a + (1 - a) * (1 - n / GLATT_EINLAUF);
+  }
   function schiebe(s, x, y) {
     var lx = s.pts[s.pts.length - 2], ly = s.pts[s.pts.length - 1];
     if (Math.abs(x - lx) + Math.abs(y - ly) < 1.2) return false;
@@ -694,6 +703,8 @@
             w: SIZES[state.tool][state.size[state.tool]], pts: [p.x, p.y] };
     }
     s.gx = p.x; s.gy = p.y; s.rx = p.x; s.ry = p.y; s.tLetzt = Date.now();
+    s.n = 0;          // gezeichnete Rohpunkte, steuert das Einblenden der Glättung
+    s.bewegt = false; // erst nach echter Bewegung darf der Zackenriegel greifen
     return s;
   }
 
@@ -753,7 +764,15 @@
     // als Ende und Anfang, sondern als Fortsetzung desselben Kontakts. Ohne
     // diesen Riegel entstuende eine gerade Verbindung vom Abhebe- zum neuen
     // Aufsetzpunkt: der schmale Zacken. Pause plus Ortswechsel verraten den Fall.
-    if (s.kind !== 'line') {
+    //
+    // Nur bei einem Strich, der bereits gewandert ist: Zwischen dem Aufsetzen und
+    // dem ersten Bewegungspunkt vergehen am Board regelmäßig mehr als SPRUNG_PAUSE
+    // Millisekunden, und in der Zeit ist die Spitze längst weiter als SPRUNG_WEG.
+    // Griffe der Riegel schon dort, zerschnitte er jeden Strich sofort beim
+    // Aufsetzen in einen einzelnen Punkt und den eigentlichen Zug - genau das
+    // Haken, das kleine Indizes unschreibbar machte. Ein Strich aus einem Punkt
+    // kann ohnehin kein Abheben und Neuansetzen sein.
+    if (s.kind !== 'line' && s.bewegt) {
       var pause = Date.now() - s.tLetzt;
       if (pause > SPRUNG_PAUSE) {
         var n = pt(e);
@@ -790,14 +809,16 @@
       if (e.pointerType === 'pen' && list[i].buttons === 0) continue;
       var r = pt(list[i]);
       s.rx = r.x; s.ry = r.y;
-      if (s.kind === 'erase' || a >= 1) {           // Radierer bleibt bewusst ungefiltert
+      var ae = alphaEin(a, s.n); s.n++;
+      if (s.kind === 'erase' || ae >= 1) {          // Radierer bleibt bewusst ungefiltert
         s.gx = r.x; s.gy = r.y;
         schiebe(s, r.x, r.y);
       } else {
-        s.gx += (r.x - s.gx) * a;
-        s.gy += (r.y - s.gy) * a;
+        s.gx += (r.x - s.gx) * ae;
+        s.gy += (r.y - s.gy) * ae;
         schiebe(s, s.gx, s.gy);
       }
+      s.bewegt = true;
     }
     if (s.pts.length === start) return;
     if (s.kind === 'erase') eraseIncrement(s, start); else requestLive();

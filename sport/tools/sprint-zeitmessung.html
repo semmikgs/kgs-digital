@@ -168,7 +168,19 @@ body.vollbild .buehne .leise{display:none}
       <div id="bahnenOffen">
         <div class="reihe" style="margin:8px 0">
           <select id="laufKlasse" style="flex:1"></select>
-          <button class="knopf hell klein" id="naechsteGruppe" title="Nächste 4 Schüler der Liste einsetzen">Nächste 4 ▶</button>
+        </div>
+        <div class="reihe" style="margin:0 0 8px">
+          <select id="reihenModus" style="flex:1" title="Wie die Bahnen automatisch gefüllt werden">
+            <option value="">Bahnen von Hand wählen</option>
+            <optgroup label="Alphabet"><option value="abc">Alphabet – alle</option><option value="abc-m">Alphabet – Jungen</option><option value="abc-w">Alphabet – Mädchen</option></optgroup>
+            <optgroup label="Bestzeit (gleich Schnelle zusammen)"><option value="best">Bestzeit – alle</option><option value="best-m">Bestzeit – Jungen</option><option value="best-w">Bestzeit – Mädchen</option></optgroup>
+            <optgroup label="Zufall"><option value="zuf">Zufall – alle</option><option value="zuf-m">Zufall – Jungen</option><option value="zuf-w">Zufall – Mädchen</option></optgroup>
+          </select>
+        </div>
+        <div class="reihe" id="reihenSteuerung" style="margin:0 0 8px">
+          <button class="knopf hell klein" id="vorigeReihe" title="vorige Reihe">◀</button>
+          <span class="leise" id="reihenInfo" style="flex:1;text-align:center"></span>
+          <button class="knopf klein" id="naechsteGruppe" title="Nächste Reihe einsetzen">Nächste Reihe ▶</button>
         </div>
         <div id="bahnen"></div>
         <button class="knopf klein" id="bahnenFertig" style="width:100%">✓ Bahnen fertig</button>
@@ -470,6 +482,7 @@ function laufPanelZeichnen() {
   if (daten.e.klasse && !daten.klassen[daten.e.klasse]) daten.e.klasse = "";
   ks.innerHTML = `<option value="">– ohne Klasse (nur Bahnen) –</option>` + namen.map((k) => `<option ${k === daten.e.klasse ? "selected" : ""}>${esc(k)}</option>`).join("");
   $("naechsteGruppe").disabled = !daten.e.klasse;
+  reihenInfoZeigen();
 
   const bz = $("bahnen"); bz.innerHTML = "";
   const liste = daten.e.klasse ? [...daten.klassen[daten.e.klasse]].sort(sortSchueler) : [];
@@ -500,13 +513,59 @@ $("streckeWahl").onchange = (e) => {
 const sortDe = (a, b) => a.localeCompare(b, "de", { numeric: true });
 const sortSchueler = (a, b) => (a.nn + " " + a.vn).localeCompare(b.nn + " " + b.vn, "de");
 $("laufKlasse").onchange = (e) => { daten.e.klasse = e.target.value; bahnen = [null, null, null, null]; speichern(); laufPanelZeichnen(); };
-$("naechsteGruppe").onclick = () => {
+/* ---------- Starterreihen automatisch füllen ---------- */
+// daten.e.reihe = { schluessel, ids: [Reihenfolge], pos: Index der aktuellen Reihe }
+function reihenSchluessel() {
+  const k = daten.e.klasse, m = daten.e.reihenModus || "";
+  return [k, m, m.startsWith("best") ? daten.e.strecke : "", (daten.klassen[k] || []).length].join("|");
+}
+function reihenfolgeBauen() {
+  const k = daten.e.klasse, m = daten.e.reihenModus || "";
+  const [art, g] = m.split("-");
+  let liste = [...(daten.klassen[k] || [])].filter((s) => !g || s.g === g);
+  if (art === "abc") liste.sort(sortSchueler);
+  if (art === "zuf") { liste.sort(sortSchueler); for (let i = liste.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [liste[i], liste[j]] = [liste[j], liste[i]]; } }
+  if (art === "best") {
+    const best = (s) => { const r = daten.ergebnisse.filter((x) => x.sid === s.id && x.strecke === daten.e.strecke); return r.length ? Math.min(...r.map((x) => x.zeit)) : null; };
+    const mit = liste.map((s) => ({ s, b: best(s) }));
+    mit.sort((a, b) => (a.b == null) - (b.b == null) || (a.b ?? 0) - (b.b ?? 0) || sortSchueler(a.s, b.s));
+    liste = mit.map((x) => x.s);
+  }
+  daten.e.reihe = { schluessel: reihenSchluessel(), ids: liste.map((s) => s.id), pos: 0 };
+}
+function reiheEinsetzen() {
+  const r = daten.e.reihe; if (!r) return;
+  bahnen = [0, 1, 2, 3].map((j) => r.ids[r.pos + j] ? { sid: r.ids[r.pos + j] } : null);
+  ausGruppe = true; speichern(); bahnenUebernehmen(); laufPanelZeichnen();
+}
+function reiheWechseln(richtung) {
   const k = daten.e.klasse; if (!k) return;
-  const liste = [...daten.klassen[k]].sort(sortSchueler); if (!liste.length) return;
-  let p = daten.e.gruppe[k] || 0; if (p >= liste.length) p = 0;
-  bahnen = [0, 1, 2, 3].map((j) => liste[p + j] ? { sid: liste[p + j].id } : null);
-  daten.e.gruppe[k] = p + 4 >= liste.length ? 0 : p + 4; speichern();
-  ausGruppe = true; bahnenUebernehmen(); laufPanelZeichnen();
+  if (!daten.e.reihenModus) { daten.e.reihenModus = "abc"; }
+  const r = daten.e.reihe;
+  if (!r || r.schluessel !== reihenSchluessel()) { reihenfolgeBauen(); reiheEinsetzen(); return; }
+  if (!r.ids.length) { melden("Keine passenden Schüler in dieser Klasse."); return; }
+  r.pos += 4 * richtung;
+  if (r.pos >= r.ids.length) {
+    if (daten.e.reihenModus.startsWith("zuf")) reihenfolgeBauen(); else r.pos = 0;
+    melden("Alle durch – es geht von vorne los");
+  }
+  if (r.pos < 0) r.pos = Math.max(0, Math.floor((r.ids.length - 1) / 4) * 4);
+  reiheEinsetzen();
+}
+function reihenInfoZeigen() {
+  const r = daten.e.reihe, aktiv = !!daten.e.reihenModus && !!daten.e.klasse;
+  $("reihenSteuerung").hidden = !daten.e.klasse;
+  $("vorigeReihe").disabled = !aktiv;
+  $("reihenModus").value = daten.e.reihenModus || "";
+  $("reihenModus").disabled = !daten.e.klasse;
+  $("reihenInfo").textContent = aktiv && r && r.schluessel === reihenSchluessel() && r.ids.length
+    ? `Reihe ${Math.floor(r.pos / 4) + 1}/${Math.ceil(r.ids.length / 4)} · ${r.ids.length} Sch.` : "";
+}
+$("naechsteGruppe").onclick = () => reiheWechseln(1);
+$("vorigeReihe").onclick = () => reiheWechseln(-1);
+$("reihenModus").onchange = (e) => {
+  daten.e.reihenModus = e.target.value;
+  if (daten.e.reihenModus) { reihenfolgeBauen(); reiheEinsetzen(); } else { speichern(); laufPanelZeichnen(); }
 };
 function bahnName(i) {
   const b = bahnen[i]; if (!b) return "Bahn " + (i + 1);

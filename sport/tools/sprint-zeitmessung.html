@@ -134,7 +134,7 @@ tr.klick{cursor:pointer}tr.klick:hover{background:#f6f7fb}
         </div>
         <div class="reihe" style="margin-top:8px">
           <button class="knopf rot" id="stopp" style="flex:1" disabled>■ Stopp</button>
-          <button class="knopf hell" id="abbrechen" style="flex:1" disabled>Abbrechen</button>
+          <button class="knopf hell" id="reset" style="flex:1" title="Lauf verwerfen und neu beginnen – Bahnen bleiben">↺ Reset</button>
         </div>
       </div>
     </div>
@@ -406,7 +406,7 @@ function bahnName(i) {
 /* =========================================================
    GERÄTE: Kamera + Mikrofon
    ========================================================= */
-let videoStrom = null, audioCtx = null, knallKnoten = null, wakeLock = null;
+let videoStrom = null, audioCtx = null, audioQuelle = null, knallKnoten = null, wakeLock = null;
 const video = $("video");
 let kameraFps = 0;
 
@@ -471,6 +471,7 @@ async function audioStarten() {
   const strom = await navigator.mediaDevices.getUserMedia({
     audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 }, video: false
   });
+  audioQuelle = strom;
   const AC = window.AudioContext || window.webkitAudioContext;
   audioCtx = new AC({ latencyHint: "interactive" });
   if (audioCtx.state === "suspended") await audioCtx.resume();
@@ -552,6 +553,7 @@ function setzeZustand(z) {
   zustand = z;
   const st = $("status"); st.className = "status " + ({ warte: "warte", laeuft: "laeuft", auswertung: "aus" }[z] || "");
   const g = $("statusGross"), t = $("statusText");
+  if (z === "aus") { g.textContent = "–"; t.textContent = "Kamera und Mikrofon starten"; }
   if (z === "bereit") { g.textContent = "Bereit"; t.textContent = kalibModus ? "Kalibrierlauf: scharf schalten, Klappe auf der Ziellinie schlagen" : "Bahnen wählen, dann scharf schalten"; }
   if (z === "warte") { g.textContent = "🔔"; t.textContent = "Warte auf den Knall …"; }
   if (z === "laeuft") { t.textContent = lauf.start === "hand" ? "Läuft (Handstart)" : "Läuft – Start per Knall"; }
@@ -560,7 +562,6 @@ function setzeZustand(z) {
   $("scharf").textContent = z === "warte" ? "Entschärfen" : "🔔 Scharf schalten";
   $("handstart").disabled = !(z === "bereit" || z === "warte");
   $("stopp").disabled = z !== "laeuft";
-  $("abbrechen").disabled = !(z === "laeuft" || z === "warte");
   $("zuordnenBox").hidden = z !== "auswertung";
   laufPanelZeichnen();
 }
@@ -578,10 +579,36 @@ $("handstart").addEventListener("pointerdown", (e) => {
   laufStarten(e.timeStamp || performance.now(), "hand");
 });
 $("stopp").onclick = () => laufBeenden();
-$("abbrechen").onclick = () => {
-  knallKnoten && knallKnoten.port.postMessage({ scharf: false });
-  lauf = null; aufnahme = null; ansicht = "kamera"; buehneZeigen(); setzeZustand("bereit");
+$("reset").onclick = () => {
+  if (zustand === "auswertung" && lauf && lauf.zeiten.some(Boolean) && !confirm("Zugeordnete Zeiten verwerfen und neu beginnen?")) return;
+  resetLauf();
 };
+// Setzt den Lauf komplett zurück; Bahnen und Einstellungen bleiben erhalten.
+async function resetLauf() {
+  knallKnoten && knallKnoten.port.postMessage({ scharf: false });
+  if (aufnahme) aufnahme.laeuft = false;
+  lauf = null; aufnahme = null; kalibModus = false;
+  zeiger.clear(); gestik = null; cursor = 0; scroll = 0;
+  // Geräte prüfen und notfalls neu verbinden (z. B. nach Anruf, Sperrbildschirm, Tab-Wechsel)
+  try {
+    if (audioCtx && audioCtx.state === "suspended") await audioCtx.resume();
+    const vt = videoStrom && videoStrom.getVideoTracks()[0];
+    const at = audioQuelle && audioQuelle.getAudioTracks()[0];
+    if ((vt && vt.readyState === "ended") || (at && at.readyState === "ended") || (audioCtx && audioCtx.state === "closed")) {
+      geraeteStoppen(); await geraeteStarten(); melden("Kamera und Mikrofon neu verbunden"); return;
+    }
+    if (video.paused && videoStrom) await video.play();
+  } catch (e) { console.warn(e); }
+  ansicht = videoStrom ? "kamera" : "leer"; buehneZeigen();
+  setzeZustand(videoStrom ? "bereit" : "aus");
+  melden("Zurückgesetzt – bereit für den nächsten Lauf");
+}
+function geraeteStoppen() {
+  try { videoStrom && videoStrom.getTracks().forEach((t) => t.stop()); } catch (e) {}
+  try { audioQuelle && audioQuelle.getTracks().forEach((t) => t.stop()); } catch (e) {}
+  try { audioCtx && audioCtx.close(); } catch (e) {}
+  videoStrom = null; audioQuelle = null; audioCtx = null; knallKnoten = null;
+}
 
 function laufStarten(perfKnall, art) {
   const strecke = kalibModus ? 0 : daten.e.strecke;

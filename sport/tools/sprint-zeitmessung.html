@@ -62,7 +62,21 @@ h3{margin:14px 0 8px;font-size:15px;color:var(--indigo)}
 .meter{position:relative;height:22px;background:#e5e7eb;border-radius:6px;overflow:hidden;cursor:pointer;touch-action:none}
 .meter .pegel{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#22c55e,#eab308 70%,#ef4444);width:0}
 .meter .schwelle{position:absolute;top:-2px;bottom:-2px;width:3px;background:#111}
-.zuordnen button{display:flex;justify-content:space-between;width:100%;margin-bottom:6px;text-align:left}
+.zuordnen{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.zuordnen button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:8px 10px;min-width:0}
+.zuordnen button .zn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.zuordnen button .zt{font-size:18px}
+.zuordnen button.gesetzt{background:#fff;outline:2px solid currentColor}
+.zuordnen.kalib{grid-template-columns:1fr}
+.bahnenkopf{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.bahnenzeile{font-size:13.5px;line-height:1.5;min-width:0}
+.bahnenzeile span{white-space:nowrap;margin-right:6px}
+body.ziel .nurStart{display:none!important}
+body.ziel .status{padding:4px 8px;margin:4px 0}
+body.ziel .status .gross{font-size:22px}
+body.ziel #streifen{height:calc(100vh - 360px);min-height:240px}
+body.ziel .hilfe{display:none}
+body.vollbild.ziel #streifen{height:calc(100vh - 230px)}
 .zuordnen .zt{font-variant-numeric:tabular-nums}
 .buehne{padding:10px;min-width:0}
 .buehnenkopf{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:8px}
@@ -121,43 +135,43 @@ body.vollbild .buehne .leise{display:none}
   <aside class="karte panel">
     <div class="panelkopf"><span><h2 style="margin:0">Lauf</h2></span><button id="panelZu" title="Seitenleiste ein-/ausklappen">◀</button></div>
 
-    <div class="chips" id="streckenChips"></div>
-    <p class="leise" id="schallInfo" style="margin:6px 0 10px"></p>
-
     <div class="status" id="status"><div class="gross" id="statusGross">–</div><div id="statusText">Kamera und Mikrofon starten</div></div>
 
-    <div id="steuerung">
-      <button class="knopf gross" id="geraeteStart" style="width:100%">📷 Kamera &amp; Mikrofon starten</button>
-      <div id="laufKnoepfe" hidden>
+    <div class="nurStart">
+      <div class="chips" id="streckenChips"></div>
+      <p class="leise" id="schallInfo" style="margin:6px 0 10px"></p>
+    </div>
+
+    <button class="knopf gross" id="geraeteStart" style="width:100%">📷 Kamera &amp; Mikrofon starten</button>
+    <div id="laufKnoepfe" hidden>
+      <div class="nurStart">
         <div class="meter" id="meter" title="Tippen setzt die Schwelle"><div class="pegel" id="pegel"></div><div class="schwelle" id="schwelleStrich"></div></div>
-        <div class="reihe" style="justify-content:space-between;margin:4px 0 10px"><span class="leise">Pegel <b id="pegelDb">–</b></span><span class="leise">Schwelle <b id="schwelleDb">–</b></span></div>
-        <input type="range" id="schwelle" min="-50" max="-1" step="1" style="width:100%;margin-bottom:10px">
+        <div class="reihe" style="justify-content:space-between;margin:4px 0 6px"><span class="leise">Pegel <b id="pegelDb">–</b></span><span class="leise">Schwelle <b id="schwelleDb">–</b></span></div>
+        <input type="range" id="schwelle" min="-50" max="-1" step="1" style="width:100%;margin-bottom:8px">
         <div class="reihe">
           <button class="knopf gross gelb" id="scharf" style="flex:1">🔔 Scharf schalten</button>
           <button class="knopf gross" id="handstart" style="flex:1">✋ Handstart</button>
         </div>
-        <div class="reihe" style="margin-top:8px">
-          <button class="knopf rot" id="stopp" style="flex:1" disabled>■ Stopp</button>
-          <button class="knopf hell" id="reset" style="flex:1" title="Lauf verwerfen und neu beginnen – Bahnen bleiben">↺ Reset</button>
+      </div>
+      <div class="reihe" style="margin-top:8px">
+        <button class="knopf rot nurStart" id="stopp" style="flex:1" disabled>■ Stopp</button>
+        <button class="knopf hell" id="reset" style="flex:1" title="Lauf verwerfen und neu beginnen – Bahnen bleiben">↺ Reset</button>
+      </div>
+    </div>
+
+    <div id="bahnenBox" style="margin-top:12px">
+      <div class="bahnenkopf" id="bahnenKopf">
+        <div id="bahnenZeile" class="bahnenzeile"></div>
+        <button class="knopf hell klein" id="bahnenUmschalten">✎ Bahnen</button>
+      </div>
+      <div id="bahnenOffen">
+        <div class="reihe" style="margin:8px 0">
+          <select id="laufKlasse" style="flex:1"></select>
+          <button class="knopf hell klein" id="naechsteGruppe" title="Nächste 4 Schüler der Liste einsetzen">Nächste 4 ▶</button>
         </div>
+        <div id="bahnen"></div>
+        <button class="knopf klein" id="bahnenFertig" style="width:100%">✓ Bahnen fertig</button>
       </div>
-    </div>
-
-    <div class="reihe" style="margin:12px 0 8px">
-      <select id="laufKlasse" style="flex:1"></select>
-      <button class="knopf hell klein" id="naechsteGruppe" title="Nächste 4 Schüler der Liste einsetzen">Nächste 4 ▶</button>
-    </div>
-    <div id="bahnen"></div>
-
-    <div id="zuordnenBox" hidden>
-      <h3>Zeit zuordnen</h3>
-      <p class="leise" style="margin-top:0">Cursor im Fotofinish auf die Brust setzen, dann die Bahn antippen.</p>
-      <div class="zuordnen" id="zuordnen"></div>
-      <div class="reihe">
-        <button class="knopf gruen" id="laufSpeichern" style="flex:1">✓ Lauf speichern</button>
-        <button class="knopf hell" id="laufVerwerfen">Verwerfen</button>
-      </div>
-      <div class="reihe" style="margin-top:6px"><button class="knopf hell klein" id="bildSichern">Bild sichern</button><span class="leise" id="kalibHinweis"></span></div>
     </div>
 
     <h3>Heute gemessen</h3>
@@ -185,7 +199,16 @@ body.vollbild .buehne .leise{display:none}
     <div id="fotofinish" hidden>
       <canvas id="uebersicht" title="Orange = deutliche Bewegung auf der Ziellinie (Einlauf), rotes Dreieck = Beginn"></canvas>
       <canvas id="streifen"></canvas>
-      <p class="leise" style="margin:6px 0 0">Leiste oben: orange = Einlauf, antippen springt hin · gelbe Linie am Griff ziehen · daneben wischen = scrollen · Tippen = Cursor · zwei Finger = Zoom. Zeiten werden auf Hundertstel aufgerundet.</p>
+      <div id="zielLeiste" hidden>
+        <div class="zuordnen" id="zuordnen"></div>
+        <div class="reihe" style="margin-top:6px">
+          <button class="knopf gruen" id="laufSpeichern" style="flex:2">✓ Lauf speichern</button>
+          <button class="knopf hell" id="laufVerwerfen" style="flex:1">Verwerfen</button>
+          <button class="knopf hell" id="bildSichern">Bild sichern</button>
+          <span class="leise" id="kalibHinweis"></span>
+        </div>
+      </div>
+      <p class="leise hilfe" style="margin:6px 0 0">Leiste oben: orange = Einlauf, antippen springt hin · gelbe Linie am Griff ziehen · daneben wischen = scrollen · Tippen = Cursor · zwei Finger = Zoom. Zeiten werden auf Hundertstel aufgerundet.</p>
     </div>
   </div>
 </section>
@@ -360,6 +383,19 @@ $("panelZu").onclick = () => {
    ========================================================= */
 let bahnen = [null, null, null, null];   // {sid} | {gast:"Name"} | null
 let ausGruppe = false;                   // Bahnen kamen über „Nächste 4“
+let bahnenZu = false;                    // Bahnenbereich zugeklappt
+function bahnenAnzeigen() {
+  $("bahnenOffen").hidden = bahnenZu;
+  $("bahnenUmschalten").hidden = !bahnenZu;
+  $("bahnenZeile").innerHTML = bahnenZu
+    ? bahnen.map((b, i) => `<span><b style="color:${BAHNFARBEN[i]}">${i + 1}</b> ${b ? esc(b.gast || nameKurz(schueler(b.sid))) : '<span class="leise">frei</span>'}</span>`).join(" ")
+    : '<h3 style="margin:0">Bahnen</h3>';
+}
+function bahnenUebernehmen() {   // Änderungen nach dem Lauf gelten für den angezeigten Lauf
+  if (lauf && !lauf.kalib) { lauf.bahnen = bahnen.map((b) => b ? Object.assign({}, b) : null); zeichneBald(); }
+}
+$("bahnenUmschalten").onclick = () => { bahnenZu = false; bahnenAnzeigen(); };
+$("bahnenFertig").onclick = () => { bahnenZu = true; bahnenAnzeigen(); };
 
 function laufPanelZeichnen() {
   const sc = $("streckenChips"); sc.innerHTML = "";
@@ -390,11 +426,12 @@ function laufPanelZeichnen() {
       if (sel.value === "#gast") { const n = prompt("Name für Bahn " + (i + 1) + ":"); bahnen[i] = n ? { gast: n.trim() } : null; }
       else if (sel.value === "#g") {}
       else bahnen[i] = sel.value ? { sid: sel.value } : null;
-      ausGruppe = false; laufPanelZeichnen();
+      ausGruppe = false; bahnenUebernehmen(); laufPanelZeichnen();
     };
     row.innerHTML = `<span class="punkt" style="background:${BAHNFARBEN[i]}">${i + 1}</span>`;
     row.appendChild(sel); bz.appendChild(row);
   }
+  bahnenAnzeigen();
   zuordnenZeichnen();
 }
 const sortDe = (a, b) => a.localeCompare(b, "de", { numeric: true });
@@ -406,7 +443,7 @@ $("naechsteGruppe").onclick = () => {
   let p = daten.e.gruppe[k] || 0; if (p >= liste.length) p = 0;
   bahnen = [0, 1, 2, 3].map((j) => liste[p + j] ? { sid: liste[p + j].id } : null);
   daten.e.gruppe[k] = p + 4 >= liste.length ? 0 : p + 4; speichern();
-  ausGruppe = true; laufPanelZeichnen();
+  ausGruppe = true; bahnenUebernehmen(); laufPanelZeichnen();
 };
 function bahnName(i) {
   const b = bahnen[i]; if (!b) return "Bahn " + (i + 1);
@@ -573,13 +610,17 @@ function setzeZustand(z) {
   $("scharf").textContent = z === "warte" ? "Entschärfen" : "🔔 Scharf schalten";
   $("handstart").disabled = !(z === "bereit" || z === "warte");
   $("stopp").disabled = z !== "laeuft";
-  $("zuordnenBox").hidden = z !== "auswertung";
+  $("zielLeiste").hidden = z !== "auswertung";
+  const warZiel = document.body.classList.contains("ziel");
+  document.body.classList.toggle("ziel", z === "auswertung");
+  if (warZiel !== (z === "auswertung")) setTimeout(() => { groesseAnpassen(); zeichneBald(); }, 30);
   laufPanelZeichnen();
 }
 
 $("scharf").onclick = () => {
   if (zustand === "warte") { knallKnoten && knallKnoten.port.postMessage({ scharf: false }); setzeZustand("bereit"); return; }
   if (!knallKnoten) { melden("Kein Mikrofon – bitte Handstart nutzen."); return; }
+  bahnenZu = true;
   setzeZustand("warte");
   // kurze Sperrzeit, damit das Antippen selbst nicht auslöst
   setTimeout(() => { if (zustand === "warte") knallKnoten.port.postMessage({ scharf: true }); }, 500);
@@ -633,6 +674,7 @@ function laufStarten(perfKnall, art) {
     zeiten: [null, null, null, null]
   };
   aufnahmeStarten();
+  bahnenZu = true;
   setzeZustand("laeuft");
   ansicht = "streifen"; buehneZeigen();
   uhrTick();
@@ -661,7 +703,7 @@ function laufBeenden() {
 /* ---------- Zuordnen ---------- */
 function zuordnenZeichnen() {
   const box = $("zuordnen"); if (!box || !lauf) return;
-  box.innerHTML = "";
+  box.innerHTML = ""; box.classList.toggle("kalib", !!lauf.kalib);
   if (lauf.kalib) {
     const b = document.createElement("button"); b.className = "knopf gelb";
     b.innerHTML = `<span>Als Nullpunkt übernehmen</span><span class="zt">${aufnahme && aufnahme.n ? fmtS(cursorZeit()) : ""}</span>`;
@@ -675,10 +717,10 @@ function zuordnenZeichnen() {
   }
   for (let i = 0; i < 4; i++) {
     const belegt = lauf.bahnen[i];
-    const b = document.createElement("button"); b.className = "knopf hell";
-    b.style.borderLeft = "6px solid " + BAHNFARBEN[i];
+    const b = document.createElement("button"); b.className = "knopf hell" + (lauf.zeiten[i] ? " gesetzt" : "");
+    b.style.borderLeft = "6px solid " + BAHNFARBEN[i]; b.style.color = BAHNFARBEN[i];
     const name = belegt ? (belegt.gast || nameKurz(schueler(belegt.sid))) : "Bahn " + (i + 1);
-    b.innerHTML = `<span>${i + 1} · ${esc(name)}</span><span class="zt">${lauf.zeiten[i] ? fmtS(lauf.zeiten[i].t) : "zuordnen"}</span>`;
+    b.innerHTML = `<span class="zn" style="color:var(--tinte)">${i + 1} · ${esc(name)}</span><span class="zt">${lauf.zeiten[i] ? fmtS(lauf.zeiten[i].t) : "Zeit setzen"}</span>`;
     b.onclick = () => {
       const t = cursorZeit(); if (t == null) return;
       if (lauf.zeiten[i] && Math.abs(lauf.zeiten[i].c - cursor) < 0.01) lauf.zeiten[i] = null;   // nochmal tippen = entfernen
@@ -697,7 +739,7 @@ $("laufSpeichern").onclick = () => {
     zeile.push(`<span style="color:${BAHNFARBEN[i]}">●</span> ${esc(b ? (b.gast || nameKurz(schueler(b.sid))) : "Bahn " + (i + 1))} ${fmtS(z.t)}`);
     if (b && b.sid) {
       const s = schueler(b.sid);
-      daten.ergebnisse.push({ id: uid(), sid: b.sid, klasse: s ? s.klasse : "", strecke: lauf.strecke, zeit: Math.ceil(z.t * 100 - 1e-6) / 100, datum, start: lauf.start, lauf: lauf.id });
+      daten.ergebnisse.push({ id: uid(), sid: b.sid, klasse: s ? s.klasse : "", strecke: lauf.strecke, zeit: Math.ceil(z.t * 100 - 1e-6) / 100, datum, ts: Date.now(), start: lauf.start, lauf: lauf.id });
       n++;
     }
   });
@@ -1198,18 +1240,28 @@ async function xlsxZeilen(buf) {
 /* =========================================================
    AUSWERTUNG
    ========================================================= */
-let aw = { klasse: "", strecke: 50, g: "", sid: null, modus: "einzel", auswahl: new Set() };
+let aw = { klasse: "", strecke: 50, g: "", sid: null, modus: "einzel", auswahl: new Set(), tag: "" };
 const SERIENFARBEN = ["#312e91", "#e11d48", "#16a34a", "#d97706", "#0891b2", "#9333ea", "#db2777", "#65a30d", "#0f766e", "#b91c1c"];
 
-// Bestzeit je Schüler und Tag für die gewählte Strecke
+const zeitstempel = (r) => r.ts || parseInt(r.id.slice(0, Math.max(1, r.id.length - 5)), 36) || 0;
+function ergebnisseVon(sid, tag) {
+  return daten.ergebnisse.filter((x) => x.sid === sid && x.strecke === aw.strecke && (!tag || x.datum === tag))
+    .sort((a, b) => a.datum.localeCompare(b.datum) || zeitstempel(a) - zeitstempel(b));
+}
+// Über Tage: beste Zeit je Tag
 function tageswerte(sid) {
   const proTag = {};
-  daten.ergebnisse.filter((x) => x.sid === sid && x.strecke === aw.strecke).forEach((x) => {
-    if (proTag[x.datum] == null || x.zeit < proTag[x.datum]) proTag[x.datum] = x.zeit;
-  });
+  ergebnisseVon(sid).forEach((x) => { if (proTag[x.datum] == null || x.zeit < proTag[x.datum]) proTag[x.datum] = x.zeit; });
   return Object.keys(proTag).sort().map((d) => ({ datum: d, zeit: proTag[d] }));
 }
+// Innerhalb eines Tages: jeder Lauf in Reihenfolge, nr = 1., 2., 3. Lauf
+const laufwerte = (sid, tag) => ergebnisseVon(sid, tag).map((x, i) => ({ nr: i + 1, zeit: x.zeit, datum: x.datum }));
+const verlauf = (sid) => aw.tag ? laufwerte(sid, aw.tag) : tageswerte(sid);
 function awListe() { return (daten.klassen[aw.klasse] || []).filter((s) => !aw.g || s.g === aw.g); }
+function awTage() {
+  const ids = new Set((daten.klassen[aw.klasse] || []).map((s) => s.id));
+  return [...new Set(daten.ergebnisse.filter((r) => ids.has(r.sid) && r.strecke === aw.strecke).map((r) => r.datum))].sort().reverse();
+}
 
 function auswertungZeichnen() {
   const namen = Object.keys(daten.klassen).sort(sortDe);
@@ -1219,18 +1271,20 @@ function auswertungZeichnen() {
   $("awGeschlecht").innerHTML = [["", "alle"], ["m", "Jungen"], ["w", "Mädchen"]].map(([v, t]) => `<button data-g="${v}" aria-pressed="${aw.g === v}">${t}</button>`).join("");
   $("awStrecken").querySelectorAll("button").forEach((b) => b.onclick = () => { aw.strecke = Number(b.dataset.s); auswertungZeichnen(); });
   $("awGeschlecht").querySelectorAll("button").forEach((b) => b.onclick = () => { aw.g = b.dataset.g; auswertungZeichnen(); });
+  const tage = awTage();
+  if (aw.tag && !tage.includes(aw.tag)) aw.tag = tage[0] || "";
 
   const liste = awListe();
   const ids = new Set(liste.map((s) => s.id));
   [...aw.auswahl].forEach((id) => { if (!ids.has(id)) aw.auswahl.delete(id); });
   const zeilen = liste.map((s) => {
-    const r = daten.ergebnisse.filter((x) => x.sid === s.id && x.strecke === aw.strecke).sort((a, b) => a.datum.localeCompare(b.datum));
-    const best = r.length ? Math.min(...r.map((x) => x.zeit)) : null;
-    return { s, n: r.length, best, erste: r.length ? r[0].zeit : null, letzte: r.length ? r[r.length - 1].zeit : null };
+    const r = ergebnisseVon(s.id, aw.tag);
+    return { s, n: r.length, best: r.length ? Math.min(...r.map((x) => x.zeit)) : null, erste: r.length ? r[0].zeit : null, letzte: r.length ? r[r.length - 1].zeit : null };
   }).sort((a, b) => (a.best ?? 1e9) - (b.best ?? 1e9) || sortSchueler(a.s, b.s));
   let platz = 0;
   const auswahlSpalte = aw.modus === "auswahl";
-  $("awTabelle").innerHTML = liste.length ? `<table><tr>${auswahlSpalte ? "<th>✓</th>" : ""}<th>#</th><th>Name</th><th>Läufe</th><th>Bestzeit</th><th>Letzte</th><th>Entwicklung</th></tr>
+  $("awTabelle").innerHTML = (aw.tag ? `<p class="leise" style="margin:0 0 6px">Nur ${datumDe(aw.tag)} · Entwicklung = letzter minus erster Lauf des Tages</p>` : "") +
+    (liste.length ? `<table><tr>${auswahlSpalte ? "<th>✓</th>" : ""}<th>#</th><th>Name</th><th>Läufe</th><th>Bestzeit</th><th>Letzte</th><th>Entwicklung</th></tr>
     ${zeilen.map((z) => {
       const d = z.n > 1 ? z.letzte - z.erste : null;
       const markiert = auswahlSpalte ? aw.auswahl.has(z.s.id) : z.s.id === aw.sid;
@@ -1239,27 +1293,36 @@ function auswertungZeichnen() {
         <td>${z.best != null ? ++platz : ""}</td><td>${esc(z.s.nn)}, ${esc(z.s.vn)}</td><td>${z.n || ""}</td>
         <td class="z">${z.best != null ? fmtS(z.best) : "–"}</td><td class="z">${z.letzte != null ? fmtS(z.letzte) : ""}</td>
         <td class="z ${d == null ? "" : d < 0 ? "besser" : d > 0 ? "schlechter" : ""}">${d == null ? "" : (d > 0 ? "+" : "−") + fmt(Math.abs(d)) + " s"}</td></tr>`;
-    }).join("")}</table>` : `<p class="leise">Keine Schüler in dieser Auswahl.</p>`;
+    }).join("")}</table>` : `<p class="leise">Keine Schüler in dieser Auswahl.</p>`);
   $("awTabelle").querySelectorAll("tr[data-sid]").forEach((tr) => tr.onclick = () => {
     const id = tr.dataset.sid;
     if (aw.modus === "auswahl") { aw.auswahl.has(id) ? aw.auswahl.delete(id) : aw.auswahl.add(id); }
     else { aw.sid = id; if (aw.modus === "klasse") aw.modus = "einzel"; }
     auswertungZeichnen();
   });
-  detailZeichnen();
+  detailZeichnen(tage);
 }
 $("awKlasse").onchange = (e) => { aw.klasse = e.target.value; aw.sid = null; aw.auswahl.clear(); auswertungZeichnen(); };
 
-function detailZeichnen() {
+function detailZeichnen(tage) {
   const box = $("awDetail");
-  const reiter = `<div class="chips" style="margin-bottom:12px">${[["einzel", "Einzel"], ["auswahl", "Auswahl"], ["klasse", "Klasse"]]
-    .map(([v, t]) => `<button data-m="${v}" aria-pressed="${aw.modus === v}">${t}</button>`).join("")}</div>`;
+  const kopf = `<div class="chips" style="margin-bottom:8px">${[["einzel", "Einzel"], ["auswahl", "Auswahl"], ["klasse", "Klasse"]]
+      .map(([v, t]) => `<button data-m="${v}" aria-pressed="${aw.modus === v}">${t}</button>`).join("")}</div>
+    <div class="reihe" style="margin-bottom:12px">
+      <div class="chips"><button data-z="" aria-pressed="${!aw.tag}">Über alle Tage</button><button data-z="tag" aria-pressed="${!!aw.tag}">Ein Tag</button></div>
+      ${aw.tag ? `<select id="awTag">${tage.map((d) => `<option value="${d}" ${d === aw.tag ? "selected" : ""}>${datumDe(d)}</option>`).join("")}</select>` : ""}
+    </div>`;
   let inhalt = "";
   if (aw.modus === "einzel") inhalt = einzelInhalt();
   if (aw.modus === "auswahl") inhalt = auswahlInhalt();
   if (aw.modus === "klasse") inhalt = klassenInhalt();
-  box.innerHTML = reiter + inhalt;
+  box.innerHTML = kopf + inhalt;
   box.querySelectorAll("[data-m]").forEach((b) => b.onclick = () => { aw.modus = b.dataset.m; auswertungZeichnen(); });
+  box.querySelectorAll("[data-z]").forEach((b) => b.onclick = () => {
+    if (b.dataset.z && !tage.length) { melden("Noch keine Läufe über diese Strecke."); return; }
+    aw.tag = b.dataset.z ? (aw.tag || tage[0]) : ""; auswertungZeichnen();
+  });
+  const ts = $("awTag"); if (ts) ts.onchange = () => { aw.tag = ts.value; auswertungZeichnen(); };
   box.querySelectorAll("[data-rm]").forEach((b) => b.onclick = () => {
     if (!confirm("Diese Zeit löschen?")) return;
     daten.ergebnisse = daten.ergebnisse.filter((x) => x.id !== b.dataset.rm); speichern(); auswertungZeichnen();
@@ -1270,89 +1333,100 @@ function detailZeichnen() {
     if (!(n > 0)) return; x.zeit = Math.round(n * 100) / 100; speichern(); auswertungZeichnen();
   });
   const alle = $("awAlle"), keine = $("awKeine");
-  if (alle) alle.onclick = () => { awListe().forEach((s) => { if (tageswerte(s.id).length) aw.auswahl.add(s.id); }); auswertungZeichnen(); };
+  if (alle) alle.onclick = () => { awListe().forEach((s) => { if (verlauf(s.id).length) aw.auswahl.add(s.id); }); auswertungZeichnen(); };
   if (keine) keine.onclick = () => { aw.auswahl.clear(); auswertungZeichnen(); };
 }
+const zeitraumText = () => aw.tag ? `am ${datumDe(aw.tag)}` : "über alle Tage";
+const diagrammOpt = (o = {}) => Object.assign({ xLauf: !!aw.tag }, o);
 
 function einzelInhalt() {
   const s = aw.sid && schueler(aw.sid);
   if (!s) return `<p class="leise">Schüler in der Tabelle antippen, um den Verlauf zu sehen.</p>`;
-  const alle = daten.ergebnisse.filter((r) => r.sid === s.id).sort((a, b) => a.datum.localeCompare(b.datum) || a.id.localeCompare(b.id));
+  const alle = daten.ergebnisse.filter((r) => r.sid === s.id);
   const proStrecke = STRECKEN.map((st) => {
     const r = alle.filter((x) => x.strecke === st);
     return r.length ? `<td>${st} m</td><td class="z">${fmtS(Math.min(...r.map((x) => x.zeit)))}</td><td>${r.length}</td>` : "";
   }).filter(Boolean);
-  const r = alle.filter((x) => x.strecke === aw.strecke);
+  const r = ergebnisseVon(s.id, aw.tag);
   return `<h2>${esc(s.vn)} ${esc(s.nn)} <span class="leise">· ${esc(s.klasse)}</span></h2>
-    ${proStrecke.length ? `<table><tr><th>Strecke</th><th>Bestzeit</th><th>Läufe</th></tr>${proStrecke.map((x) => `<tr>${x}</tr>`).join("")}</table>` : `<p class="leise">Noch keine Zeiten.</p>`}
-    <h3>Verlauf ${aw.strecke} m</h3>
-    ${liniendiagramm([{ name: s.vn, farbe: "#312e91", punkte: tageswerte(s.id) }], { bestlinie: true })}
-    ${r.length ? `<table><tr><th>Datum</th><th>Zeit</th><th>Start</th><th></th></tr>${[...r].reverse().map((x) =>
-      `<tr><td>${datumDe(x.datum)}</td><td class="z">${fmtS(x.zeit)}</td><td>${x.start === "hand" ? "Hand" : "Knall"}</td>
+    ${!aw.tag && proStrecke.length ? `<table><tr><th>Strecke</th><th>Bestzeit</th><th>Läufe</th></tr>${proStrecke.map((x) => `<tr>${x}</tr>`).join("")}</table>` : ""}
+    <h3>${aw.strecke} m ${zeitraumText()}${aw.tag ? "" : " (Bestwert je Tag)"}</h3>
+    ${liniendiagramm([{ name: s.vn, farbe: "#312e91", punkte: verlauf(s.id) }], diagrammOpt({ bestlinie: true }))}
+    ${r.length ? `<table><tr><th>${aw.tag ? "Lauf" : "Datum"}</th><th>Zeit</th><th>Start</th><th></th></tr>${r.map((x, i) => ({ x, i })).reverse().map(({ x, i }) =>
+      `<tr><td>${aw.tag ? (i + 1) + "." : datumDe(x.datum)}</td><td class="z">${fmtS(x.zeit)}</td><td>${x.start === "hand" ? "Hand" : "Knall"}</td>
        <td style="white-space:nowrap"><button class="knopf hell klein" data-ed="${x.id}">ändern</button> <button class="knopf hell klein" data-rm="${x.id}">löschen</button></td></tr>`).join("")}</table>` : ""}`;
 }
 
 function auswahlInhalt() {
   const ids = [...aw.auswahl];
-  const kopf = `<div class="reihe" style="justify-content:space-between"><h2 style="margin:0">Vergleich ${aw.strecke} m</h2>
+  const kopf = `<div class="reihe" style="justify-content:space-between"><h2 style="margin:0">Vergleich ${aw.strecke} m ${zeitraumText()}</h2>
     <div class="reihe"><button class="knopf hell klein" id="awAlle">alle mit Zeiten</button><button class="knopf hell klein" id="awKeine">keine</button></div></div>
-    <p class="leise">Schüler links in der Tabelle an- und abhaken. Pro Tag zählt die beste Zeit.</p>`;
+    <p class="leise">Schüler links in der Tabelle an- und abhaken. ${aw.tag ? "Jeder Lauf des Tages ist ein Punkt." : "Pro Tag zählt die beste Zeit."}</p>`;
   if (!ids.length) return kopf + `<p class="leise">Noch niemand ausgewählt.</p>`;
-  const serien = ids.map((id, i) => { const s = schueler(id); return { name: s ? s.vn + " " + (s.nn || "").slice(0, 1) + "." : "?", farbe: SERIENFARBEN[i % SERIENFARBEN.length], punkte: tageswerte(id) }; });
+  const serien = ids.map((id, i) => { const s = schueler(id); return { name: s ? s.vn + " " + (s.nn || "").slice(0, 1) + "." : "?", farbe: SERIENFARBEN[i % SERIENFARBEN.length], punkte: verlauf(id) }; });
   const ohne = serien.filter((x) => !x.punkte.length).map((x) => x.name);
-  return kopf + liniendiagramm(serien.filter((x) => x.punkte.length), { legende: true }) +
-    (ohne.length ? `<p class="leise">Ohne Zeit über ${aw.strecke} m: ${esc(ohne.join(", "))}</p>` : "");
+  return kopf + liniendiagramm(serien.filter((x) => x.punkte.length), diagrammOpt({ legende: true })) +
+    (ohne.length ? `<p class="leise">Ohne Zeit ${zeitraumText()}: ${esc(ohne.join(", "))}</p>` : "");
 }
 
 function klassenInhalt() {
   const liste = awListe();
-  const titel = `${esc(aw.klasse)}${aw.g === "m" ? " · Jungen" : aw.g === "w" ? " · Mädchen" : ""} · ${aw.strecke} m`;
-  // je Tag: Bestzeiten aller Schüler dieses Tages
-  const tage = {};
-  liste.forEach((s) => tageswerte(s.id).forEach((p) => { (tage[p.datum] = tage[p.datum] || []).push(p.zeit); }));
-  const daten_ = Object.keys(tage).sort();
-  if (!daten_.length) return `<h2>${titel}</h2><p class="leise">Noch keine Zeiten über diese Strecke.</p>`;
-  const schnitt = daten_.map((d) => ({ datum: d, zeit: tage[d].reduce((a, b) => a + b, 0) / tage[d].length }));
-  const band = daten_.map((d) => ({ datum: d, min: Math.min(...tage[d]), max: Math.max(...tage[d]) }));
-  // Rangliste der Bestzeiten
-  const besten = liste.map((s) => { const p = tageswerte(s.id); return p.length ? { s, best: Math.min(...p.map((x) => x.zeit)) } : null; })
+  const titel = `${esc(aw.klasse)}${aw.g === "m" ? " · Jungen" : aw.g === "w" ? " · Mädchen" : ""} · ${aw.strecke} m ${zeitraumText()}`;
+  // Gruppen: je Tag (über Tage) bzw. je Lauf-Nummer (ein Tag)
+  const gruppen = {};
+  liste.forEach((s) => verlauf(s.id).forEach((p) => { const k = aw.tag ? p.nr : p.datum; (gruppen[k] = gruppen[k] || []).push(p.zeit); }));
+  const schluessel = Object.keys(gruppen).sort(aw.tag ? (a, b) => a - b : undefined);
+  if (!schluessel.length) return `<h2>${titel}</h2><p class="leise">Noch keine Zeiten.</p>`;
+  const punkt = (k, extra) => Object.assign(aw.tag ? { nr: Number(k) } : { datum: k }, extra);
+  const schnitt = schluessel.map((k) => punkt(k, { zeit: gruppen[k].reduce((a, b) => a + b, 0) / gruppen[k].length }));
+  const band = schluessel.map((k) => punkt(k, { min: Math.min(...gruppen[k]), max: Math.max(...gruppen[k]) }));
+  const besten = liste.map((s) => { const p = verlauf(s.id); return p.length ? { s, best: Math.min(...p.map((x) => x.zeit)) } : null; })
     .filter(Boolean).sort((a, b) => a.best - b.best);
   const gesamt = besten.reduce((a, b) => a + b.best, 0) / besten.length;
   return `<h2>${titel}</h2>
     <p class="leise" style="margin-top:0">${besten.length} von ${liste.length} Schülern gemessen · Schnitt der Bestzeiten <b>${fmtS(gesamt)}</b></p>
-    <h3>Entwicklung der Klasse</h3>
-    ${liniendiagramm([{ name: "Klassenschnitt", farbe: "#312e91", punkte: schnitt }], { band, legende: true, anzahl: daten_.map((d) => tage[d].length) })}
-    <h3>Bestzeiten</h3>${balkendiagramm(besten, gesamt)}`;
+    <h3>${aw.tag ? "Entwicklung über die Läufe des Tages" : "Entwicklung der Klasse"}</h3>
+    ${liniendiagramm([{ name: aw.tag ? "Schnitt je Lauf" : "Klassenschnitt", farbe: "#312e91", punkte: schnitt }], diagrammOpt({ band, legende: true, anzahl: schluessel.map((k) => gruppen[k].length) }))}
+    <h3>Bestzeiten ${zeitraumText()}</h3>${balkendiagramm(besten, gesamt)}`;
 }
 
-// Liniendiagramm über echte Datumsachse; oben = schneller
+// Liniendiagramm: x = Datum (über Tage) oder Lauf-Nummer (ein Tag); oben = schneller
 function liniendiagramm(serien, opt = {}) {
   const pkte = serien.flatMap((s) => s.punkte);
   if (!pkte.length) return `<p class="leise">Noch keine Läufe über diese Strecke.</p>`;
   const W = 560, H = 230, L = 50, R = 14, T = 14, B = 34;
   const zs = pkte.map((p) => p.zeit).concat(opt.band ? opt.band.flatMap((b) => [b.min, b.max]) : []);
   let lo = Math.min(...zs), hi = Math.max(...zs); const pad = Math.max(0.1, (hi - lo) * 0.12); lo -= pad; hi += pad;
-  const tage = [...new Set(pkte.map((p) => p.datum).concat(opt.band ? opt.band.map((b) => b.datum) : []))].sort();
-  const ms = (d) => new Date(d + "T12:00:00").getTime();
-  const t0 = ms(tage[0]), t1 = ms(tage[tage.length - 1]);
-  const X = (d) => tage.length === 1 ? (L + W - R) / 2 : L + (W - L - R) * (ms(d) - t0) / (t1 - t0);
+  const alleP = pkte.concat(opt.band || []);
+  let X, achse;
+  if (opt.xLauf) {
+    const max = Math.max(...alleP.map((p) => p.nr));
+    X = (p) => max === 1 ? (L + W - R) / 2 : L + (W - L - R) * (p.nr - 1) / (max - 1);
+    achse = Array.from({ length: max }, (_, i) => ({ p: { nr: i + 1 }, t: (i + 1) + "." }));
+  } else {
+    const tage = [...new Set(alleP.map((p) => p.datum))].sort();
+    const ms = (d) => new Date(d + "T12:00:00").getTime();
+    const t0 = ms(tage[0]), t1 = ms(tage[tage.length - 1]);
+    X = (p) => tage.length === 1 ? (L + W - R) / 2 : L + (W - L - R) * (ms(p.datum) - t0) / (t1 - t0);
+    achse = tage.map((d) => ({ p: { datum: d }, t: datumDe(d).slice(0, 5) }));
+  }
   const Y = (z) => T + (H - T - B) * (z - lo) / (hi - lo);
   let s = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" font-family="sans-serif" font-size="11">`;
   for (let k = 0; k <= 4; k++) { const z = lo + (hi - lo) * k / 4, y = Y(z);
     s += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="#e5e7eb"/><text x="${L - 6}" y="${y + 4}" text-anchor="end" fill="#6b7280">${z.toFixed(2).replace(".", ",")}</text>`; }
-  const schritt = Math.ceil(tage.length / 8);
-  tage.forEach((d, i) => { if (i % schritt === 0 || i === tage.length - 1) s += `<text x="${X(d)}" y="${H - 14}" text-anchor="middle" fill="#6b7280">${datumDe(d).slice(0, 5)}</text>`; });
+  const schritt = Math.ceil(achse.length / 10);
+  achse.forEach((a, i) => { if (i % schritt === 0 || i === achse.length - 1) s += `<text x="${X(a.p)}" y="${H - 14}" text-anchor="middle" fill="#6b7280">${a.t}</text>`; });
   if (opt.band) {
-    if (opt.band.length > 1) s += `<polygon fill="#c7d2fe" opacity=".6" points="${opt.band.map((b) => X(b.datum) + "," + Y(b.min)).concat([...opt.band].reverse().map((b) => X(b.datum) + "," + Y(b.max))).join(" ")}"/>`;
-    opt.band.forEach((b, i) => { s += `<line x1="${X(b.datum)}" x2="${X(b.datum)}" y1="${Y(b.min)}" y2="${Y(b.max)}" stroke="#818cf8" stroke-width="2"/>`;
-      if (opt.anzahl) s += `<text x="${X(b.datum)}" y="${Y(b.max) + 13}" text-anchor="middle" fill="#6366f1" font-size="10">n=${opt.anzahl[i]}</text>`; });
+    if (opt.band.length > 1) s += `<polygon fill="#c7d2fe" opacity=".6" points="${opt.band.map((b) => X(b) + "," + Y(b.min)).concat([...opt.band].reverse().map((b) => X(b) + "," + Y(b.max))).join(" ")}"/>`;
+    opt.band.forEach((b, i) => { s += `<line x1="${X(b)}" x2="${X(b)}" y1="${Y(b.min)}" y2="${Y(b.max)}" stroke="#818cf8" stroke-width="2"/>`;
+      if (opt.anzahl) s += `<text x="${X(b)}" y="${Y(b.max) + 13}" text-anchor="middle" fill="#6366f1" font-size="10">n=${opt.anzahl[i]}</text>`; });
   }
   if (opt.bestlinie) { const best = Math.min(...pkte.map((p) => p.zeit)); s += `<line x1="${L}" x2="${W - R}" y1="${Y(best)}" y2="${Y(best)}" stroke="#16a34a" stroke-dasharray="4 3"/>`; }
   serien.forEach((se) => {
-    if (se.punkte.length > 1) s += `<polyline fill="none" stroke="${se.farbe}" stroke-width="2.5" points="${se.punkte.map((p) => X(p.datum) + "," + Y(p.zeit)).join(" ")}"/>`;
-    se.punkte.forEach((p) => { s += `<circle cx="${X(p.datum)}" cy="${Y(p.zeit)}" r="4.5" fill="${se.farbe}"><title>${esc(se.name)} · ${datumDe(p.datum)} · ${fmtS(p.zeit)}</title></circle>`; });
+    if (se.punkte.length > 1) s += `<polyline fill="none" stroke="${se.farbe}" stroke-width="2.5" points="${se.punkte.map((p) => X(p) + "," + Y(p.zeit)).join(" ")}"/>`;
+    se.punkte.forEach((p) => { s += `<circle cx="${X(p)}" cy="${Y(p.zeit)}" r="4.5" fill="${se.farbe}"><title>${esc(se.name)} · ${opt.xLauf ? p.nr + ". Lauf" : datumDe(p.datum)} · ${fmtS(p.zeit)}</title></circle>`; });
   });
-  s += `<text x="${L}" y="${H - 1}" fill="#9ca3af" font-size="10">oben = schneller${opt.bestlinie ? " · grün gestrichelt = Bestzeit" : ""}${opt.band ? " · Fläche = schnellste bis langsamste Zeit des Tages" : ""}</text></svg>`;
+  s += `<text x="${L}" y="${H - 1}" fill="#9ca3af" font-size="10">${opt.xLauf ? "waagerecht: 1., 2., 3. … Lauf des Tages · " : ""}oben = schneller${opt.bestlinie ? " · grün gestrichelt = Bestzeit" : ""}${opt.band ? " · Fläche = schnellste bis langsamste Zeit" : ""}</text></svg>`;
   if (opt.legende) s += `<div class="reihe" style="gap:4px 14px;font-size:13.5px">${serien.map((se) => `<span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${se.farbe};vertical-align:-1px"></span> ${esc(se.name)}</span>`).join("")}</div>`;
   return s;
 }

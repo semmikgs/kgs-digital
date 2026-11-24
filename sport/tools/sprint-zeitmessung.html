@@ -239,7 +239,18 @@ body.vollbild .buehne .leise{display:none}
     <p class="leise" style="margin-top:0">Import aus WebUntis (CSV) oder Excel (.xlsx). Erkannt werden die Spalten Langname/Nachname, Vorname, Klasse, Geschlecht. Gleiche Schüler werden nicht doppelt angelegt.</p>
     <div class="reihe">
       <label class="knopf" style="display:inline-block">📄 Liste importieren<input type="file" id="importDatei" accept=".csv,.txt,.xlsx,text/csv" hidden></label>
+      <button class="knopf" id="textImport">📋 Text einfügen</button>
       <button class="knopf hell" id="neueKlasse">+ Neue Klasse</button>
+    </div>
+    <div id="textBox" hidden style="margin-top:12px">
+      <p class="leise" style="margin:0 0 6px">WebUntis-Liste in Safari anzeigen, alles markieren, kopieren und hier einfügen. Zusätzliche Spalten und # hinter Namen werden ignoriert.</p>
+      <textarea id="textEingabe" rows="7" style="width:100%;font:inherit;font-size:14px;padding:8px;border:1.5px solid var(--linie);border-radius:8px" placeholder="Langname;Vorname;Klasse;Geschlecht;…&#10;Röpke;Anna;10R1;w;…"></textarea>
+      <div class="reihe" style="margin-top:6px">
+        <input type="text" id="textKlasse" placeholder="Klasse (nur nötig, wenn nicht im Text)" style="flex:1 1 100%">
+        <button class="knopf gruen" id="textUebernehmen" disabled>✓ Übernehmen</button>
+        <button class="knopf hell" id="textAbbrechen">Abbrechen</button>
+      </div>
+      <div id="textVorschau" style="margin-top:8px"></div>
     </div>
     <h3>Vorhandene Klassen</h3>
     <div id="klassenListe"></div>
@@ -1226,25 +1237,37 @@ function csvZeilen(text) {
   if (feld !== "" || zeile.length) { zeile.push(feld); zeilen.push(zeile); }
   return zeilen.filter((z) => z.some((x) => x.trim() !== ""));
 }
-function listeUebernehmen(zeilen) {
-  if (!zeilen.length) throw new Error("Datei ist leer");
-  const kopf = zeilen[0].map((h) => h.trim().toLowerCase().replace(/[^a-zäöüß]/g, ""));
+// Tabellenzeilen (mit oder ohne Kopfzeile) -> [{nn, vn, k, g}]
+function zeilenAuswerten(zeilen, ersatzKlasse, fragen) {
+  if (!zeilen.length) throw new Error("keine Daten gefunden");
+  const kopf = zeilen[0].map((h) => String(h).trim().toLowerCase().replace(/[^a-zäöüß]/g, ""));
   const finde = (...n) => kopf.findIndex((h) => n.includes(h));
-  let iNn = finde("langname", "nachname", "name", "familienname"), iVn = finde("vorname", "rufname"),
+  let iNn = finde("langname", "nachname", "name", "familienname"), iVn = finde("vorname", "vornamen", "rufname"),
       iK = finde("klasse", "klassen", "class"), iG = finde("geschlecht", "g", "sex");
   let start = 1;
-  if (iNn < 0 && iVn < 0) { iNn = 0; iVn = 1; start = 0; }   // ohne Kopfzeile: Name, Vorname[, Klasse]
-  let ersatzKlasse = null;
-  if (iK < 0) {
-    if (!start && zeilen[0].length > 2) iK = 2;
-    else { ersatzKlasse = (prompt("Die Datei enthält keine Klassenspalte. Name der Klasse:", klasseAktiv || "") || "").trim(); if (!ersatzKlasse) throw new Error("keine Klasse angegeben"); }
+  if (iNn < 0 && iVn < 0) {   // ohne Kopfzeile: Reihenfolge wie WebUntis – Langname, Vorname, Klasse, Geschlecht
+    iNn = 0; iVn = 1; start = 0;
+    if (zeilen[0].length > 2) iK = 2;
+    if (zeilen[0].length > 3 && /^[mwdf]$/i.test(String(zeilen[0][3]).trim())) iG = 3;
   }
-  let neu = 0, da = 0; const kl = new Set();
+  if (iK < 0 && !ersatzKlasse) {
+    if (!fragen) throw new Error("keine Klassenspalte – bitte Klassenname eintragen");
+    ersatzKlasse = (prompt("Die Liste enthält keine Klassenspalte. Name der Klasse:", klasseAktiv || "") || "").trim();
+    if (!ersatzKlasse) throw new Error("keine Klasse angegeben");
+  }
+  const sauber = (t) => String(t || "").replace(/#/g, "").replace(/\s+/g, " ").trim();
+  const ergebnis = [];
   for (const z of zeilen.slice(start)) {
-    const nn = (z[iNn] || "").trim(), vn = iVn >= 0 ? (z[iVn] || "").trim() : "";
+    const nn = sauber(z[iNn]), vn = iVn >= 0 ? sauber(z[iVn]) : "";
     if (!nn && !vn) continue;
-    const k = ersatzKlasse || (z[iK] || "").trim() || "ohne Klasse";
-    let g = iG >= 0 ? (z[iG] || "").trim().toLowerCase() : ""; g = g.startsWith("m") ? "m" : g.startsWith("w") || g.startsWith("f") ? "w" : g.startsWith("d") ? "d" : "";
+    let g = iG >= 0 ? sauber(z[iG]).toLowerCase() : ""; g = g.startsWith("m") ? "m" : g.startsWith("w") || g.startsWith("f") ? "w" : g.startsWith("d") ? "d" : "";
+    ergebnis.push({ nn, vn, k: (iK >= 0 && sauber(z[iK])) || ersatzKlasse || "ohne Klasse", g });
+  }
+  return ergebnis;
+}
+function eintraegeUebernehmen(eintraege) {
+  let neu = 0, da = 0; const kl = new Set();
+  for (const { nn, vn, k, g } of eintraege) {
     if (!daten.klassen[k]) daten.klassen[k] = [];
     kl.add(k);
     const vorh = daten.klassen[k].find((s) => s.nn.toLowerCase() === nn.toLowerCase() && s.vn.toLowerCase() === vn.toLowerCase());
@@ -1254,6 +1277,56 @@ function listeUebernehmen(zeilen) {
   speichern();
   return { neu, da, klassen: [...kl].sort(sortDe) };
 }
+const listeUebernehmen = (zeilen) => eintraegeUebernehmen(zeilenAuswerten(zeilen, null, true));
+
+// Eingefügter Text (z. B. aus der WebUntis-Anzeige kopiert)
+function textAuswerten(text, klasseVorgabe) {
+  text = text.replace(/\r/g, "");
+  if (/[;\t]/.test(text)) {
+    // Kopfzeile ggf. mitten im Text? Nur Zeilen mit Trennzeichen verwenden
+    const zeilen = csvZeilen(text.split("\n").filter((l) => /[;\t]/.test(l)).join("\n")).map((z) => z.map((x) => x.trim()));
+    return zeilenAuswerten(zeilen, klasseVorgabe, false);
+  }
+  // Nur Leerzeichen: Langname = erstes Wort, dann Vornamen bis zur Klasse (z. B. 10R1, 7a), danach m/w/d
+  const istKlasse = (t) => (klasseVorgabe && t.toLowerCase() === klasseVorgabe.toLowerCase()) || /^\d{1,2}[A-Za-z]{0,3}\d{0,2}$/.test(t);
+  const erg = [];
+  text.split("\n").map((l) => l.trim()).filter(Boolean).forEach((l) => {
+    if (/langname|vorname/i.test(l)) return;
+    const w = l.split(/\s+/);
+    let ki = w.findIndex((t, i) => i >= 1 && istKlasse(t));
+    let rest = ki >= 0 ? w.slice(1, ki) : w.slice(1);
+    let g = "";
+    const nach = ki >= 0 ? w[ki + 1] : rest[rest.length - 1];
+    if (nach && /^[mwdf]$/i.test(nach)) { g = nach.toLowerCase() === "f" ? "w" : nach.toLowerCase(); if (ki < 0) rest = rest.slice(0, -1); }
+    const nn = w[0].replace(/#/g, ""), vn = rest.join(" ").replace(/#/g, "").trim();
+    erg.push({ nn, vn, k: ki >= 0 ? w[ki] : klasseVorgabe || "ohne Klasse", g });
+  });
+  if (!erg.length) throw new Error("keine Namen gefunden");
+  return erg;
+}
+$("textImport").onclick = () => { $("textBox").hidden = false; $("textEingabe").focus(); };
+$("textAbbrechen").onclick = () => { $("textBox").hidden = true; };
+function textVorschau() {
+  const box = $("textVorschau"); $("textUebernehmen").disabled = true;
+  const t = $("textEingabe").value.trim(); if (!t) { box.innerHTML = ""; return; }
+  try {
+    const e = textAuswerten(t, $("textKlasse").value.trim());
+    box.innerHTML = `<p class="leise">${e.length} Schüler erkannt – bitte prüfen. Falls ein Doppelname falsch getrennt ist, im Text ein ; zwischen Nachname und Vorname setzen.</p>
+      <div style="max-height:260px;overflow:auto"><table><tr><th>Nachname</th><th>Vorname(n)</th><th>Klasse</th><th>G</th></tr>
+      ${e.map((x) => `<tr><td>${esc(x.nn)}</td><td>${esc(x.vn)}</td><td>${esc(x.k)}</td><td>${esc(x.g)}</td></tr>`).join("")}</table></div>`;
+    $("textUebernehmen").disabled = false;
+  } catch (err) { box.innerHTML = `<p class="hinweisleiste">${esc(err.message)}</p>`; }
+}
+$("textEingabe").addEventListener("input", textVorschau);
+$("textKlasse").addEventListener("input", textVorschau);
+$("textUebernehmen").onclick = () => {
+  try {
+    const r = eintraegeUebernehmen(textAuswerten($("textEingabe").value.trim(), $("textKlasse").value.trim()));
+    melden(`${r.neu} neu, ${r.da} schon vorhanden – ${r.klassen.join(", ")}`);
+    $("textEingabe").value = ""; $("textVorschau").innerHTML = ""; $("textBox").hidden = true;
+    klasseAktiv = r.klassen[0] || klasseAktiv; klassenZeichnen();
+  } catch (err) { melden("Übernehmen fehlgeschlagen: " + err.message); }
+};
 // Kleiner .xlsx-Leser ohne Fremdbibliothek (erstes Tabellenblatt)
 async function xlsxZeilen(buf) {
   if (typeof DecompressionStream === "undefined") throw new Error("Excel-Import braucht ein aktuelles iPadOS – bitte als CSV speichern");

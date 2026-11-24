@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sprint-Zeitmessung mit Fotofinish</title>
+<meta name="description" content="iPad im Ziel: Start per Knall der Startklappe mit Schallkorrektur, Fotofinish-Zeitstrahl für bis zu 4 Bahnen, Klassenlisten und Leistungsverlauf. In Entwicklung.">
+<meta name="kgs-kategorie" content="in Entwicklung">
+<style>
+:root{
+  --bg:#2a2c8e;--karte:#fff;--tinte:#1f2430;--leise:#6b7280;--indigo:#312e91;--navy:#1e2a78;--navy-h:#16205c;
+  --linie:#e3e6ee;--chip:#eef0f5;--badge:#e6e8fb;--rot:#dc2626;--gruen:#16a34a;--gelb:#f59e0b;
+  --b1:#e11d48;--b2:#2563eb;--b3:#16a34a;--b4:#d97706;
+  --r:14px;--rk:8px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--tinte);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;font-size:16px;line-height:1.45;
+  padding:12px 12px 40px;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+button,select,input{font:inherit}
+.karte{background:var(--karte);border-radius:var(--r);padding:16px 18px;margin-bottom:12px;box-shadow:0 1px 3px rgba(15,20,60,.12)}
+.kopf{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.kopf h1{margin:0;font-size:24px;color:var(--indigo);display:flex;align-items:center;gap:10px}
+.entw{font-size:12.5px;font-weight:700;background:#fef3c7;color:#92400e;border-radius:999px;padding:3px 10px}
+.reiter{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.reiter button{border:0;background:var(--chip);color:var(--navy);padding:10px 16px;border-radius:var(--rk);font-weight:600;cursor:pointer}
+.reiter button[aria-pressed=true]{background:var(--navy);color:#fff}
+a.zurueck{color:var(--navy);font-weight:600;text-decoration:none;font-size:14px;border:1.5px solid var(--linie);padding:8px 12px;border-radius:var(--rk)}
+.knopf{border:0;background:var(--navy);color:#fff;padding:12px 16px;border-radius:var(--rk);font-weight:700;cursor:pointer;touch-action:manipulation}
+.knopf:active{background:var(--navy-h)}
+.knopf.hell{background:var(--chip);color:var(--navy)}
+.knopf.rot{background:var(--rot)}
+.knopf.gruen{background:var(--gruen)}
+.knopf.gelb{background:var(--gelb);color:#1f2430}
+.knopf.gross{font-size:19px;padding:16px 18px}
+.knopf:disabled{opacity:.4;cursor:default}
+.reihe{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{border:0;background:var(--chip);color:var(--tinte);padding:9px 13px;border-radius:999px;font-weight:600;cursor:pointer}
+.chips button[aria-pressed=true]{background:var(--indigo);color:#fff}
+label.feld{display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--leise);font-weight:600}
+input[type=number],input[type=text],select{padding:9px 10px;border:1.5px solid var(--linie);border-radius:var(--rk);background:#fff;color:var(--tinte);font-size:16px;min-width:0}
+h2{margin:0 0 10px;font-size:18px;color:var(--indigo)}
+h3{margin:14px 0 8px;font-size:15px;color:var(--indigo)}
+.leise{color:var(--leise);font-size:14px}
+.ansicht[hidden]{display:none!important}
+
+/* Messen */
+.messen{display:grid;grid-template-columns:350px 1fr;gap:12px;align-items:start}
+.messen.zu{grid-template-columns:54px 1fr}
+.messen.zu .panel>*:not(.panelkopf){display:none}
+.messen.zu .panelkopf span{display:none}
+.panel{position:sticky;top:8px}
+.panelkopf{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.panelkopf button{border:0;background:var(--chip);border-radius:var(--rk);padding:6px 10px;font-weight:700;cursor:pointer;color:var(--navy)}
+.bahn{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:center;margin-bottom:6px}
+.punkt{width:24px;height:24px;border-radius:50%;color:#fff;font-weight:800;font-size:13px;display:grid;place-items:center}
+.status{border-radius:var(--rk);padding:12px;text-align:center;background:var(--chip);margin:10px 0}
+.status .gross{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.status.warte{background:#fef3c7}.status.laeuft{background:#dcfce7}.status.aus{background:#e0e7ff}
+.meter{position:relative;height:22px;background:#e5e7eb;border-radius:6px;overflow:hidden;cursor:pointer;touch-action:none}
+.meter .pegel{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#22c55e,#eab308 70%,#ef4444);width:0}
+.meter .schwelle{position:absolute;top:-2px;bottom:-2px;width:3px;background:#111}
+.zuordnen button{display:flex;justify-content:space-between;width:100%;margin-bottom:6px;text-align:left}
+.zuordnen .zt{font-variant-numeric:tabular-nums}
+.buehne{padding:10px;min-width:0}
+.buehnenkopf{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cursorzeit{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--indigo);min-width:140px}
+.vorschau{position:relative;background:#111;border-radius:10px;overflow:hidden;touch-action:none}
+.vorschau video{display:block;width:100%;height:auto;max-height:68vh;object-fit:contain}
+.ziellinie{position:absolute;top:0;bottom:0;width:0;border-left:3px dashed #facc15;pointer-events:none}
+.ziellinie::after{content:"Ziellinie";position:absolute;top:6px;left:6px;background:#facc15;color:#111;font-size:12px;font-weight:800;padding:2px 6px;border-radius:4px;white-space:nowrap}
+.hinweisbox{position:absolute;left:8px;bottom:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;font-size:13.5px;padding:6px 10px;border-radius:6px}
+#uebersicht{width:100%;height:26px;display:block;border-radius:6px;background:#e5e7eb;touch-action:none;cursor:pointer}
+#streifen{width:100%;height:min(62vh,560px);display:block;background:#111;border-radius:8px;margin-top:6px;touch-action:none;cursor:crosshair}
+.leer{display:grid;place-items:center;min-height:300px;color:var(--leise);text-align:center;background:#f3f4f6;border-radius:10px;padding:20px}
+.laufliste{font-size:14px;max-height:220px;overflow:auto}
+.laufliste div{padding:5px 0;border-bottom:1px solid var(--linie)}
+
+/* Tabellen */
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{padding:8px 8px;border-bottom:1px solid var(--linie);text-align:left}
+th{font-size:13px;color:var(--leise);font-weight:700}
+td.z{font-variant-numeric:tabular-nums;font-weight:700}
+tr.klick{cursor:pointer}tr.klick:hover{background:#f6f7fb}
+.zwei{display:grid;grid-template-columns:minmax(260px,1fr) 2fr;gap:12px;align-items:start}
+.klein{padding:5px 9px;font-size:13px}
+.besser{color:var(--gruen)}.schlechter{color:var(--rot)}
+.zwei.aw{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}
+.raster{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.melden{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#111;color:#fff;padding:10px 18px;border-radius:999px;font-weight:600;z-index:50;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
+.melden.an{opacity:1}
+@media (max-width:860px){.messen,.messen.zu{grid-template-columns:1fr}.panel{position:static}.zwei{grid-template-columns:1fr}.reiter{margin-left:0}}
+</style>
+</head>
+<body>
+
+<div class="karte kopf">
+  <h1>🏃 Sprint-Zeitmessung <span class="entw">in Entwicklung</span></h1>
+  <nav class="reiter" id="reiter">
+    <button data-v="messen" aria-pressed="true">Messen</button>
+    <button data-v="klassen">Klassen</button>
+    <button data-v="auswertung">Auswertung</button>
+    <button data-v="aufbau">Aufbau &amp; Einstellungen</button>
+  </nav>
+  <a class="zurueck" href="../">← Sport</a>
+</div>
+
+<!-- ===================== MESSEN ===================== -->
+<section class="ansicht messen" id="v-messen">
+  <aside class="karte panel">
+    <div class="panelkopf"><span><h2 style="margin:0">Lauf</h2></span><button id="panelZu" title="Seitenleiste ein-/ausklappen">◀</button></div>
+
+    <div class="chips" id="streckenChips"></div>
+    <p class="leise" id="schallInfo" style="margin:6px 0 10px"></p>
+
+    <div class="reihe" style="margin-bottom:8px">
+      <select id="laufKlasse" style="flex:1"></select>
+      <button class="knopf hell klein" id="naechsteGruppe" title="Nächste 4 Schüler der Liste einsetzen">Nächste 4 ▶</button>
+    </div>
+    <div id="bahnen"></div>
+
+    <div class="status" id="status"><div class="gross" id="statusGross">–</div><div id="statusText">Kamera und Mikrofon starten</div></div>
+
+    <div id="steuerung">
+      <button class="knopf gross" id="geraeteStart" style="width:100%">📷 Kamera &amp; Mikrofon starten</button>
+      <div id="laufKnoepfe" hidden>
+        <div class="meter" id="meter" title="Tippen setzt die Schwelle"><div class="pegel" id="pegel"></div><div class="schwelle" id="schwelleStrich"></div></div>
+        <div class="reihe" style="justify-content:space-between;margin:4px 0 10px"><span class="leise">Pegel <b id="pegelDb">–</b></span><span class="leise">Schwelle <b id="schwelleDb">–</b></span></div>
+        <input type="range" id="schwelle" min="-50" max="-1" step="1" style="width:100%;margin-bottom:10px">
+        <div class="reihe">
+          <button class="knopf gross gelb" id="scharf" style="flex:1">🔔 Scharf schalten</button>
+          <button class="knopf gross" id="handstart" style="flex:1">✋ Handstart</button>
+        </div>
+        <div class="reihe" style="margin-top:8px">
+          <button class="knopf rot" id="stopp" style="flex:1" disabled>■ Stopp</button>
+          <button class="knopf hell" id="abbrechen" style="flex:1" disabled>Abbrechen</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="zuordnenBox" hidden>
+      <h3>Zeit zuordnen</h3>
+      <p class="leise" style="margin-top:0">Cursor im Fotofinish auf die Brust setzen, dann die Bahn antippen.</p>
+      <div class="zuordnen" id="zuordnen"></div>
+      <div class="reihe">
+        <button class="knopf gruen" id="laufSpeichern" style="flex:1">✓ Lauf speichern</button>
+        <button class="knopf hell" id="laufVerwerfen">Verwerfen</button>
+      </div>
+      <div class="reihe" style="margin-top:6px"><button class="knopf hell klein" id="bildSichern">Bild sichern</button><span class="leise" id="kalibHinweis"></span></div>
+    </div>
+
+    <h3>Heute gemessen</h3>
+    <div class="laufliste" id="laufliste"><span class="leise">Noch keine Läufe.</span></div>
+  </aside>
+
+  <div class="karte buehne">
+    <div class="buehnenkopf">
+      <div class="cursorzeit" id="cursorZeit">–</div>
+      <div class="reihe">
+        <button class="knopf hell" id="bildLinks" title="ein Bild zurück">◀ 1</button>
+        <button class="knopf hell" id="bildRechts" title="ein Bild vor">1 ▶</button>
+        <button class="knopf hell" id="zoomAus">−</button>
+        <button class="knopf hell" id="zoomEin">+</button>
+        <button class="knopf hell" id="ansichtWechsel">Kamera</button>
+      </div>
+    </div>
+    <div id="leerBox" class="leer">Kamera starten, iPad im Ziel seitlich auf die Verlängerung der Ziellinie stellen<br>und die gelbe Linie auf die Ziellinie schieben.</div>
+    <div class="vorschau" id="vorschau" hidden>
+      <video id="video" playsinline muted autoplay></video>
+      <div class="ziellinie" id="ziellinie"></div>
+      <div class="hinweisbox" id="kameraInfo">Linie mit dem Finger auf die Ziellinie schieben.</div>
+    </div>
+    <div id="fotofinish" hidden>
+      <canvas id="uebersicht"></canvas>
+      <canvas id="streifen"></canvas>
+      <p class="leise" style="margin:6px 0 0">Wischen = scrollen · Tippen = Cursor · zwei Finger = Zoom. Zeiten werden auf Hundertstel aufgerundet.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== KLASSEN ===================== -->
+<section class="ansicht zwei" id="v-klassen" hidden>
+  <div class="karte">
+    <h2>Klassen</h2>
+    <p class="leise" style="margin-top:0">Import aus WebUntis (CSV) oder Excel (.xlsx). Erkannt werden die Spalten Langname/Nachname, Vorname, Klasse, Geschlecht. Gleiche Schüler werden nicht doppelt angelegt.</p>
+    <div class="reihe">
+      <label class="knopf" style="display:inline-block">📄 Liste importieren<input type="file" id="importDatei" accept=".csv,.txt,.xlsx,text/csv" hidden></label>
+      <button class="knopf hell" id="neueKlasse">+ Neue Klasse</button>
+    </div>
+    <h3>Vorhandene Klassen</h3>
+    <div id="klassenListe"></div>
+  </div>
+  <div class="karte" id="klassenDetail"><p class="leise">Klasse auswählen.</p></div>
+</section>
+
+<!-- ===================== AUSWERTUNG ===================== -->
+<section class="ansicht" id="v-auswertung" hidden>
+  <div class="karte">
+    <div class="reihe" style="justify-content:space-between">
+      <h2 style="margin:0">Auswertung</h2>
+      <div class="reihe">
+        <button class="knopf hell klein" id="exportCsv">Ergebnisse als CSV</button>
+        <button class="knopf hell klein" id="sicherungExport">Sicherung speichern</button>
+        <label class="knopf hell klein" style="display:inline-block">Sicherung laden<input type="file" id="sicherungImport" accept=".json,application/json" hidden></label>
+      </div>
+    </div>
+    <div class="reihe" style="margin-top:10px">
+      <select id="awKlasse"></select>
+      <div class="chips" id="awStrecken"></div>
+      <div class="chips" id="awGeschlecht"></div>
+    </div>
+  </div>
+  <div class="zwei aw">
+    <div class="karte"><div id="awTabelle"></div></div>
+    <div class="karte" id="awDetail"><p class="leise">Schüler antippen, um den Verlauf zu sehen.</p></div>
+  </div>
+</section>
+
+<!-- ===================== AUFBAU ===================== -->
+<section class="ansicht zwei" id="v-aufbau" hidden>
+  <div class="karte">
+    <h2>Einstellungen</h2>
+    <div class="raster">
+      <label class="feld">Lufttemperatur (°C)<input type="number" id="eTemp" step="1"></label>
+      <label class="feld">Seitlicher Abstand iPad ↔ Klappe (m)<input type="number" id="eVersatz" step="0.5" min="0"></label>
+      <label class="feld">Knall-Schwelle (dBFS)<input type="number" id="eSchwelle" step="1" max="0" min="-60"></label>
+      <label class="feld">Impulsfilter (dB über Grundrauschen, 0 = aus)<input type="number" id="eImpuls" step="1" min="0" max="40"></label>
+      <label class="feld">Automatisch stoppen nach (s, 0 = aus)<input type="number" id="eAutoStopp" step="1" min="0" max="45"></label>
+      <label class="feld">Geräte-Versatz Ton/Bild (ms)<input type="number" id="eOffset" step="1"></label>
+    </div>
+    <p class="leise" id="eSchallText"></p>
+
+    <h3>Kalibrieren (einmal pro iPad)</h3>
+    <p class="leise" style="margin-top:0">Ton und Bild kommen im iPad mit unterschiedlicher Verzögerung an. So misst du den Versatz: Klappe direkt im Ziel <b>auf der Ziellinie vor der Kamera</b> zuschlagen. Danach im Fotofinish den Cursor auf das Bild setzen, in dem die Klappe zu ist, und „Als Nullpunkt übernehmen“ drücken.</p>
+    <button class="knopf gelb" id="kalibStart">Kalibrierlauf vorbereiten</button>
+
+    <h3>Kamera</h3>
+    <p class="leise" id="kameraDaten">Noch nicht gestartet.</p>
+
+    <h3>Daten</h3>
+    <p class="leise" style="margin-top:0">Alles bleibt nur auf diesem Gerät (im Browser gespeichert). Regelmäßig unter „Auswertung“ eine Sicherung speichern, z. B. bevor der Safari-Verlauf gelöscht wird.</p>
+    <button class="knopf rot klein" id="allesLoeschen">Alle Daten auf diesem Gerät löschen</button>
+  </div>
+  <div class="karte">
+    <h2>Aufbau</h2>
+    <svg viewBox="0 0 520 300" style="width:100%;height:auto" font-family="sans-serif" font-size="12">
+      <rect x="0" y="0" width="520" height="300" rx="10" fill="#f3f4f6"/>
+      <g fill="#fde7d4" stroke="#c2410c" stroke-width="1">
+        <rect x="40" y="60" width="400" height="160"/>
+      </g>
+      <g stroke="#fff" stroke-width="2"><line x1="40" y1="100" x2="440" y2="100"/><line x1="40" y1="140" x2="440" y2="140"/><line x1="40" y1="180" x2="440" y2="180"/></g>
+      <g fill="#7c2d12" font-weight="700"><text x="48" y="85">1</text><text x="48" y="125">2</text><text x="48" y="165">3</text><text x="48" y="205">4</text></g>
+      <line x1="70" y1="56" x2="70" y2="224" stroke="#111" stroke-width="3"/>
+      <text x="58" y="48" font-weight="700">Start</text>
+      <line x1="420" y1="56" x2="420" y2="224" stroke="#111" stroke-width="3"/>
+      <text x="402" y="48" font-weight="700">Ziel</text>
+      <circle cx="70" cy="245" r="9" fill="#f59e0b"/><text x="84" y="249">Klappe (Knall)</text>
+      <rect x="410" y="252" width="20" height="28" rx="3" fill="#1e2a78"/><text x="436" y="270">iPad</text>
+      <path d="M420 250 L420 230" stroke="#1e2a78" stroke-width="2" marker-end="url(#pf)"/>
+      <defs><marker id="pf" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8z" fill="#1e2a78"/></marker></defs>
+      <line x1="80" y1="245" x2="405" y2="262" stroke="#6b7280" stroke-dasharray="5 4"/>
+      <text x="200" y="272" fill="#374151">Schallweg = √(Strecke² + Versatz²)</text>
+      <text x="40" y="20" font-weight="700" fill="#312e91">iPad auf der Verlängerung der Ziellinie, Kamera blickt quer über alle Bahnen</text>
+    </svg>
+    <ul class="leise">
+      <li>iPad quer auf ein Stativ, etwa 2–4 m neben Bahn 1 (oder 4), Kamera genau entlang der Ziellinie.</li>
+      <li>Bahn, die dem iPad am nächsten ist, nicht zu dicht: Läufer sollten ganz ins Bild passen.</li>
+      <li>Klappe neben der Startlinie auf der iPad-Seite schlagen; den seitlichen Abstand oben eintragen.</li>
+      <li>Wind und Lärm: Schwelle so hoch stellen, dass Rufe nicht auslösen. Notfalls Handstart.</li>
+      <li>Gegenlicht vermeiden: Sonne möglichst im Rücken der Kamera.</li>
+    </ul>
+  </div>
+</section>
+
+<div class="melden" id="melden"></div>
+
+<script>
+"use strict";
+/* =========================================================
+   Sprint-Zeitmessung · KGS Schwarmstedt
+   Start: Knall per Mikrofon (AudioWorklet), Schalllaufzeit wird abgezogen.
+   Ziel: Fotofinish (Slit-Scan) – pro Kamerabild eine Pixelspalte an der Ziellinie.
+   Daten: localStorage, nur auf diesem Gerät.
+   ========================================================= */
+
+const $ = (id) => document.getElementById(id);
+const STRECKEN = [30, 50, 70, 75, 100];
+const AUTOSTOPP_VORSCHLAG = { 30: 12, 50: 18, 70: 24, 75: 25, 100: 30 };
+const BAHNFARBEN = ["#e11d48", "#2563eb", "#16a34a", "#d97706"];
+const SPEICHER = "kgs-sprint-v1";
+
+/* ---------- Daten ---------- */
+let daten = laden();
+function laden() {
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem(SPEICHER) || "null"); } catch (e) {}
+  d = d || {};
+  d.klassen = d.klassen || {};           // name -> [{id, nn, vn, g}]
+  d.ergebnisse = d.ergebnisse || [];     // {id, sid, klasse, strecke, zeit, datum, start, lauf}
+  d.e = Object.assign({ temp: 15, versatz: 3, schwelle: -12, impuls: 18, autoStopp: 0, offset: 0,
+                        strecke: 50, linie: 0.5, klasse: "", gruppe: {} }, d.e || {});
+  return d;
+}
+function speichern() {
+  try { localStorage.setItem(SPEICHER, JSON.stringify(daten)); }
+  catch (e) { melden("Speichern fehlgeschlagen – Speicher voll?"); }
+}
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+function melden(t) {
+  const m = $("melden"); m.textContent = t; m.classList.add("an");
+  clearTimeout(melden.t); melden.t = setTimeout(() => m.classList.remove("an"), 2600);
+}
+const fmt = (t) => t == null || !isFinite(t) ? "–" : (Math.ceil(t * 100 - 1e-6) / 100).toFixed(2).replace(".", ",");
+const fmtS = (t) => fmt(t) + " s";
+const heute = () => new Date().toISOString().slice(0, 10);
+const datumDe = (iso) => iso ? iso.slice(8, 10) + "." + iso.slice(5, 7) + "." + iso.slice(2, 4) : "";
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function schueler(sid) {
+  for (const k in daten.klassen) { const s = daten.klassen[k].find((x) => x.id === sid); if (s) return Object.assign({ klasse: k }, s); }
+  return null;
+}
+const nameKurz = (s) => s ? s.vn + " " + (s.nn || "").slice(0, 1) + "." : "";
+
+/* ---------- Physik ---------- */
+const schallGeschw = () => 331.3 * Math.sqrt(1 + (Number(daten.e.temp) || 0) / 273.15);
+const schallWeg = (strecke) => Math.hypot(strecke, Number(daten.e.versatz) || 0);
+const schallZeit = (strecke) => schallWeg(strecke) / schallGeschw();
+
+/* ---------- Reiter ---------- */
+$("reiter").addEventListener("click", (ev) => {
+  const b = ev.target.closest("button"); if (!b) return;
+  document.querySelectorAll("#reiter button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+  document.querySelectorAll(".ansicht").forEach((s) => s.hidden = s.id !== "v-" + b.dataset.v);
+  if (b.dataset.v === "klassen") klassenZeichnen();
+  if (b.dataset.v === "auswertung") auswertungZeichnen();
+  if (b.dataset.v === "aufbau") einstellungenZeigen();
+  if (b.dataset.v === "messen") { laufPanelZeichnen(); zeichneBald(); }
+});
+$("panelZu").onclick = () => {
+  const m = $("v-messen"); m.classList.toggle("zu");
+  $("panelZu").textContent = m.classList.contains("zu") ? "▶" : "◀";
+  setTimeout(() => { groesseAnpassen(); zeichneBald(); }, 50);
+};
+
+/* =========================================================
+   LAUF-PANEL
+   ========================================================= */
+let bahnen = [null, null, null, null];   // {sid} | {gast:"Name"} | null
+let ausGruppe = false;                   // Bahnen kamen über „Nächste 4“
+
+function laufPanelZeichnen() {
+  const sc = $("streckenChips"); sc.innerHTML = "";
+  STRECKEN.forEach((s) => {
+    const b = document.createElement("button"); b.textContent = s + " m";
+    b.setAttribute("aria-pressed", daten.e.strecke === s);
+    b.disabled = zustand === "laeuft" || zustand === "warte";
+    b.onclick = () => { daten.e.strecke = s; speichern(); laufPanelZeichnen(); };
+    sc.appendChild(b);
+  });
+  $("schallInfo").textContent = `Schallweg ${schallWeg(daten.e.strecke).toFixed(1).replace(".", ",")} m · Korrektur ${(schallZeit(daten.e.strecke) * 1000).toFixed(0)} ms bei ${daten.e.temp} °C`;
+
+  const ks = $("laufKlasse"); const namen = Object.keys(daten.klassen).sort(sortDe);
+  if (daten.e.klasse && !daten.klassen[daten.e.klasse]) daten.e.klasse = "";
+  ks.innerHTML = `<option value="">– ohne Klasse (nur Bahnen) –</option>` + namen.map((k) => `<option ${k === daten.e.klasse ? "selected" : ""}>${esc(k)}</option>`).join("");
+  $("naechsteGruppe").disabled = !daten.e.klasse;
+
+  const bz = $("bahnen"); bz.innerHTML = "";
+  const liste = daten.e.klasse ? [...daten.klassen[daten.e.klasse]].sort(sortSchueler) : [];
+  for (let i = 0; i < 4; i++) {
+    const row = document.createElement("div"); row.className = "bahn";
+    const sel = document.createElement("select");
+    const akt = bahnen[i];
+    sel.innerHTML = `<option value="">Bahn ${i + 1} – frei</option><option value="#gast">Gast / ohne Liste…</option>` +
+      (akt && akt.gast ? `<option value="#g" selected>${esc(akt.gast)} (Gast)</option>` : "") +
+      liste.map((s) => `<option value="${s.id}" ${akt && akt.sid === s.id ? "selected" : ""}>${esc(s.nn)}, ${esc(s.vn)}</option>`).join("");
+    sel.onchange = () => {
+      if (sel.value === "#gast") { const n = prompt("Name für Bahn " + (i + 1) + ":"); bahnen[i] = n ? { gast: n.trim() } : null; }
+      else if (sel.value === "#g") {}
+      else bahnen[i] = sel.value ? { sid: sel.value } : null;
+      ausGruppe = false; laufPanelZeichnen();
+    };
+    row.innerHTML = `<span class="punkt" style="background:${BAHNFARBEN[i]}">${i + 1}</span>`;
+    row.appendChild(sel); bz.appendChild(row);
+  }
+  zuordnenZeichnen();
+}
+const sortDe = (a, b) => a.localeCompare(b, "de", { numeric: true });
+const sortSchueler = (a, b) => (a.nn + " " + a.vn).localeCompare(b.nn + " " + b.vn, "de");
+$("laufKlasse").onchange = (e) => { daten.e.klasse = e.target.value; bahnen = [null, null, null, null]; speichern(); laufPanelZeichnen(); };
+$("naechsteGruppe").onclick = () => {
+  const k = daten.e.klasse; if (!k) return;
+  const liste = [...daten.klassen[k]].sort(sortSchueler); if (!liste.length) return;
+  let p = daten.e.gruppe[k] || 0; if (p >= liste.length) p = 0;
+  bahnen = [0, 1, 2, 3].map((j) => liste[p + j] ? { sid: liste[p + j].id } : null);
+  daten.e.gruppe[k] = p + 4 >= liste.length ? 0 : p + 4; speichern();
+  ausGruppe = true; laufPanelZeichnen();
+};
+function bahnName(i) {
+  const b = bahnen[i]; if (!b) return "Bahn " + (i + 1);
+  if (b.gast) return b.gast;
+  const s = schueler(b.sid); return s ? s.vn + " " + s.nn : "Bahn " + (i + 1);
+}
+
+/* =========================================================
+   GERÄTE: Kamera + Mikrofon
+   ========================================================= */
+let videoStrom = null, audioCtx = null, knallKnoten = null, wakeLock = null;
+const video = $("video");
+let kameraFps = 0;
+
+$("geraeteStart").onclick = geraeteStarten;
+async function geraeteStarten() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    melden("Kamera nicht verfügbar – Seite über https öffnen (z. B. GitHub Pages)."); return;
+  }
+  $("statusText").textContent = "Starte …";
+  try {
+    videoStrom = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: { facingMode: { ideal: "environment" }, frameRate: { ideal: 60, min: 24 }, width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+  } catch (e) {
+    try { videoStrom = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false }); }
+    catch (e2) { melden("Kein Zugriff auf die Kamera: " + e2.message); $("statusText").textContent = "Kamera verweigert"; return; }
+  }
+  video.srcObject = videoStrom;
+  try { await video.play(); } catch (e) {}
+  const st = videoStrom.getVideoTracks()[0].getSettings();
+  kameraFps = st.frameRate || 0;
+  $("kameraDaten").textContent = `${st.width || "?"}×${st.height || "?"} Pixel · ${kameraFps ? Math.round(kameraFps) : "?"} Bilder/s` +
+    (kameraFps && kameraFps < 50 ? " – unter 60 Bilder/s wird die Messung gröber." : "");
+
+  try { await audioStarten(); }
+  catch (e) { melden("Mikrofon nicht verfügbar – nur Handstart möglich."); console.warn(e); }
+
+  try { if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen"); } catch (e) {}
+  document.addEventListener("visibilitychange", async () => {
+    if (document.visibilityState === "visible" && "wakeLock" in navigator && videoStrom) { try { wakeLock = await navigator.wakeLock.request("screen"); } catch (e) {} }
+  });
+
+  $("geraeteStart").hidden = true; $("laufKnoepfe").hidden = false;
+  ansicht = "kamera"; buehneZeigen();
+  setzeZustand("bereit");
+}
+
+const WORKLET = `
+class Knall extends AudioWorkletProcessor {
+  constructor(){ super(); this.scharf=false; this.schwelle=0.25; this.faktor=0; this.grund=0.002; this.spitze=0; this.n=0;
+    this.port.onmessage=(e)=>{ Object.assign(this,e.data); }; }
+  process(inputs){
+    const ch = inputs[0] && inputs[0][0]; if(!ch) return true;
+    let pk=0, qs=0;
+    for(let i=0;i<ch.length;i++){
+      const a = ch[i] < 0 ? -ch[i] : ch[i]; qs += a*a; if(a>pk) pk=a;
+      if(this.scharf && a>=this.schwelle && (this.faktor<=1 || a>=this.grund*this.faktor)){
+        this.scharf=false; this.port.postMessage({typ:"knall", t: currentTime + i/sampleRate, pk:a, grund:this.grund});
+      }
+    }
+    const rms = Math.sqrt(qs/ch.length);
+    if(pk < this.schwelle) this.grund = this.grund*0.99 + rms*0.01;
+    if(pk>this.spitze) this.spitze=pk;
+    if(++this.n>=16){ this.port.postMessage({typ:"pegel", pk:this.spitze, grund:this.grund}); this.spitze=0; this.n=0; }
+    return true;
+  }
+}
+registerProcessor("knall", Knall);`;
+
+async function audioStarten() {
+  const strom = await navigator.mediaDevices.getUserMedia({
+    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 }, video: false
+  });
+  const AC = window.AudioContext || window.webkitAudioContext;
+  audioCtx = new AC({ latencyHint: "interactive" });
+  if (audioCtx.state === "suspended") await audioCtx.resume();
+  const quelle = audioCtx.createMediaStreamSource(strom);
+  const stumm = audioCtx.createGain(); stumm.gain.value = 0; stumm.connect(audioCtx.destination);
+  if (audioCtx.audioWorklet) {
+    const url = URL.createObjectURL(new Blob([WORKLET], { type: "application/javascript" }));
+    await audioCtx.audioWorklet.addModule(url);
+    knallKnoten = new AudioWorkletNode(audioCtx, "knall");
+    knallKnoten.port.onmessage = (e) => audioNachricht(e.data);
+    quelle.connect(knallKnoten); knallKnoten.connect(stumm);
+  } else {
+    // Ersatz für sehr alte Browser
+    const sp = audioCtx.createScriptProcessor(512, 1, 1);
+    const z = { scharf: false, schwelle: .25, faktor: 0, grund: .002, spitze: 0, n: 0 };
+    knallKnoten = { port: { postMessage: (d) => Object.assign(z, d) } };
+    sp.onaudioprocess = (ev) => {
+      const ch = ev.inputBuffer.getChannelData(0), t0 = audioCtx.currentTime; let pk = 0, qs = 0;
+      for (let i = 0; i < ch.length; i++) {
+        const a = Math.abs(ch[i]); qs += a * a; if (a > pk) pk = a;
+        if (z.scharf && a >= z.schwelle && (z.faktor <= 1 || a >= z.grund * z.faktor)) { z.scharf = false; audioNachricht({ typ: "knall", t: t0 + i / audioCtx.sampleRate, pk: a }); }
+      }
+      const rms = Math.sqrt(qs / ch.length); if (pk < z.schwelle) z.grund = z.grund * .95 + rms * .05;
+      z.spitze = Math.max(z.spitze, pk); if (++z.n >= 4) { audioNachricht({ typ: "pegel", pk: z.spitze }); z.spitze = 0; z.n = 0; }
+    };
+    quelle.connect(sp); sp.connect(stumm);
+  }
+  schwelleSenden();
+}
+function schwelleSenden() {
+  if (!knallKnoten) return;
+  knallKnoten.port.postMessage({ schwelle: Math.pow(10, daten.e.schwelle / 20), faktor: daten.e.impuls > 0 ? Math.pow(10, daten.e.impuls / 20) : 0 });
+}
+// Zeitpunkt im Audio-Takt -> performance.now()-Zeitachse
+function audioZuPerf(t) {
+  if (audioCtx.getOutputTimestamp) {
+    const ts = audioCtx.getOutputTimestamp();
+    if (ts && ts.performanceTime > 0 && ts.contextTime > 0) return ts.performanceTime + (t - ts.contextTime) * 1000;
+  }
+  return performance.now() - (audioCtx.currentTime - t) * 1000;
+}
+
+/* ---------- Pegelanzeige ---------- */
+const dbVon = (a) => a > 0 ? 20 * Math.log10(a) : -99;
+const dbZuProzent = (db) => Math.max(0, Math.min(100, (db + 60) / 60 * 100));
+function pegelZeigen(pk) {
+  const db = dbVon(pk);
+  $("pegel").style.width = dbZuProzent(db) + "%";
+  $("pegelDb").textContent = (db < -60 ? "< -60" : db.toFixed(0)) + " dB";
+}
+function schwelleZeigen() {
+  $("schwelleStrich").style.left = "calc(" + dbZuProzent(daten.e.schwelle) + "% - 1px)";
+  $("schwelleDb").textContent = daten.e.schwelle + " dB";
+  $("schwelle").value = daten.e.schwelle;
+}
+$("schwelle").oninput = (e) => { daten.e.schwelle = Number(e.target.value); schwelleZeigen(); schwelleSenden(); speichern(); };
+$("meter").addEventListener("pointerdown", (e) => {
+  const r = e.currentTarget.getBoundingClientRect();
+  daten.e.schwelle = Math.round(Math.min(-1, Math.max(-50, (e.clientX - r.left) / r.width * 60 - 60)));
+  schwelleZeigen(); schwelleSenden(); speichern();
+});
+
+function audioNachricht(d) {
+  if (d.typ === "pegel") pegelZeigen(d.pk);
+  else if (d.typ === "knall" && zustand === "warte") {
+    const perf = audioZuPerf(d.t);
+    laufStarten(perf, "knall");
+  }
+}
+
+/* =========================================================
+   LAUF-ZUSTAND
+   ========================================================= */
+let zustand = "aus";   // aus | bereit | warte | laeuft | auswertung
+let lauf = null;       // aktueller Lauf
+let kalibModus = false;
+
+function setzeZustand(z) {
+  zustand = z;
+  const st = $("status"); st.className = "status " + ({ warte: "warte", laeuft: "laeuft", auswertung: "aus" }[z] || "");
+  const g = $("statusGross"), t = $("statusText");
+  if (z === "bereit") { g.textContent = "Bereit"; t.textContent = kalibModus ? "Kalibrierlauf: scharf schalten, Klappe auf der Ziellinie schlagen" : "Bahnen wählen, dann scharf schalten"; }
+  if (z === "warte") { g.textContent = "🔔"; t.textContent = "Warte auf den Knall …"; }
+  if (z === "laeuft") { t.textContent = lauf.start === "hand" ? "Läuft (Handstart)" : "Läuft – Start per Knall"; }
+  if (z === "auswertung") { g.textContent = "Ziel"; t.textContent = "Zeiten zuordnen"; }
+  $("scharf").disabled = !(z === "bereit" || z === "warte");
+  $("scharf").textContent = z === "warte" ? "Entschärfen" : "🔔 Scharf schalten";
+  $("handstart").disabled = !(z === "bereit" || z === "warte");
+  $("stopp").disabled = z !== "laeuft";
+  $("abbrechen").disabled = !(z === "laeuft" || z === "warte");
+  $("zuordnenBox").hidden = z !== "auswertung";
+  laufPanelZeichnen();
+}
+
+$("scharf").onclick = () => {
+  if (zustand === "warte") { knallKnoten && knallKnoten.port.postMessage({ scharf: false }); setzeZustand("bereit"); return; }
+  if (!knallKnoten) { melden("Kein Mikrofon – bitte Handstart nutzen."); return; }
+  setzeZustand("warte");
+  // kurze Sperrzeit, damit das Antippen selbst nicht auslöst
+  setTimeout(() => { if (zustand === "warte") knallKnoten.port.postMessage({ scharf: true }); }, 500);
+};
+$("handstart").addEventListener("pointerdown", (e) => {
+  if ($("handstart").disabled) return;
+  knallKnoten && knallKnoten.port.postMessage({ scharf: false });
+  laufStarten(e.timeStamp || performance.now(), "hand");
+});
+$("stopp").onclick = () => laufBeenden();
+$("abbrechen").onclick = () => {
+  knallKnoten && knallKnoten.port.postMessage({ scharf: false });
+  lauf = null; aufnahme = null; ansicht = "kamera"; buehneZeigen(); setzeZustand("bereit");
+};
+
+function laufStarten(perfKnall, art) {
+  const strecke = kalibModus ? 0 : daten.e.strecke;
+  const korrektur = art === "knall" ? schallZeit(strecke) * 1000 : 0;
+  lauf = {
+    id: uid(), start: art, strecke: daten.e.strecke, kalib: kalibModus,
+    knallPerf: perfKnall,
+    startPerf: perfKnall - korrektur,
+    offset: art === "knall" && !kalibModus ? Number(daten.e.offset) || 0 : 0,
+    bahnen: bahnen.map((b) => b ? Object.assign({}, b) : null),
+    zeiten: [null, null, null, null]
+  };
+  aufnahmeStarten();
+  setzeZustand("laeuft");
+  ansicht = "streifen"; buehneZeigen();
+  uhrTick();
+}
+function uhrTick() {
+  if (zustand !== "laeuft" || !lauf) return;
+  const t = (performance.now() - lauf.startPerf - lauf.offset) / 1000;
+  $("statusGross").textContent = t.toFixed(1).replace(".", ",") + " s";
+  const grenze = kalibModus ? 3 : Number(daten.e.autoStopp) || 0;
+  if (grenze > 0 && t > grenze) { laufBeenden(); return; }
+  if (aufnahme && aufnahme.n >= aufnahme.max - 1) { laufBeenden(); melden("Maximale Aufnahmelänge erreicht."); return; }
+  requestAnimationFrame(uhrTick);
+}
+function laufBeenden() {
+  if (!lauf) return;
+  aufnahmeStoppen();
+  setzeZustand("auswertung");
+  // Cursor an die erste Bewegung setzen
+  const erste = ersteBewegung();
+  zoom = 4; cursor = erste != null ? erste : 0;
+  scroll = Math.max(0, cursor - sichtbareSpalten() * 0.3);
+  zeichneBald();
+  $("kalibHinweis").textContent = lauf.kalib ? "Kalibrierlauf" : "";
+}
+
+/* ---------- Zuordnen ---------- */
+function zuordnenZeichnen() {
+  const box = $("zuordnen"); if (!box || !lauf) return;
+  box.innerHTML = "";
+  if (lauf.kalib) {
+    const b = document.createElement("button"); b.className = "knopf gelb";
+    b.innerHTML = `<span>Als Nullpunkt übernehmen</span><span class="zt">${aufnahme && aufnahme.n ? fmtS(cursorZeit()) : ""}</span>`;
+    b.onclick = () => {
+      const t = cursorZeit(); if (t == null) return;
+      daten.e.offset = Math.round((Number(daten.e.offset) || 0) + t * 1000);
+      speichern(); kalibModus = false; melden("Geräte-Versatz gespeichert: " + daten.e.offset + " ms");
+      lauf = null; aufnahme = null; ansicht = "kamera"; buehneZeigen(); setzeZustand("bereit"); einstellungenZeigen();
+    };
+    box.appendChild(b); return;
+  }
+  for (let i = 0; i < 4; i++) {
+    const belegt = lauf.bahnen[i];
+    const b = document.createElement("button"); b.className = "knopf hell";
+    b.style.borderLeft = "6px solid " + BAHNFARBEN[i];
+    const name = belegt ? (belegt.gast || nameKurz(schueler(belegt.sid))) : "Bahn " + (i + 1);
+    b.innerHTML = `<span>${i + 1} · ${esc(name)}</span><span class="zt">${lauf.zeiten[i] ? fmtS(lauf.zeiten[i].t) : "zuordnen"}</span>`;
+    b.onclick = () => {
+      const t = cursorZeit(); if (t == null) return;
+      if (lauf.zeiten[i] && Math.abs(lauf.zeiten[i].c - cursor) < 0.01) lauf.zeiten[i] = null;   // nochmal tippen = entfernen
+      else lauf.zeiten[i] = { c: cursor, t };
+      zuordnenZeichnen(); zeichneBald();
+    };
+    box.appendChild(b);
+  }
+}
+$("laufSpeichern").onclick = () => {
+  if (!lauf) return;
+  const datum = heute(); let n = 0; const zeile = [];
+  lauf.zeiten.forEach((z, i) => {
+    if (!z) return;
+    const b = lauf.bahnen[i];
+    zeile.push(`<span style="color:${BAHNFARBEN[i]}">●</span> ${esc(b ? (b.gast || nameKurz(schueler(b.sid))) : "Bahn " + (i + 1))} ${fmtS(z.t)}`);
+    if (b && b.sid) {
+      const s = schueler(b.sid);
+      daten.ergebnisse.push({ id: uid(), sid: b.sid, klasse: s ? s.klasse : "", strecke: lauf.strecke, zeit: Math.ceil(z.t * 100 - 1e-6) / 100, datum, start: lauf.start, lauf: lauf.id });
+      n++;
+    }
+  });
+  speichern();
+  laufListe.unshift(`<div><b>${lauf.strecke} m</b> ${lauf.start === "hand" ? "(Hand)" : ""} · ${zeile.join(" · ") || "ohne Zeiten"}</div>`);
+  $("laufliste").innerHTML = laufListe.join("");
+  melden(n ? n + " Zeit(en) gespeichert" : "Lauf notiert (keine Schüler zugeordnet)");
+  lauf = null; aufnahme = null; ansicht = "kamera"; buehneZeigen(); setzeZustand("bereit");
+  if (daten.e.klasse && ausGruppe) $("naechsteGruppe").click();
+};
+$("laufVerwerfen").onclick = () => {
+  if (!confirm("Lauf verwerfen?")) return;
+  lauf = null; aufnahme = null; ansicht = "kamera"; buehneZeigen(); setzeZustand("bereit");
+};
+const laufListe = [];
+
+$("bildSichern").onclick = () => {
+  const c = $("streifen");
+  c.toBlob((blob) => {
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+    a.download = `fotofinish_${heute()}_${lauf ? lauf.strecke : ""}m.png`; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  }, "image/png");
+};
+
+/* =========================================================
+   AUFNAHME (Slit-Scan)
+   ========================================================= */
+let aufnahme = null;
+const spalte = document.createElement("canvas");
+const spalteCtx = spalte.getContext("2d", { willReadFrequently: true });
+
+function aufnahmeStarten() {
+  const vw = video.videoWidth || 1280, vh = video.videoHeight || 720;
+  const H = Math.min(vh, 720);
+  const max = Math.round(Math.max(30, kameraFps || 60) * 50);   // 50 Sekunden
+  const streifen = document.createElement("canvas");
+  streifen.width = max; streifen.height = H;
+  spalte.width = 1; spalte.height = H;
+  aufnahme = {
+    vw, vh, H, max, n: 0, streifen, sctx: streifen.getContext("2d"),
+    zeiten: new Float64Array(max), aktiv: new Float32Array(max), ref: null, laeuft: true, letzterFrame: -1
+  };
+  if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(bildNeu);
+  else requestAnimationFrame(bildNeuRaf);
+}
+function aufnahmeStoppen() { if (aufnahme) aufnahme.laeuft = false; }
+
+function bildNeu(now, meta) {
+  if (!aufnahme || !aufnahme.laeuft) return;
+  const t = typeof meta.captureTime === "number" && meta.captureTime > 0 ? meta.captureTime
+          : typeof meta.presentationTime === "number" && meta.presentationTime > 0 ? meta.presentationTime : now;
+  spalteAufnehmen(t);
+  video.requestVideoFrameCallback(bildNeu);
+}
+let letzteVideoZeit = -1;
+function bildNeuRaf(now) {
+  if (!aufnahme || !aufnahme.laeuft) return;
+  if (video.currentTime !== letzteVideoZeit) { letzteVideoZeit = video.currentTime; spalteAufnehmen(now); }
+  requestAnimationFrame(bildNeuRaf);
+}
+function spalteAufnehmen(t) {
+  const a = aufnahme; if (a.n >= a.max) return;
+  const sx = Math.min(a.vw - 1, Math.max(0, Math.round(daten.e.linie * a.vw)));
+  spalteCtx.drawImage(video, sx, 0, 1, a.vh, 0, 0, 1, a.H);
+  const img = spalteCtx.getImageData(0, 0, 1, a.H);
+  a.sctx.putImageData(img, a.n, 0);
+  // Bewegung = Abweichung von der leeren Ziellinie (Mittel der ersten Bilder)
+  const p = img.data;
+  if (a.n < 6) {
+    if (!a.ref) a.ref = new Float32Array(a.H * 3);
+    for (let y = 0; y < a.H; y++) for (let k = 0; k < 3; k++) a.ref[y * 3 + k] += p[y * 4 + k] / 6;
+    a.aktiv[a.n] = 0;
+  } else {
+    let s = 0;
+    for (let y = 0; y < a.H; y++) {
+      const d = Math.abs(p[y * 4] - a.ref[y * 3]) + Math.abs(p[y * 4 + 1] - a.ref[y * 3 + 1]) + Math.abs(p[y * 4 + 2] - a.ref[y * 3 + 2]);
+      if (d > 60) s++;
+    }
+    a.aktiv[a.n] = s / a.H;
+  }
+  a.zeiten[a.n] = t;
+  a.n++;
+  if (ansicht === "streifen" && zustand === "laeuft") { scroll = Math.max(0, a.n - sichtbareSpalten()); zeichneBald(); }
+}
+function ersteBewegung() {
+  const a = aufnahme; if (!a || a.n < 8) return null;
+  for (let i = 6; i < a.n; i++) if (a.aktiv[i] > 0.04) return i;
+  return null;
+}
+
+/* ---------- Zeitachse ---------- */
+// Zeit der Spalte (Bruchteil erlaubt), in Sekunden ab Start
+function spaltenZeit(c) {
+  const a = aufnahme; if (!a || !a.n) return null;
+  c = Math.max(0, Math.min(a.n - 1, c));
+  const i = Math.floor(c), f = c - i;
+  const t0 = a.zeiten[i], t1 = i + 1 < a.n ? a.zeiten[i + 1] : t0;
+  return (t0 + (t1 - t0) * f - lauf.startPerf - lauf.offset) / 1000;
+}
+function zeitZuSpalte(t) {
+  const a = aufnahme; if (!a || a.n < 2) return null;
+  const ziel = t * 1000 + lauf.startPerf + lauf.offset;
+  let lo = 0, hi = a.n - 1;
+  if (ziel <= a.zeiten[0]) return 0; if (ziel >= a.zeiten[hi]) return hi;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (a.zeiten[m] <= ziel) lo = m; else hi = m; }
+  return lo + (ziel - a.zeiten[lo]) / (a.zeiten[hi] - a.zeiten[lo] || 1);
+}
+const cursorZeit = () => spaltenZeit(cursor);
+
+/* =========================================================
+   BÜHNE: Kamera-Vorschau / Fotofinish-Ansicht
+   ========================================================= */
+let ansicht = "leer";   // leer | kamera | streifen
+let zoom = 4, scroll = 0, cursor = 0;
+const cv = $("streifen"), ctx = cv.getContext("2d");
+const ov = $("uebersicht"), octx = ov.getContext("2d");
+
+function buehneZeigen() {
+  $("leerBox").hidden = ansicht !== "leer";
+  $("vorschau").hidden = ansicht !== "kamera";
+  $("fotofinish").hidden = ansicht !== "streifen";
+  $("ansichtWechsel").textContent = ansicht === "kamera" ? "Fotofinish" : "Kamera";
+  $("ansichtWechsel").disabled = !videoStrom || !aufnahme;
+  linieZeigen();
+  groesseAnpassen(); zeichneBald();
+}
+$("ansichtWechsel").onclick = () => { ansicht = ansicht === "kamera" ? "streifen" : "kamera"; buehneZeigen(); };
+
+function linieZeigen() { $("ziellinie").style.left = (daten.e.linie * 100) + "%"; }
+// Ziellinie verschieben – nur in der Kamera-Ansicht und nicht während der Aufnahme
+$("vorschau").addEventListener("pointerdown", (e) => {
+  if (zustand === "laeuft") return;
+  const el = $("vorschau"); el.setPointerCapture(e.pointerId);
+  const setzen = (ev) => {
+    const r = video.getBoundingClientRect();
+    // sichtbare Videofläche (object-fit: contain) berücksichtigen
+    const ar = (video.videoWidth || 16) / (video.videoHeight || 9);
+    let w = r.width, x0 = r.left;
+    if (r.width / r.height > ar) { w = r.height * ar; x0 = r.left + (r.width - w) / 2; }
+    daten.e.linie = Math.max(0.01, Math.min(0.99, (ev.clientX - x0) / w));
+    linieZeigen();
+  };
+  setzen(e);
+  const mv = (ev) => setzen(ev);
+  const up = () => { el.removeEventListener("pointermove", mv); el.removeEventListener("pointerup", up); speichern(); };
+  el.addEventListener("pointermove", mv); el.addEventListener("pointerup", up);
+});
+
+function groesseAnpassen() {
+  const dpr = window.devicePixelRatio || 1;
+  for (const c of [cv, ov]) {
+    const r = c.getBoundingClientRect(); if (!r.width) continue;
+    c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr);
+  }
+}
+window.addEventListener("resize", () => { groesseAnpassen(); zeichneBald(); });
+const sichtbareSpalten = () => (cv.getBoundingClientRect().width || 800) / zoom;
+
+let zeichnenGeplant = false;
+function zeichneBald() { if (!zeichnenGeplant) { zeichnenGeplant = true; requestAnimationFrame(zeichnen); } }
+function zeichnen() {
+  zeichnenGeplant = false;
+  const a = aufnahme;
+  $("cursorZeit").textContent = a && a.n && zustand === "auswertung" ? fmtS(cursorZeit()) : "–";
+  if (ansicht !== "streifen" || !a) return;
+  const dpr = window.devicePixelRatio || 1;
+  if (!cv.width) groesseAnpassen();
+  const W = cv.width, H = cv.height, z = zoom * dpr;
+  const spalten = W / z;
+  scroll = Math.max(0, Math.min(scroll, Math.max(0, a.n - spalten * 0.5)));
+  ctx.fillStyle = "#111"; ctx.fillRect(0, 0, W, H);
+  ctx.imageSmoothingEnabled = false;
+  const achseH = 26 * dpr, bildH = H - achseH;
+  const s0 = Math.floor(scroll), sw = Math.min(Math.ceil(spalten) + 1, a.n - s0);
+  if (sw > 0) ctx.drawImage(a.streifen, s0, 0, sw, a.H, (s0 - scroll) * z, 0, sw * z, bildH);
+
+  // Zeitachse
+  ctx.fillStyle = "#f9fafb"; ctx.fillRect(0, bildH, W, achseH);
+  const tl = spaltenZeit(scroll), tr = spaltenZeit(scroll + spalten);
+  if (tl != null && tr != null && tr > tl) {
+    const proPx = (tr - tl) / W;
+    const schritte = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10];
+    const st = schritte.find((s) => s / proPx >= 70 * dpr) || 10;
+    ctx.fillStyle = "#374151"; ctx.strokeStyle = "rgba(255,255,255,.25)";
+    ctx.font = `${12 * dpr}px -apple-system,sans-serif`; ctx.textAlign = "center";
+    for (let t = Math.ceil(tl / st) * st; t <= tr; t += st) {
+      const c = zeitZuSpalte(t); if (c == null) continue;
+      const x = (c - scroll) * z;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, bildH); ctx.stroke();
+      ctx.fillRect(x - 0.5 * dpr, bildH, 1 * dpr, 6 * dpr);
+      ctx.fillText(t.toFixed(st < 0.1 ? 2 : st < 1 ? 1 : 0).replace(".", ","), x, bildH + 19 * dpr);
+    }
+  }
+
+  // Marker der zugeordneten Zeiten
+  if (lauf) lauf.zeiten.forEach((m, i) => {
+    if (!m) return;
+    const x = (m.c - scroll) * z; if (x < -50 || x > W + 50) return;
+    ctx.strokeStyle = BAHNFARBEN[i]; ctx.lineWidth = 3 * dpr;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, bildH); ctx.stroke();
+    const b = lauf.bahnen[i];
+    const txt = (i + 1) + " " + (b ? (b.gast || nameKurz(schueler(b.sid))) : "") + " " + fmt(m.t);
+    ctx.font = `bold ${13 * dpr}px -apple-system,sans-serif`; ctx.textAlign = "left";
+    const tw = ctx.measureText(txt).width + 10 * dpr, y = (8 + i * 22) * dpr;
+    ctx.fillStyle = BAHNFARBEN[i]; ctx.fillRect(x + 3 * dpr, y, tw, 19 * dpr);
+    ctx.fillStyle = "#fff"; ctx.fillText(txt, x + 8 * dpr, y + 14 * dpr);
+  });
+
+  // Cursor
+  if (zustand === "auswertung") {
+    const x = (cursor - scroll) * z;
+    ctx.strokeStyle = "#facc15"; ctx.lineWidth = 2 * dpr;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, bildH); ctx.stroke();
+  }
+
+  // Übersicht
+  const OW = ov.width, OH = ov.height;
+  octx.fillStyle = "#e5e7eb"; octx.fillRect(0, 0, OW, OH);
+  if (a.n > 1) {
+    octx.fillStyle = "#312e91";
+    for (let x = 0; x < OW; x++) {
+      const i0 = Math.floor(x / OW * a.n), i1 = Math.max(i0 + 1, Math.floor((x + 1) / OW * a.n));
+      let m = 0; for (let i = i0; i < i1 && i < a.n; i++) m = Math.max(m, a.aktiv[i]);
+      if (m > 0.01) { const h = Math.min(1, m * 3) * OH; octx.fillRect(x, OH - h, 1, h); }
+    }
+    octx.strokeStyle = "#facc15"; octx.lineWidth = 2 * dpr;
+    octx.strokeRect(scroll / a.n * OW, 1, Math.max(4, spalten / a.n * OW), OH - 2);
+  }
+  if (zustand === "auswertung") zuordnenTexte();
+}
+function zuordnenTexte() {
+  // nur die Zeit im Kalibrier-Knopf aktualisieren
+  if (lauf && lauf.kalib) { const zt = document.querySelector("#zuordnen .zt"); if (zt) zt.textContent = fmtS(cursorZeit()); }
+}
+
+/* ---------- Bedienung Fotofinish ---------- */
+const zeiger = new Map(); let gestik = null;
+cv.addEventListener("pointerdown", (e) => {
+  cv.setPointerCapture(e.pointerId); zeiger.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (zeiger.size === 1) gestik = { art: "tipp", x0: e.clientX, scroll0: scroll };
+  if (zeiger.size === 2) { const p = [...zeiger.values()]; gestik = { art: "zoom", d0: Math.abs(p[0].x - p[1].x) || 1, zoom0: zoom, mitte: (p[0].x + p[1].x) / 2 }; }
+});
+cv.addEventListener("pointermove", (e) => {
+  if (!zeiger.has(e.pointerId) || !gestik) return;
+  zeiger.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (gestik.art === "zoom" && zeiger.size === 2) {
+    const p = [...zeiger.values()]; const d = Math.abs(p[0].x - p[1].x) || 1;
+    const r = cv.getBoundingClientRect(); const mx = gestik.mitte - r.left;
+    const anker = scroll + mx / zoom;
+    zoom = Math.max(0.25, Math.min(24, gestik.zoom0 * d / gestik.d0));
+    scroll = anker - mx / zoom; zeichneBald(); return;
+  }
+  const dx = e.clientX - gestik.x0;
+  if (gestik.art === "tipp" && Math.abs(dx) > 8) gestik.art = "schieben";
+  if (gestik.art === "schieben") { scroll = gestik.scroll0 - dx / zoom; zeichneBald(); }
+});
+const zeigerEnde = (e) => {
+  if (!zeiger.has(e.pointerId)) return;
+  zeiger.delete(e.pointerId);
+  if (gestik && gestik.art === "tipp" && zustand === "auswertung") {
+    const r = cv.getBoundingClientRect();
+    cursor = Math.max(0, Math.min(aufnahme.n - 1, scroll + (e.clientX - r.left) / zoom));
+    zeichneBald();
+  }
+  if (zeiger.size === 0) gestik = null;
+};
+cv.addEventListener("pointerup", zeigerEnde);
+cv.addEventListener("pointercancel", (e) => { zeiger.delete(e.pointerId); gestik = null; });
+cv.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  if (e.ctrlKey) { zoomUm(e.deltaY < 0 ? 1.15 : 1 / 1.15); return; }
+  scroll += (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) / zoom; zeichneBald();
+}, { passive: false });
+ov.addEventListener("pointerdown", (e) => {
+  if (!aufnahme) return;
+  const r = ov.getBoundingClientRect();
+  scroll = (e.clientX - r.left) / r.width * aufnahme.n - sichtbareSpalten() / 2; zeichneBald();
+});
+function zoomUm(f) {
+  const mitte = zustand === "auswertung" ? cursor : scroll + sichtbareSpalten() / 2;
+  const pos = (mitte - scroll) * zoom;
+  zoom = Math.max(0.25, Math.min(24, zoom * f));
+  scroll = mitte - pos / zoom; zeichneBald();
+}
+$("zoomEin").onclick = () => zoomUm(1.5);
+$("zoomAus").onclick = () => zoomUm(1 / 1.5);
+function bildSchritt(d) {
+  if (!aufnahme || zustand !== "auswertung") return;
+  cursor = Math.max(0, Math.min(aufnahme.n - 1, Math.round(cursor) + d));
+  const sp = sichtbareSpalten();
+  if (cursor < scroll || cursor > scroll + sp) scroll = cursor - sp / 2;
+  zeichneBald();
+}
+$("bildLinks").onclick = () => bildSchritt(-1);
+$("bildRechts").onclick = () => bildSchritt(1);
+document.addEventListener("keydown", (e) => {
+  if (e.target.matches("input,select,textarea")) return;
+  if (e.key === "ArrowLeft") bildSchritt(-1);
+  if (e.key === "ArrowRight") bildSchritt(1);
+  if (e.key === "+") zoomUm(1.5);
+  if (e.key === "-") zoomUm(1 / 1.5);
+});
+
+/* =========================================================
+   KLASSEN & IMPORT
+   ========================================================= */
+let klasseAktiv = null;
+function klassenZeichnen() {
+  const namen = Object.keys(daten.klassen).sort(sortDe);
+  $("klassenListe").innerHTML = namen.length ? `<table>${namen.map((k) =>
+    `<tr class="klick" data-k="${esc(k)}"><td><b>${esc(k)}</b></td><td>${daten.klassen[k].length} Schüler</td><td>${daten.ergebnisse.filter((r) => r.klasse === k).length} Zeiten</td></tr>`).join("")}</table>`
+    : `<p class="leise">Noch keine Klasse. Liste importieren oder neue Klasse anlegen.</p>`;
+  $("klassenListe").querySelectorAll("tr").forEach((tr) => tr.onclick = () => { klasseAktiv = tr.dataset.k; klasseDetail(); });
+  klasseDetail();
+}
+function klasseDetail() {
+  const box = $("klassenDetail");
+  if (!klasseAktiv || !daten.klassen[klasseAktiv]) { box.innerHTML = `<p class="leise">Klasse auswählen.</p>`; return; }
+  const liste = [...daten.klassen[klasseAktiv]].sort(sortSchueler);
+  box.innerHTML = `
+    <div class="reihe" style="justify-content:space-between"><h2 style="margin:0">${esc(klasseAktiv)}</h2>
+      <div class="reihe"><button class="knopf hell klein" id="kUmbenennen">Umbenennen</button><button class="knopf rot klein" id="kLoeschen">Klasse löschen</button></div></div>
+    <div class="reihe" style="margin:12px 0">
+      <input type="text" id="nNn" placeholder="Nachname" style="flex:1"><input type="text" id="nVn" placeholder="Vorname" style="flex:1">
+      <select id="nG"><option value="">–</option><option value="m">m</option><option value="w">w</option><option value="d">d</option></select>
+      <button class="knopf klein" id="nPlus">+ hinzufügen</button></div>
+    <table><tr><th>Name</th><th>Vorname</th><th>G</th><th>Zeiten</th><th></th></tr>
+    ${liste.map((s) => `<tr><td>${esc(s.nn)}</td><td>${esc(s.vn)}</td><td>${esc(s.g)}</td><td>${daten.ergebnisse.filter((r) => r.sid === s.id).length}</td>
+      <td><button class="knopf hell klein" data-del="${s.id}">entfernen</button></td></tr>`).join("")}</table>`;
+  $("nPlus").onclick = () => {
+    const nn = $("nNn").value.trim(), vn = $("nVn").value.trim(); if (!nn && !vn) return;
+    daten.klassen[klasseAktiv].push({ id: uid(), nn, vn, g: $("nG").value }); speichern(); klassenZeichnen();
+  };
+  box.querySelectorAll("[data-del]").forEach((b) => b.onclick = () => {
+    const s = schueler(b.dataset.del);
+    if (!confirm(`${s.vn} ${s.nn} entfernen? Gespeicherte Zeiten werden ebenfalls gelöscht.`)) return;
+    daten.klassen[klasseAktiv] = daten.klassen[klasseAktiv].filter((x) => x.id !== b.dataset.del);
+    daten.ergebnisse = daten.ergebnisse.filter((r) => r.sid !== b.dataset.del); speichern(); klassenZeichnen();
+  });
+  $("kLoeschen").onclick = () => {
+    if (!confirm(`Klasse ${klasseAktiv} mit allen Zeiten löschen?`)) return;
+    const ids = new Set(daten.klassen[klasseAktiv].map((s) => s.id));
+    daten.ergebnisse = daten.ergebnisse.filter((r) => !ids.has(r.sid));
+    delete daten.klassen[klasseAktiv]; klasseAktiv = null; speichern(); klassenZeichnen();
+  };
+  $("kUmbenennen").onclick = () => {
+    const n = (prompt("Neuer Name der Klasse:", klasseAktiv) || "").trim(); if (!n || n === klasseAktiv) return;
+    if (daten.klassen[n]) { melden("Diese Klasse gibt es schon."); return; }
+    daten.klassen[n] = daten.klassen[klasseAktiv]; delete daten.klassen[klasseAktiv];
+    daten.ergebnisse.forEach((r) => { if (r.klasse === klasseAktiv) r.klasse = n; });
+    if (daten.e.klasse === klasseAktiv) daten.e.klasse = n;
+    klasseAktiv = n; speichern(); klassenZeichnen();
+  };
+}
+$("neueKlasse").onclick = () => {
+  const n = (prompt("Name der Klasse (z. B. 7a):") || "").trim(); if (!n) return;
+  if (!daten.klassen[n]) daten.klassen[n] = [];
+  klasseAktiv = n; speichern(); klassenZeichnen();
+};
+
+$("importDatei").onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  try {
+    const buf = await f.arrayBuffer();
+    const zeilen = /\.xlsx$/i.test(f.name) ? await xlsxZeilen(buf) : csvZeilen(textDekodieren(buf));
+    const r = listeUebernehmen(zeilen);
+    melden(`${r.neu} neu, ${r.da} schon vorhanden – ${r.klassen.join(", ")}`);
+    klasseAktiv = r.klassen[0] || klasseAktiv; klassenZeichnen();
+  } catch (err) { console.error(err); melden("Import fehlgeschlagen: " + err.message); }
+};
+function textDekodieren(buf) {
+  try { return new TextDecoder("utf-8", { fatal: true }).decode(buf).replace(/^﻿/, ""); }
+  catch (e) { return new TextDecoder("windows-1252").decode(buf); }
+}
+function csvZeilen(text) {
+  const erste = text.split(/\r?\n/)[0] || "";
+  const zaehl = (c) => erste.split(c).length - 1;
+  const trenn = ["\t", ";", ","].sort((a, b) => zaehl(b) - zaehl(a))[0];
+  const zeilen = []; let zeile = [], feld = "", inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) { if (c === '"') { if (text[i + 1] === '"') { feld += '"'; i++; } else inQ = false; } else feld += c; }
+    else if (c === '"' && feld === "") inQ = true;
+    else if (c === trenn) { zeile.push(feld); feld = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; zeile.push(feld); zeilen.push(zeile); zeile = []; feld = ""; }
+    else feld += c;
+  }
+  if (feld !== "" || zeile.length) { zeile.push(feld); zeilen.push(zeile); }
+  return zeilen.filter((z) => z.some((x) => x.trim() !== ""));
+}
+function listeUebernehmen(zeilen) {
+  if (!zeilen.length) throw new Error("Datei ist leer");
+  const kopf = zeilen[0].map((h) => h.trim().toLowerCase().replace(/[^a-zäöüß]/g, ""));
+  const finde = (...n) => kopf.findIndex((h) => n.includes(h));
+  let iNn = finde("langname", "nachname", "name", "familienname"), iVn = finde("vorname", "rufname"),
+      iK = finde("klasse", "klassen", "class"), iG = finde("geschlecht", "g", "sex");
+  let start = 1;
+  if (iNn < 0 && iVn < 0) { iNn = 0; iVn = 1; start = 0; }   // ohne Kopfzeile: Name, Vorname[, Klasse]
+  let ersatzKlasse = null;
+  if (iK < 0) {
+    if (!start && zeilen[0].length > 2) iK = 2;
+    else { ersatzKlasse = (prompt("Die Datei enthält keine Klassenspalte. Name der Klasse:", klasseAktiv || "") || "").trim(); if (!ersatzKlasse) throw new Error("keine Klasse angegeben"); }
+  }
+  let neu = 0, da = 0; const kl = new Set();
+  for (const z of zeilen.slice(start)) {
+    const nn = (z[iNn] || "").trim(), vn = iVn >= 0 ? (z[iVn] || "").trim() : "";
+    if (!nn && !vn) continue;
+    const k = ersatzKlasse || (z[iK] || "").trim() || "ohne Klasse";
+    let g = iG >= 0 ? (z[iG] || "").trim().toLowerCase() : ""; g = g.startsWith("m") ? "m" : g.startsWith("w") || g.startsWith("f") ? "w" : g.startsWith("d") ? "d" : "";
+    if (!daten.klassen[k]) daten.klassen[k] = [];
+    kl.add(k);
+    const vorh = daten.klassen[k].find((s) => s.nn.toLowerCase() === nn.toLowerCase() && s.vn.toLowerCase() === vn.toLowerCase());
+    if (vorh) { if (g && !vorh.g) vorh.g = g; da++; }
+    else { daten.klassen[k].push({ id: uid(), nn, vn, g }); neu++; }
+  }
+  speichern();
+  return { neu, da, klassen: [...kl].sort(sortDe) };
+}
+// Kleiner .xlsx-Leser ohne Fremdbibliothek (erstes Tabellenblatt)
+async function xlsxZeilen(buf) {
+  if (typeof DecompressionStream === "undefined") throw new Error("Excel-Import braucht ein aktuelles iPadOS – bitte als CSV speichern");
+  const dv = new DataView(buf);
+  let e = buf.byteLength - 22; while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+  if (e < 0) throw new Error("keine gültige Excel-Datei");
+  const anz = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true);
+  const dateien = {}; const td = new TextDecoder();
+  for (let k = 0; k < anz; k++) {
+    const meth = dv.getUint16(p + 10, true), csz = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true),
+          xl = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), off = dv.getUint32(p + 42, true);
+    dateien[td.decode(new Uint8Array(buf, p + 46, nl))] = { meth, csz, off }; p += 46 + nl + xl + cl;
+  }
+  const lies = async (name) => {
+    const f = dateien[name]; if (!f) return null;
+    const lnl = dv.getUint16(f.off + 26, true), lxl = dv.getUint16(f.off + 28, true);
+    const roh = new Uint8Array(buf, f.off + 30 + lnl + lxl, f.csz);
+    if (f.meth === 0) return td.decode(roh);
+    return await new Response(new Blob([roh]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text();
+  };
+  const xml = (t) => new DOMParser().parseFromString(t, "application/xml");
+  const ssT = await lies("xl/sharedStrings.xml");
+  const ss = ssT ? [...xml(ssT).getElementsByTagName("si")].map((si) => [...si.getElementsByTagName("t")].map((t) => t.textContent).join("")) : [];
+  const blatt = Object.keys(dateien).filter((n) => /^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort((a, b) => a.localeCompare(b, "en", { numeric: true }))[0];
+  if (!blatt) throw new Error("kein Tabellenblatt gefunden");
+  const doc = xml(await lies(blatt));
+  const spIdx = (r) => { const m = /^[A-Z]+/.exec(r || "A"); let n = 0; for (const ch of m[0]) n = n * 26 + ch.charCodeAt(0) - 64; return n - 1; };
+  return [...doc.getElementsByTagName("row")].map((row) => {
+    const z = [];
+    [...row.getElementsByTagName("c")].forEach((c) => {
+      const t = c.getAttribute("t"), v = c.getElementsByTagName("v")[0];
+      let w = "";
+      if (t === "s" && v) w = ss[Number(v.textContent)] || "";
+      else if (t === "inlineStr") w = [...c.getElementsByTagName("t")].map((x) => x.textContent).join("");
+      else if (v) w = v.textContent;
+      z[spIdx(c.getAttribute("r"))] = w;
+    });
+    for (let i = 0; i < z.length; i++) if (z[i] == null) z[i] = "";
+    return z;
+  }).filter((z) => z.some((x) => String(x).trim() !== ""));
+}
+
+/* =========================================================
+   AUSWERTUNG
+   ========================================================= */
+let aw = { klasse: "", strecke: 50, g: "", sid: null };
+function auswertungZeichnen() {
+  const namen = Object.keys(daten.klassen).sort(sortDe);
+  if (!aw.klasse || !daten.klassen[aw.klasse]) aw.klasse = daten.e.klasse && daten.klassen[daten.e.klasse] ? daten.e.klasse : namen[0] || "";
+  $("awKlasse").innerHTML = namen.map((k) => `<option ${k === aw.klasse ? "selected" : ""}>${esc(k)}</option>`).join("") || "<option>keine Klasse</option>";
+  $("awStrecken").innerHTML = STRECKEN.map((s) => `<button data-s="${s}" aria-pressed="${aw.strecke === s}">${s} m</button>`).join("");
+  $("awGeschlecht").innerHTML = [["", "alle"], ["m", "Jungen"], ["w", "Mädchen"]].map(([v, t]) => `<button data-g="${v}" aria-pressed="${aw.g === v}">${t}</button>`).join("");
+  $("awStrecken").querySelectorAll("button").forEach((b) => b.onclick = () => { aw.strecke = Number(b.dataset.s); auswertungZeichnen(); });
+  $("awGeschlecht").querySelectorAll("button").forEach((b) => b.onclick = () => { aw.g = b.dataset.g; auswertungZeichnen(); });
+
+  const liste = (daten.klassen[aw.klasse] || []).filter((s) => !aw.g || s.g === aw.g);
+  const zeilen = liste.map((s) => {
+    const r = daten.ergebnisse.filter((x) => x.sid === s.id && x.strecke === aw.strecke).sort((a, b) => a.datum.localeCompare(b.datum));
+    const best = r.length ? Math.min(...r.map((x) => x.zeit)) : null;
+    const erste = r.length ? r[0].zeit : null, letzte = r.length ? r[r.length - 1].zeit : null;
+    return { s, n: r.length, best, erste, letzte };
+  }).sort((a, b) => (a.best ?? 1e9) - (b.best ?? 1e9) || sortSchueler(a.s, b.s));
+  let platz = 0;
+  $("awTabelle").innerHTML = liste.length ? `<table><tr><th>#</th><th>Name</th><th>Läufe</th><th>Bestzeit</th><th>Letzte</th><th>Entwicklung</th></tr>
+    ${zeilen.map((z) => {
+      const d = z.n > 1 ? z.letzte - z.erste : null;
+      return `<tr class="klick" data-sid="${z.s.id}" ${z.s.id === aw.sid ? 'style="background:#eef0fb"' : ""}>
+        <td>${z.best != null ? ++platz : ""}</td><td>${esc(z.s.nn)}, ${esc(z.s.vn)}</td><td>${z.n || ""}</td>
+        <td class="z">${z.best != null ? fmtS(z.best) : "–"}</td><td class="z">${z.letzte != null ? fmtS(z.letzte) : ""}</td>
+        <td class="z ${d == null ? "" : d < 0 ? "besser" : d > 0 ? "schlechter" : ""}">${d == null ? "" : (d > 0 ? "+" : "−") + fmt(Math.abs(d)) + " s"}</td></tr>`;
+    }).join("")}</table>` : `<p class="leise">Keine Schüler in dieser Auswahl.</p>`;
+  $("awTabelle").querySelectorAll("tr[data-sid]").forEach((tr) => tr.onclick = () => { aw.sid = tr.dataset.sid; auswertungZeichnen(); });
+  detailZeichnen();
+}
+$("awKlasse").onchange = (e) => { aw.klasse = e.target.value; aw.sid = null; auswertungZeichnen(); };
+
+function detailZeichnen() {
+  const box = $("awDetail"); const s = aw.sid && schueler(aw.sid);
+  if (!s) { box.innerHTML = `<p class="leise">Schüler antippen, um den Verlauf zu sehen.</p>`; return; }
+  const alle = daten.ergebnisse.filter((r) => r.sid === s.id).sort((a, b) => a.datum.localeCompare(b.datum) || a.id.localeCompare(b.id));
+  const proStrecke = STRECKEN.map((st) => {
+    const r = alle.filter((x) => x.strecke === st);
+    return r.length ? `<td>${st} m</td><td class="z">${fmtS(Math.min(...r.map((x) => x.zeit)))}</td><td>${r.length}</td>` : "";
+  }).filter(Boolean);
+  const r = alle.filter((x) => x.strecke === aw.strecke);
+  box.innerHTML = `<h2>${esc(s.vn)} ${esc(s.nn)} <span class="leise">· ${esc(s.klasse)}</span></h2>
+    ${proStrecke.length ? `<table><tr><th>Strecke</th><th>Bestzeit</th><th>Läufe</th></tr>${proStrecke.map((x) => `<tr>${x}</tr>`).join("")}</table>` : `<p class="leise">Noch keine Zeiten.</p>`}
+    <h3>Verlauf ${aw.strecke} m</h3>${diagramm(r)}
+    ${r.length ? `<table><tr><th>Datum</th><th>Zeit</th><th>Start</th><th></th></tr>${[...r].reverse().map((x) =>
+      `<tr><td>${datumDe(x.datum)}</td><td class="z">${fmtS(x.zeit)}</td><td>${x.start === "hand" ? "Hand" : "Knall"}</td>
+       <td style="white-space:nowrap"><button class="knopf hell klein" data-ed="${x.id}">ändern</button> <button class="knopf hell klein" data-rm="${x.id}">löschen</button></td></tr>`).join("")}</table>` : ""}`;
+  box.querySelectorAll("[data-rm]").forEach((b) => b.onclick = () => {
+    if (!confirm("Diese Zeit löschen?")) return;
+    daten.ergebnisse = daten.ergebnisse.filter((x) => x.id !== b.dataset.rm); speichern(); auswertungZeichnen();
+  });
+  box.querySelectorAll("[data-ed]").forEach((b) => b.onclick = () => {
+    const x = daten.ergebnisse.find((y) => y.id === b.dataset.ed);
+    const n = parseFloat((prompt("Zeit in Sekunden:", fmt(x.zeit)) || "").replace(",", "."));
+    if (!(n > 0)) return; x.zeit = Math.round(n * 100) / 100; speichern(); auswertungZeichnen();
+  });
+}
+function diagramm(r) {
+  if (r.length < 2) return `<p class="leise">${r.length ? "Ab zwei Läufen erscheint hier eine Kurve." : "Noch keine Läufe über diese Strecke."}</p>`;
+  const W = 520, H = 200, L = 46, R = 12, T = 12, B = 30;
+  const zs = r.map((x) => x.zeit); let lo = Math.min(...zs), hi = Math.max(...zs);
+  const pad = Math.max(0.1, (hi - lo) * 0.15); lo -= pad; hi += pad;
+  const X = (i) => L + (W - L - R) * (r.length === 1 ? 0.5 : i / (r.length - 1));
+  const Y = (z) => T + (H - T - B) * (z - lo) / (hi - lo);   // schneller = weiter oben
+  const best = Math.min(...zs);
+  let s = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" font-family="sans-serif" font-size="11">`;
+  for (let k = 0; k <= 4; k++) { const z = lo + (hi - lo) * k / 4, y = Y(z);
+    s += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="#e5e7eb"/><text x="${L - 6}" y="${y + 4}" text-anchor="end" fill="#6b7280">${z.toFixed(2).replace(".", ",")}</text>`; }
+  s += `<line x1="${L}" x2="${W - R}" y1="${Y(best)}" y2="${Y(best)}" stroke="#16a34a" stroke-dasharray="4 3"/>`;
+  s += `<polyline fill="none" stroke="#312e91" stroke-width="2.5" points="${r.map((x, i) => X(i) + "," + Y(x.zeit)).join(" ")}"/>`;
+  r.forEach((x, i) => { s += `<circle cx="${X(i)}" cy="${Y(x.zeit)}" r="4.5" fill="${x.zeit === best ? "#16a34a" : "#312e91"}"/>`;
+    if (r.length <= 12 || i % Math.ceil(r.length / 12) === 0) s += `<text x="${X(i)}" y="${H - 10}" text-anchor="middle" fill="#6b7280">${datumDe(x.datum).slice(0, 5)}</text>`; });
+  s += `<text x="${L}" y="${H - 1}" fill="#9ca3af" font-size="10">oben = schneller · grün = Bestzeit</text></svg>`;
+  return s;
+}
+
+/* ---------- Export / Sicherung ---------- */
+function herunterladen(name, inhalt, typ) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([inhalt], { type: typ }));
+  a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+$("exportCsv").onclick = () => {
+  const z = [["Klasse", "Nachname", "Vorname", "Geschlecht", "Strecke (m)", "Datum", "Zeit (s)", "Start"]];
+  [...daten.ergebnisse].sort((a, b) => a.klasse.localeCompare(b.klasse) || a.datum.localeCompare(b.datum)).forEach((r) => {
+    const s = schueler(r.sid) || {};
+    z.push([r.klasse, s.nn || "", s.vn || "", s.g || "", r.strecke, datumDe(r.datum), fmt(r.zeit), r.start === "hand" ? "Hand" : "Knall"]);
+  });
+  herunterladen(`sprintzeiten_${heute()}.csv`, "﻿" + z.map((r) => r.map((x) => `"${String(x).replace(/"/g, '""')}"`).join(";")).join("\r\n"), "text/csv");
+};
+$("sicherungExport").onclick = () => herunterladen(`sprint-sicherung_${heute()}.json`, JSON.stringify({ format: "kgs-sprint", version: 1, daten }, null, 1), "application/json");
+$("sicherungImport").onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  try {
+    const j = JSON.parse(await f.text()); const d = j.daten || j;
+    if (!d.klassen || !d.ergebnisse) throw new Error("keine Sicherung dieses Werkzeugs");
+    if (!confirm("Sicherung laden? Die aktuellen Daten auf diesem Gerät werden ersetzt.")) return;
+    localStorage.setItem(SPEICHER, JSON.stringify(d)); daten = laden(); melden("Sicherung geladen"); auswertungZeichnen();
+  } catch (err) { melden("Laden fehlgeschlagen: " + err.message); }
+};
+
+/* =========================================================
+   EINSTELLUNGEN
+   ========================================================= */
+const EFELDER = { eTemp: "temp", eVersatz: "versatz", eSchwelle: "schwelle", eImpuls: "impuls", eAutoStopp: "autoStopp", eOffset: "offset" };
+function einstellungenZeigen() {
+  for (const id in EFELDER) $(id).value = daten.e[EFELDER[id]];
+  const c = schallGeschw();
+  $("eSchallText").innerHTML = `Schallgeschwindigkeit bei ${daten.e.temp} °C: <b>${c.toFixed(1).replace(".", ",")} m/s</b>. Korrektur: ` +
+    STRECKEN.map((s) => `${s} m → ${(schallZeit(s) * 1000).toFixed(0)} ms`).join(" · ") +
+    (daten.e.autoStopp ? "" : `<br>Vorschlag Auto-Stopp: ${AUTOSTOPP_VORSCHLAG[daten.e.strecke]} s für ${daten.e.strecke} m.`);
+}
+for (const id in EFELDER) $(id).addEventListener("change", (e) => {
+  const v = Number(e.target.value); if (!isFinite(v)) return;
+  daten.e[EFELDER[id]] = v; speichern(); einstellungenZeigen(); schwelleZeigen(); schwelleSenden();
+});
+$("kalibStart").onclick = () => {
+  kalibModus = true;
+  document.querySelector('#reiter button[data-v="messen"]').click();
+  if (zustand === "bereit") setzeZustand("bereit");
+  melden(videoStrom ? "Kalibrierlauf: scharf schalten und Klappe auf der Ziellinie schlagen" : "Erst Kamera & Mikrofon starten");
+};
+$("allesLoeschen").onclick = () => {
+  if (!confirm("Wirklich ALLE Klassen und Zeiten auf diesem Gerät löschen?")) return;
+  if (!confirm("Sicher? Das lässt sich nicht rückgängig machen.")) return;
+  localStorage.removeItem(SPEICHER); daten = laden(); melden("Alle Daten gelöscht"); einstellungenZeigen();
+};
+
+/* ---------- Start ---------- */
+schwelleZeigen();
+laufPanelZeichnen();
+buehneZeigen();
+</script>
+</body>
+</html>

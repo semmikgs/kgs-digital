@@ -391,7 +391,18 @@ function schueler(sid) {
   for (const k in daten.klassen) { const s = daten.klassen[k].find((x) => x.id === sid); if (s) return Object.assign({ klasse: k }, s); }
   return null;
 }
-const nameKurz = (s) => s ? s.vn + " " + (s.nn || "").slice(0, 1) + "." : "";
+// Kurzname: „Vorname N.“ – aber eindeutig: fehlt der Vorname, kommt der ganze Nachname;
+// gäbe es in der Klasse eine Verwechslung, wird der Name ausgeschrieben.
+function nameKurz(s) {
+  if (!s) return "";
+  const vn = (s.vn || "").trim(), nn = (s.nn || "").trim();
+  const voll = (vn + " " + nn).trim() || "?";
+  if (!vn || !nn) return voll;
+  const kurz = vn + " " + nn[0] + ".";
+  const klasse = s.klasse ? daten.klassen[s.klasse] : Object.values(daten.klassen).find((k) => k.some((x) => x.id === s.id));
+  const gleich = (x) => { const v = (x.vn || "").trim(), n = (x.nn || "").trim(); return (v ? v + " " + n[0] + "." : n) === kurz; };
+  return (klasse || []).some((x) => x.id !== s.id && gleich(x)) ? voll : kurz;
+}
 
 /* ---------- Physik ---------- */
 const schallGeschw = () => 331.3 * Math.sqrt(1 + (Number(daten.e.temp) || 0) / 273.15);
@@ -1407,7 +1418,7 @@ function auswahlInhalt() {
     <div class="reihe"><button class="knopf hell klein" id="awAlle">alle mit Zeiten</button><button class="knopf hell klein" id="awKeine">keine</button></div></div>
     <p class="leise">Schüler links in der Tabelle an- und abhaken. ${aw.tag ? "Jeder Lauf des Tages ist ein Punkt." : "Pro Tag zählt die beste Zeit."}</p>`;
   if (!ids.length) return kopf + `<p class="leise">Noch niemand ausgewählt.</p>`;
-  const serien = ids.map((id, i) => { const s = schueler(id); return { name: s ? s.vn + " " + (s.nn || "").slice(0, 1) + "." : "?", farbe: SERIENFARBEN[i % SERIENFARBEN.length], punkte: verlauf(id) }; });
+  const serien = ids.map((id, i) => { const s = schueler(id); return { name: s ? nameKurz(s) : "?", farbe: SERIENFARBEN[i % SERIENFARBEN.length], punkte: verlauf(id) }; });
   const ohne = serien.filter((x) => !x.punkte.length).map((x) => x.name);
   return kopf + liniendiagramm(serien.filter((x) => x.punkte.length), diagrammOpt({ legende: true })) +
     (ohne.length ? `<p class="leise">Ohne Zeit ${zeitraumText()}: ${esc(ohne.join(", "))}</p>` : "");
@@ -1482,7 +1493,7 @@ function balkendiagramm(besten, schnitt) {
   const B = (z) => (W - L - R) * (z - lo) / ((hi - lo) || 1) * 0.9 + (W - L - R) * 0.1;
   let s = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" font-family="sans-serif" font-size="12">`;
   besten.forEach((b, i) => { const y = 4 + i * zeile, w = B(b.best);
-    s += `<text x="${L - 6}" y="${y + 14}" text-anchor="end" fill="#374151">${i + 1}. ${esc(b.s.vn)} ${esc((b.s.nn || "").slice(0, 1))}.</text>
+    s += `<text x="${L - 6}" y="${y + 14}" text-anchor="end" fill="#374151">${i + 1}. ${esc(nameKurz(b.s))}</text>
       <rect x="${L}" y="${y + 2}" width="${w}" height="${zeile - 6}" rx="3" fill="${b.best <= schnitt ? "#16a34a" : "#6366f1"}"/>
       <text x="${L + w + 5}" y="${y + 14}" fill="#111" font-weight="700">${fmt(b.best)}</text>`; });
   const xs = L + B(schnitt);

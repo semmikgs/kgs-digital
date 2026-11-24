@@ -224,7 +224,7 @@ body.vollbild .buehne .leise{display:none}
   </div>
   <div class="zwei aw">
     <div class="karte"><div id="awTabelle"></div></div>
-    <div class="karte" id="awDetail"><p class="leise">Schüler antippen, um den Verlauf zu sehen.</p></div>
+    <div class="karte" id="awDetail"></div>
   </div>
 </section>
 
@@ -1198,7 +1198,19 @@ async function xlsxZeilen(buf) {
 /* =========================================================
    AUSWERTUNG
    ========================================================= */
-let aw = { klasse: "", strecke: 50, g: "", sid: null };
+let aw = { klasse: "", strecke: 50, g: "", sid: null, modus: "einzel", auswahl: new Set() };
+const SERIENFARBEN = ["#312e91", "#e11d48", "#16a34a", "#d97706", "#0891b2", "#9333ea", "#db2777", "#65a30d", "#0f766e", "#b91c1c"];
+
+// Bestzeit je Schüler und Tag für die gewählte Strecke
+function tageswerte(sid) {
+  const proTag = {};
+  daten.ergebnisse.filter((x) => x.sid === sid && x.strecke === aw.strecke).forEach((x) => {
+    if (proTag[x.datum] == null || x.zeit < proTag[x.datum]) proTag[x.datum] = x.zeit;
+  });
+  return Object.keys(proTag).sort().map((d) => ({ datum: d, zeit: proTag[d] }));
+}
+function awListe() { return (daten.klassen[aw.klasse] || []).filter((s) => !aw.g || s.g === aw.g); }
+
 function auswertungZeichnen() {
   const namen = Object.keys(daten.klassen).sort(sortDe);
   if (!aw.klasse || !daten.klassen[aw.klasse]) aw.klasse = daten.e.klasse && daten.klassen[daten.e.klasse] ? daten.e.klasse : namen[0] || "";
@@ -1208,42 +1220,46 @@ function auswertungZeichnen() {
   $("awStrecken").querySelectorAll("button").forEach((b) => b.onclick = () => { aw.strecke = Number(b.dataset.s); auswertungZeichnen(); });
   $("awGeschlecht").querySelectorAll("button").forEach((b) => b.onclick = () => { aw.g = b.dataset.g; auswertungZeichnen(); });
 
-  const liste = (daten.klassen[aw.klasse] || []).filter((s) => !aw.g || s.g === aw.g);
+  const liste = awListe();
+  const ids = new Set(liste.map((s) => s.id));
+  [...aw.auswahl].forEach((id) => { if (!ids.has(id)) aw.auswahl.delete(id); });
   const zeilen = liste.map((s) => {
     const r = daten.ergebnisse.filter((x) => x.sid === s.id && x.strecke === aw.strecke).sort((a, b) => a.datum.localeCompare(b.datum));
     const best = r.length ? Math.min(...r.map((x) => x.zeit)) : null;
-    const erste = r.length ? r[0].zeit : null, letzte = r.length ? r[r.length - 1].zeit : null;
-    return { s, n: r.length, best, erste, letzte };
+    return { s, n: r.length, best, erste: r.length ? r[0].zeit : null, letzte: r.length ? r[r.length - 1].zeit : null };
   }).sort((a, b) => (a.best ?? 1e9) - (b.best ?? 1e9) || sortSchueler(a.s, b.s));
   let platz = 0;
-  $("awTabelle").innerHTML = liste.length ? `<table><tr><th>#</th><th>Name</th><th>Läufe</th><th>Bestzeit</th><th>Letzte</th><th>Entwicklung</th></tr>
+  const auswahlSpalte = aw.modus === "auswahl";
+  $("awTabelle").innerHTML = liste.length ? `<table><tr>${auswahlSpalte ? "<th>✓</th>" : ""}<th>#</th><th>Name</th><th>Läufe</th><th>Bestzeit</th><th>Letzte</th><th>Entwicklung</th></tr>
     ${zeilen.map((z) => {
       const d = z.n > 1 ? z.letzte - z.erste : null;
-      return `<tr class="klick" data-sid="${z.s.id}" ${z.s.id === aw.sid ? 'style="background:#eef0fb"' : ""}>
+      const markiert = auswahlSpalte ? aw.auswahl.has(z.s.id) : z.s.id === aw.sid;
+      return `<tr class="klick" data-sid="${z.s.id}" ${markiert ? 'style="background:#eef0fb"' : ""}>
+        ${auswahlSpalte ? `<td><input type="checkbox" ${aw.auswahl.has(z.s.id) ? "checked" : ""} style="width:20px;height:20px" tabindex="-1"></td>` : ""}
         <td>${z.best != null ? ++platz : ""}</td><td>${esc(z.s.nn)}, ${esc(z.s.vn)}</td><td>${z.n || ""}</td>
         <td class="z">${z.best != null ? fmtS(z.best) : "–"}</td><td class="z">${z.letzte != null ? fmtS(z.letzte) : ""}</td>
         <td class="z ${d == null ? "" : d < 0 ? "besser" : d > 0 ? "schlechter" : ""}">${d == null ? "" : (d > 0 ? "+" : "−") + fmt(Math.abs(d)) + " s"}</td></tr>`;
     }).join("")}</table>` : `<p class="leise">Keine Schüler in dieser Auswahl.</p>`;
-  $("awTabelle").querySelectorAll("tr[data-sid]").forEach((tr) => tr.onclick = () => { aw.sid = tr.dataset.sid; auswertungZeichnen(); });
+  $("awTabelle").querySelectorAll("tr[data-sid]").forEach((tr) => tr.onclick = () => {
+    const id = tr.dataset.sid;
+    if (aw.modus === "auswahl") { aw.auswahl.has(id) ? aw.auswahl.delete(id) : aw.auswahl.add(id); }
+    else { aw.sid = id; if (aw.modus === "klasse") aw.modus = "einzel"; }
+    auswertungZeichnen();
+  });
   detailZeichnen();
 }
-$("awKlasse").onchange = (e) => { aw.klasse = e.target.value; aw.sid = null; auswertungZeichnen(); };
+$("awKlasse").onchange = (e) => { aw.klasse = e.target.value; aw.sid = null; aw.auswahl.clear(); auswertungZeichnen(); };
 
 function detailZeichnen() {
-  const box = $("awDetail"); const s = aw.sid && schueler(aw.sid);
-  if (!s) { box.innerHTML = `<p class="leise">Schüler antippen, um den Verlauf zu sehen.</p>`; return; }
-  const alle = daten.ergebnisse.filter((r) => r.sid === s.id).sort((a, b) => a.datum.localeCompare(b.datum) || a.id.localeCompare(b.id));
-  const proStrecke = STRECKEN.map((st) => {
-    const r = alle.filter((x) => x.strecke === st);
-    return r.length ? `<td>${st} m</td><td class="z">${fmtS(Math.min(...r.map((x) => x.zeit)))}</td><td>${r.length}</td>` : "";
-  }).filter(Boolean);
-  const r = alle.filter((x) => x.strecke === aw.strecke);
-  box.innerHTML = `<h2>${esc(s.vn)} ${esc(s.nn)} <span class="leise">· ${esc(s.klasse)}</span></h2>
-    ${proStrecke.length ? `<table><tr><th>Strecke</th><th>Bestzeit</th><th>Läufe</th></tr>${proStrecke.map((x) => `<tr>${x}</tr>`).join("")}</table>` : `<p class="leise">Noch keine Zeiten.</p>`}
-    <h3>Verlauf ${aw.strecke} m</h3>${diagramm(r)}
-    ${r.length ? `<table><tr><th>Datum</th><th>Zeit</th><th>Start</th><th></th></tr>${[...r].reverse().map((x) =>
-      `<tr><td>${datumDe(x.datum)}</td><td class="z">${fmtS(x.zeit)}</td><td>${x.start === "hand" ? "Hand" : "Knall"}</td>
-       <td style="white-space:nowrap"><button class="knopf hell klein" data-ed="${x.id}">ändern</button> <button class="knopf hell klein" data-rm="${x.id}">löschen</button></td></tr>`).join("")}</table>` : ""}`;
+  const box = $("awDetail");
+  const reiter = `<div class="chips" style="margin-bottom:12px">${[["einzel", "Einzel"], ["auswahl", "Auswahl"], ["klasse", "Klasse"]]
+    .map(([v, t]) => `<button data-m="${v}" aria-pressed="${aw.modus === v}">${t}</button>`).join("")}</div>`;
+  let inhalt = "";
+  if (aw.modus === "einzel") inhalt = einzelInhalt();
+  if (aw.modus === "auswahl") inhalt = auswahlInhalt();
+  if (aw.modus === "klasse") inhalt = klassenInhalt();
+  box.innerHTML = reiter + inhalt;
+  box.querySelectorAll("[data-m]").forEach((b) => b.onclick = () => { aw.modus = b.dataset.m; auswertungZeichnen(); });
   box.querySelectorAll("[data-rm]").forEach((b) => b.onclick = () => {
     if (!confirm("Diese Zeit löschen?")) return;
     daten.ergebnisse = daten.ergebnisse.filter((x) => x.id !== b.dataset.rm); speichern(); auswertungZeichnen();
@@ -1253,23 +1269,108 @@ function detailZeichnen() {
     const n = parseFloat((prompt("Zeit in Sekunden:", fmt(x.zeit)) || "").replace(",", "."));
     if (!(n > 0)) return; x.zeit = Math.round(n * 100) / 100; speichern(); auswertungZeichnen();
   });
+  const alle = $("awAlle"), keine = $("awKeine");
+  if (alle) alle.onclick = () => { awListe().forEach((s) => { if (tageswerte(s.id).length) aw.auswahl.add(s.id); }); auswertungZeichnen(); };
+  if (keine) keine.onclick = () => { aw.auswahl.clear(); auswertungZeichnen(); };
 }
-function diagramm(r) {
-  if (r.length < 2) return `<p class="leise">${r.length ? "Ab zwei Läufen erscheint hier eine Kurve." : "Noch keine Läufe über diese Strecke."}</p>`;
-  const W = 520, H = 200, L = 46, R = 12, T = 12, B = 30;
-  const zs = r.map((x) => x.zeit); let lo = Math.min(...zs), hi = Math.max(...zs);
-  const pad = Math.max(0.1, (hi - lo) * 0.15); lo -= pad; hi += pad;
-  const X = (i) => L + (W - L - R) * (r.length === 1 ? 0.5 : i / (r.length - 1));
-  const Y = (z) => T + (H - T - B) * (z - lo) / (hi - lo);   // schneller = weiter oben
-  const best = Math.min(...zs);
+
+function einzelInhalt() {
+  const s = aw.sid && schueler(aw.sid);
+  if (!s) return `<p class="leise">Schüler in der Tabelle antippen, um den Verlauf zu sehen.</p>`;
+  const alle = daten.ergebnisse.filter((r) => r.sid === s.id).sort((a, b) => a.datum.localeCompare(b.datum) || a.id.localeCompare(b.id));
+  const proStrecke = STRECKEN.map((st) => {
+    const r = alle.filter((x) => x.strecke === st);
+    return r.length ? `<td>${st} m</td><td class="z">${fmtS(Math.min(...r.map((x) => x.zeit)))}</td><td>${r.length}</td>` : "";
+  }).filter(Boolean);
+  const r = alle.filter((x) => x.strecke === aw.strecke);
+  return `<h2>${esc(s.vn)} ${esc(s.nn)} <span class="leise">· ${esc(s.klasse)}</span></h2>
+    ${proStrecke.length ? `<table><tr><th>Strecke</th><th>Bestzeit</th><th>Läufe</th></tr>${proStrecke.map((x) => `<tr>${x}</tr>`).join("")}</table>` : `<p class="leise">Noch keine Zeiten.</p>`}
+    <h3>Verlauf ${aw.strecke} m</h3>
+    ${liniendiagramm([{ name: s.vn, farbe: "#312e91", punkte: tageswerte(s.id) }], { bestlinie: true })}
+    ${r.length ? `<table><tr><th>Datum</th><th>Zeit</th><th>Start</th><th></th></tr>${[...r].reverse().map((x) =>
+      `<tr><td>${datumDe(x.datum)}</td><td class="z">${fmtS(x.zeit)}</td><td>${x.start === "hand" ? "Hand" : "Knall"}</td>
+       <td style="white-space:nowrap"><button class="knopf hell klein" data-ed="${x.id}">ändern</button> <button class="knopf hell klein" data-rm="${x.id}">löschen</button></td></tr>`).join("")}</table>` : ""}`;
+}
+
+function auswahlInhalt() {
+  const ids = [...aw.auswahl];
+  const kopf = `<div class="reihe" style="justify-content:space-between"><h2 style="margin:0">Vergleich ${aw.strecke} m</h2>
+    <div class="reihe"><button class="knopf hell klein" id="awAlle">alle mit Zeiten</button><button class="knopf hell klein" id="awKeine">keine</button></div></div>
+    <p class="leise">Schüler links in der Tabelle an- und abhaken. Pro Tag zählt die beste Zeit.</p>`;
+  if (!ids.length) return kopf + `<p class="leise">Noch niemand ausgewählt.</p>`;
+  const serien = ids.map((id, i) => { const s = schueler(id); return { name: s ? s.vn + " " + (s.nn || "").slice(0, 1) + "." : "?", farbe: SERIENFARBEN[i % SERIENFARBEN.length], punkte: tageswerte(id) }; });
+  const ohne = serien.filter((x) => !x.punkte.length).map((x) => x.name);
+  return kopf + liniendiagramm(serien.filter((x) => x.punkte.length), { legende: true }) +
+    (ohne.length ? `<p class="leise">Ohne Zeit über ${aw.strecke} m: ${esc(ohne.join(", "))}</p>` : "");
+}
+
+function klassenInhalt() {
+  const liste = awListe();
+  const titel = `${esc(aw.klasse)}${aw.g === "m" ? " · Jungen" : aw.g === "w" ? " · Mädchen" : ""} · ${aw.strecke} m`;
+  // je Tag: Bestzeiten aller Schüler dieses Tages
+  const tage = {};
+  liste.forEach((s) => tageswerte(s.id).forEach((p) => { (tage[p.datum] = tage[p.datum] || []).push(p.zeit); }));
+  const daten_ = Object.keys(tage).sort();
+  if (!daten_.length) return `<h2>${titel}</h2><p class="leise">Noch keine Zeiten über diese Strecke.</p>`;
+  const schnitt = daten_.map((d) => ({ datum: d, zeit: tage[d].reduce((a, b) => a + b, 0) / tage[d].length }));
+  const band = daten_.map((d) => ({ datum: d, min: Math.min(...tage[d]), max: Math.max(...tage[d]) }));
+  // Rangliste der Bestzeiten
+  const besten = liste.map((s) => { const p = tageswerte(s.id); return p.length ? { s, best: Math.min(...p.map((x) => x.zeit)) } : null; })
+    .filter(Boolean).sort((a, b) => a.best - b.best);
+  const gesamt = besten.reduce((a, b) => a + b.best, 0) / besten.length;
+  return `<h2>${titel}</h2>
+    <p class="leise" style="margin-top:0">${besten.length} von ${liste.length} Schülern gemessen · Schnitt der Bestzeiten <b>${fmtS(gesamt)}</b></p>
+    <h3>Entwicklung der Klasse</h3>
+    ${liniendiagramm([{ name: "Klassenschnitt", farbe: "#312e91", punkte: schnitt }], { band, legende: true, anzahl: daten_.map((d) => tage[d].length) })}
+    <h3>Bestzeiten</h3>${balkendiagramm(besten, gesamt)}`;
+}
+
+// Liniendiagramm über echte Datumsachse; oben = schneller
+function liniendiagramm(serien, opt = {}) {
+  const pkte = serien.flatMap((s) => s.punkte);
+  if (!pkte.length) return `<p class="leise">Noch keine Läufe über diese Strecke.</p>`;
+  const W = 560, H = 230, L = 50, R = 14, T = 14, B = 34;
+  const zs = pkte.map((p) => p.zeit).concat(opt.band ? opt.band.flatMap((b) => [b.min, b.max]) : []);
+  let lo = Math.min(...zs), hi = Math.max(...zs); const pad = Math.max(0.1, (hi - lo) * 0.12); lo -= pad; hi += pad;
+  const tage = [...new Set(pkte.map((p) => p.datum).concat(opt.band ? opt.band.map((b) => b.datum) : []))].sort();
+  const ms = (d) => new Date(d + "T12:00:00").getTime();
+  const t0 = ms(tage[0]), t1 = ms(tage[tage.length - 1]);
+  const X = (d) => tage.length === 1 ? (L + W - R) / 2 : L + (W - L - R) * (ms(d) - t0) / (t1 - t0);
+  const Y = (z) => T + (H - T - B) * (z - lo) / (hi - lo);
   let s = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" font-family="sans-serif" font-size="11">`;
   for (let k = 0; k <= 4; k++) { const z = lo + (hi - lo) * k / 4, y = Y(z);
     s += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="#e5e7eb"/><text x="${L - 6}" y="${y + 4}" text-anchor="end" fill="#6b7280">${z.toFixed(2).replace(".", ",")}</text>`; }
-  s += `<line x1="${L}" x2="${W - R}" y1="${Y(best)}" y2="${Y(best)}" stroke="#16a34a" stroke-dasharray="4 3"/>`;
-  s += `<polyline fill="none" stroke="#312e91" stroke-width="2.5" points="${r.map((x, i) => X(i) + "," + Y(x.zeit)).join(" ")}"/>`;
-  r.forEach((x, i) => { s += `<circle cx="${X(i)}" cy="${Y(x.zeit)}" r="4.5" fill="${x.zeit === best ? "#16a34a" : "#312e91"}"/>`;
-    if (r.length <= 12 || i % Math.ceil(r.length / 12) === 0) s += `<text x="${X(i)}" y="${H - 10}" text-anchor="middle" fill="#6b7280">${datumDe(x.datum).slice(0, 5)}</text>`; });
-  s += `<text x="${L}" y="${H - 1}" fill="#9ca3af" font-size="10">oben = schneller · grün = Bestzeit</text></svg>`;
+  const schritt = Math.ceil(tage.length / 8);
+  tage.forEach((d, i) => { if (i % schritt === 0 || i === tage.length - 1) s += `<text x="${X(d)}" y="${H - 14}" text-anchor="middle" fill="#6b7280">${datumDe(d).slice(0, 5)}</text>`; });
+  if (opt.band) {
+    if (opt.band.length > 1) s += `<polygon fill="#c7d2fe" opacity=".6" points="${opt.band.map((b) => X(b.datum) + "," + Y(b.min)).concat([...opt.band].reverse().map((b) => X(b.datum) + "," + Y(b.max))).join(" ")}"/>`;
+    opt.band.forEach((b, i) => { s += `<line x1="${X(b.datum)}" x2="${X(b.datum)}" y1="${Y(b.min)}" y2="${Y(b.max)}" stroke="#818cf8" stroke-width="2"/>`;
+      if (opt.anzahl) s += `<text x="${X(b.datum)}" y="${Y(b.max) + 13}" text-anchor="middle" fill="#6366f1" font-size="10">n=${opt.anzahl[i]}</text>`; });
+  }
+  if (opt.bestlinie) { const best = Math.min(...pkte.map((p) => p.zeit)); s += `<line x1="${L}" x2="${W - R}" y1="${Y(best)}" y2="${Y(best)}" stroke="#16a34a" stroke-dasharray="4 3"/>`; }
+  serien.forEach((se) => {
+    if (se.punkte.length > 1) s += `<polyline fill="none" stroke="${se.farbe}" stroke-width="2.5" points="${se.punkte.map((p) => X(p.datum) + "," + Y(p.zeit)).join(" ")}"/>`;
+    se.punkte.forEach((p) => { s += `<circle cx="${X(p.datum)}" cy="${Y(p.zeit)}" r="4.5" fill="${se.farbe}"><title>${esc(se.name)} · ${datumDe(p.datum)} · ${fmtS(p.zeit)}</title></circle>`; });
+  });
+  s += `<text x="${L}" y="${H - 1}" fill="#9ca3af" font-size="10">oben = schneller${opt.bestlinie ? " · grün gestrichelt = Bestzeit" : ""}${opt.band ? " · Fläche = schnellste bis langsamste Zeit des Tages" : ""}</text></svg>`;
+  if (opt.legende) s += `<div class="reihe" style="gap:4px 14px;font-size:13.5px">${serien.map((se) => `<span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${se.farbe};vertical-align:-1px"></span> ${esc(se.name)}</span>`).join("")}</div>`;
+  return s;
+}
+
+// Waagerechte Balken: Bestzeit je Schüler, Linie = Klassenschnitt
+function balkendiagramm(besten, schnitt) {
+  const zeile = 22, L = 120, R = 56, W = 560, H = besten.length * zeile + 20;
+  const lo = Math.max(0, Math.min(...besten.map((b) => b.best)) * 0.9), hi = Math.max(...besten.map((b) => b.best));
+  const B = (z) => (W - L - R) * (z - lo) / ((hi - lo) || 1) * 0.9 + (W - L - R) * 0.1;
+  let s = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" font-family="sans-serif" font-size="12">`;
+  besten.forEach((b, i) => { const y = 4 + i * zeile, w = B(b.best);
+    s += `<text x="${L - 6}" y="${y + 14}" text-anchor="end" fill="#374151">${i + 1}. ${esc(b.s.vn)} ${esc((b.s.nn || "").slice(0, 1))}.</text>
+      <rect x="${L}" y="${y + 2}" width="${w}" height="${zeile - 6}" rx="3" fill="${b.best <= schnitt ? "#16a34a" : "#6366f1"}"/>
+      <text x="${L + w + 5}" y="${y + 14}" fill="#111" font-weight="700">${fmt(b.best)}</text>`; });
+  const xs = L + B(schnitt);
+  s += `<line x1="${xs}" x2="${xs}" y1="0" y2="${H - 14}" stroke="#d97706" stroke-dasharray="4 3" stroke-width="2"/>
+    <text x="${xs}" y="${H - 2}" text-anchor="middle" fill="#d97706" font-size="11">Schnitt ${fmt(schnitt)}</text></svg>
+    <p class="leise" style="margin:4px 0 0">kürzerer Balken = schneller · grün = schneller als der Schnitt</p>`;
   return s;
 }
 

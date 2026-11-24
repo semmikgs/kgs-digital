@@ -38,7 +38,7 @@ a.zurueck{color:var(--navy);font-weight:600;text-decoration:none;font-size:14px;
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chips button{border:0;background:var(--chip);color:var(--tinte);padding:9px 13px;border-radius:999px;font-weight:600;cursor:pointer}
 .chips button[aria-pressed=true]{background:var(--indigo);color:#fff}
-.panel .chips{flex-wrap:nowrap;gap:4px}.panel .chips button{padding:8px 9px;flex:1;font-size:15px}
+.panel .chips{flex-wrap:nowrap;gap:4px}.panel .chips button{padding:8px 4px;flex:1;font-size:14.5px;white-space:nowrap}
 label.feld{display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--leise);font-weight:600}
 input[type=number],input[type=text],select{padding:9px 10px;border:1.5px solid var(--linie);border-radius:var(--rk);background:#fff;color:var(--tinte);font-size:16px;min-width:0}
 h2{margin:0 0 10px;font-size:18px;color:var(--indigo)}
@@ -185,7 +185,7 @@ body.vollbild .buehne .leise{display:none}
     <div id="fotofinish" hidden>
       <canvas id="uebersicht"></canvas>
       <canvas id="streifen"></canvas>
-      <p class="leise" style="margin:6px 0 0">Wischen = scrollen · Tippen = Cursor · zwei Finger = Zoom. Zeiten werden auf Hundertstel aufgerundet.</p>
+      <p class="leise" style="margin:6px 0 0">Gelbe Linie am Griff ziehen · daneben wischen = scrollen · Tippen = Cursor · zwei Finger = Zoom. Zeiten werden auf Hundertstel aufgerundet.</p>
     </div>
   </div>
 </section>
@@ -912,6 +912,13 @@ function zeichnen() {
     const x = (cursor - scroll) * z;
     ctx.strokeStyle = "#facc15"; ctx.lineWidth = 2 * dpr;
     ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, bildH); ctx.stroke();
+    // Griff zum Ziehen
+    const gw = 44 * dpr, gh = 30 * dpr, gy = bildH - gh - 8 * dpr;
+    ctx.fillStyle = "#facc15"; ctx.strokeStyle = "#111"; ctx.lineWidth = 1.5 * dpr;
+    ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x - gw / 2, gy, gw, gh, 8 * dpr); else ctx.rect(x - gw / 2, gy, gw, gh);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#111"; ctx.font = `bold ${16 * dpr}px -apple-system,sans-serif`; ctx.textAlign = "center";
+    ctx.fillText("◀ ▶", x, gy + 20 * dpr);
   }
 
   // Übersicht
@@ -938,7 +945,13 @@ function zuordnenTexte() {
 const zeiger = new Map(); let gestik = null;
 cv.addEventListener("pointerdown", (e) => {
   cv.setPointerCapture(e.pointerId); zeiger.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  if (zeiger.size === 1) gestik = { art: "tipp", x0: e.clientX, scroll0: scroll };
+  if (zeiger.size === 1) {
+    gestik = { art: "tipp", x0: e.clientX, scroll0: scroll };
+    if (zustand === "auswertung" && aufnahme) {
+      const r = cv.getBoundingClientRect(); const cx = r.left + (cursor - scroll) * zoom;
+      if (Math.abs(e.clientX - cx) < 30) gestik.art = "cursor";   // Linie bzw. Griff gefasst
+    }
+  }
   if (zeiger.size === 2) { const p = [...zeiger.values()]; gestik = { art: "zoom", d0: Math.abs(p[0].x - p[1].x) || 1, zoom0: zoom, mitte: (p[0].x + p[1].x) / 2 }; }
 });
 cv.addEventListener("pointermove", (e) => {
@@ -950,6 +963,11 @@ cv.addEventListener("pointermove", (e) => {
     const anker = scroll + mx / zoom;
     zoom = Math.max(0.25, Math.min(24, gestik.zoom0 * d / gestik.d0));
     scroll = anker - mx / zoom; zeichneBald(); return;
+  }
+  if (gestik.art === "cursor") {
+    const r = cv.getBoundingClientRect(); const x = e.clientX - r.left;
+    if (x < 30) scroll -= 2 / zoom * 4; else if (x > r.width - 30) scroll += 2 / zoom * 4;   // am Rand mitscrollen
+    cursor = Math.max(0, Math.min(aufnahme.n - 1, scroll + x / zoom)); zeichneBald(); return;
   }
   const dx = e.clientX - gestik.x0;
   if (gestik.art === "tipp" && Math.abs(dx) > 8) gestik.art = "schieben";

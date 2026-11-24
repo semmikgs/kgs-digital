@@ -183,9 +183,9 @@ body.vollbild .buehne .leise{display:none}
       <div class="hinweisbox" id="kameraInfo">Linie mit dem Finger auf die Ziellinie schieben.</div>
     </div>
     <div id="fotofinish" hidden>
-      <canvas id="uebersicht"></canvas>
+      <canvas id="uebersicht" title="Orange = deutliche Bewegung auf der Ziellinie (Einlauf), rotes Dreieck = Beginn"></canvas>
       <canvas id="streifen"></canvas>
-      <p class="leise" style="margin:6px 0 0">Gelbe Linie am Griff ziehen · daneben wischen = scrollen · Tippen = Cursor · zwei Finger = Zoom. Zeiten werden auf Hundertstel aufgerundet.</p>
+      <p class="leise" style="margin:6px 0 0">Leiste oben: orange = Einlauf, antippen springt hin · gelbe Linie am Griff ziehen · daneben wischen = scrollen · Tippen = Cursor · zwei Finger = Zoom. Zeiten werden auf Hundertstel aufgerundet.</p>
     </div>
   </div>
 </section>
@@ -783,9 +783,20 @@ function spalteAufnehmen(t) {
   a.n++;
   if (ansicht === "streifen" && zustand === "laeuft") { scroll = Math.max(0, a.n - sichtbareSpalten()); zeichneBald(); }
 }
+// Ab welcher Aktivität gilt eine Spalte als „deutlich“ (Läufer auf der Linie)?
+// Bezug ist das Grundrauschen dieser Aufnahme (Median), damit Wind/Schatten nicht alles einfärben.
+function starkeGrenze(a) {
+  if (a._gN === a.n) return a._g;
+  const werte = Array.from(a.aktiv.subarray(6, a.n)).sort((x, y) => x - y);
+  const median = werte.length ? werte[Math.floor(werte.length / 2)] : 0;
+  const max = werte.length ? werte[werte.length - 1] : 0;
+  a._g = Math.max(0.06, median + Math.max(0.05, (max - median) * 0.35)); a._gN = a.n;
+  return a._g;
+}
 function ersteBewegung() {
   const a = aufnahme; if (!a || a.n < 8) return null;
-  for (let i = 6; i < a.n; i++) if (a.aktiv[i] > 0.04) return i;
+  const g = starkeGrenze(a);
+  for (let i = 6; i < a.n; i++) if (a.aktiv[i] >= g) return i;
   return null;
 }
 
@@ -925,11 +936,18 @@ function zeichnen() {
   const OW = ov.width, OH = ov.height;
   octx.fillStyle = "#e5e7eb"; octx.fillRect(0, 0, OW, OH);
   if (a.n > 1) {
-    octx.fillStyle = "#312e91";
+    const grenze = starkeGrenze(a);
+    let vorher = false;
     for (let x = 0; x < OW; x++) {
       const i0 = Math.floor(x / OW * a.n), i1 = Math.max(i0 + 1, Math.floor((x + 1) / OW * a.n));
       let m = 0; for (let i = i0; i < i1 && i < a.n; i++) m = Math.max(m, a.aktiv[i]);
-      if (m > 0.01) { const h = Math.min(1, m * 3) * OH; octx.fillRect(x, OH - h, 1, h); }
+      const stark = m >= grenze;
+      if (m > 0.01) { const h = Math.min(1, m * 3) * OH; octx.fillStyle = stark ? "#f97316" : "#312e91"; octx.fillRect(x, OH - h, 1, h); }
+      if (stark && !vorher) {   // Beginn eines Einlaufs: kleines Dreieck oben
+        octx.fillStyle = "#dc2626"; octx.beginPath();
+        octx.moveTo(x - 5 * dpr, 0); octx.lineTo(x + 5 * dpr, 0); octx.lineTo(x, 8 * dpr); octx.fill();
+      }
+      vorher = stark;
     }
     octx.strokeStyle = "#facc15"; octx.lineWidth = 2 * dpr;
     octx.strokeRect(scroll / a.n * OW, 1, Math.max(4, spalten / a.n * OW), OH - 2);

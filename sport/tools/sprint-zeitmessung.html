@@ -114,6 +114,23 @@ body.vollbild .panel{top:0;max-height:calc(100vh - 12px);overflow:auto}
 body.vollbild .vorschau video{max-height:calc(100vh - 80px)}
 body.vollbild #streifen{height:calc(100vh - 140px)}
 body.vollbild .buehne .leise{display:none}
+/* Querformat (iPad): Messen füllt genau den Bildschirm, ohne Seitenscrollen */
+@media (orientation:landscape) and (min-width:861px){
+  body.mess{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;padding-bottom:12px}
+  body.mess>.kopf{flex:none}
+  body.mess #v-messen{flex:1 1 0;min-height:0;grid-template-rows:minmax(0,1fr);align-items:stretch}
+  body.mess .panel{position:static;overflow:auto;margin-bottom:0;min-height:0}
+  body.mess .buehne{display:flex;flex-direction:column;min-height:0;margin-bottom:0}
+  body.mess .buehnenkopf{flex:none}
+  body.mess #leerBox{flex:1;min-height:0}
+  body.mess .vorschau{flex:1 1 0;min-height:0}
+  body.mess .vorschau video{width:100%;height:100%;max-height:none}
+  body.mess #fotofinish{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+  body.mess #uebersicht{flex:none}
+  body.mess #streifen{flex:1 1 0;height:0!important;min-height:120px}
+  body.mess #zielLeiste{flex:none}
+  body.mess .hilfe{flex:none}
+}
 @media (max-width:860px){.messen,.messen.zu{grid-template-columns:1fr}.panel{position:static}.zwei{grid-template-columns:1fr}.reiter{margin-left:0}}
 </style>
 </head>
@@ -138,7 +155,8 @@ body.vollbild .buehne .leise{display:none}
     <div class="status" id="status"><div class="gross" id="statusGross">–</div><div id="statusText">Kamera und Mikrofon starten</div></div>
 
     <div class="nurStart">
-      <div class="chips" id="streckenChips"></div>
+      <div class="reihe"><label class="leise" for="streckeWahl" style="font-weight:700">Strecke</label>
+        <select id="streckeWahl" style="flex:1;font-weight:700"></select></div>
       <p class="leise" id="schallInfo" style="margin:6px 0 10px"></p>
     </div>
 
@@ -241,7 +259,7 @@ body.vollbild .buehne .leise{display:none}
     </div>
     <div class="reihe" style="margin-top:10px">
       <select id="awKlasse"></select>
-      <div class="chips" id="awStrecken"></div>
+      <select id="awStrecke" style="font-weight:700"></select>
       <div class="chips" id="awGeschlecht"></div>
     </div>
   </div>
@@ -264,6 +282,7 @@ body.vollbild .buehne .leise{display:none}
       <label class="feld">Geräte-Versatz Ton/Bild (ms)<input type="number" id="eOffset" step="1"></label>
     </div>
     <p class="leise" id="eSchallText"></p>
+    <p class="reihe" id="eStrecken" style="gap:6px"></p>
 
     <h3>Kalibrieren (einmal pro iPad)</h3>
     <p class="leise" style="margin-top:0">Ton und Bild kommen im iPad mit unterschiedlicher Verzögerung an. So misst du den Versatz: Klappe direkt im Ziel <b>auf der Ziellinie vor der Kamera</b> zuschlagen. Danach im Fotofinish den Cursor auf das Bild setzen, in dem die Klappe zu ist, und „Als Nullpunkt übernehmen“ drücken.</p>
@@ -319,8 +338,25 @@ body.vollbild .buehne .leise{display:none}
    ========================================================= */
 
 const $ = (id) => document.getElementById(id);
-const STRECKEN = [30, 50, 70, 75, 100];
-const AUTOSTOPP_VORSCHLAG = { 30: 12, 50: 18, 70: 24, 75: 25, 100: 30 };
+const STANDARD_STRECKEN = [30, 50, 75, 100];
+// Standard + eigene + alle, zu denen schon Zeiten gespeichert sind
+function streckenListe() {
+  const m = new Set(STANDARD_STRECKEN.concat(daten.e.strecken || []));
+  daten.ergebnisse.forEach((r) => m.add(r.strecke));
+  return [...m].filter((x) => x > 0).sort((a, b) => a - b);
+}
+const autoStoppVorschlag = (m) => Math.round(8 + m * 0.22);
+function streckenOptionen(sel, aktuell, mitNeu) {
+  sel.innerHTML = streckenListe().map((m) => `<option value="${m}" ${m === aktuell ? "selected" : ""}>${String(m).replace(".", ",")} m</option>`).join("") +
+    (mitNeu ? `<option value="neu">+ eigene Strecke …</option>` : "");
+}
+function eigeneStrecke() {
+  const n = parseFloat((prompt("Eigene Strecke in Metern:") || "").replace(",", "."));
+  if (!(n > 0 && n <= 1000)) return null;
+  const m = Math.round(n * 10) / 10;
+  daten.e.strecken = [...new Set((daten.e.strecken || []).concat(m))]; speichern();
+  return m;
+}
 const BAHNFARBEN = ["#e11d48", "#2563eb", "#16a34a", "#d97706"];
 const SPEICHER = "kgs-sprint-v1";
 
@@ -370,7 +406,8 @@ $("reiter").addEventListener("click", (ev) => {
   if (b.dataset.v === "klassen") klassenZeichnen();
   if (b.dataset.v === "auswertung") auswertungZeichnen();
   if (b.dataset.v === "aufbau") einstellungenZeigen();
-  if (b.dataset.v === "messen") { laufPanelZeichnen(); zeichneBald(); }
+  document.body.classList.toggle("mess", b.dataset.v === "messen");
+  if (b.dataset.v === "messen") { laufPanelZeichnen(); setTimeout(() => { groesseAnpassen(); linieZeigen(); zeichneBald(); }, 30); }
 });
 $("panelZu").onclick = () => {
   const m = $("v-messen"); m.classList.toggle("zu");
@@ -398,14 +435,9 @@ $("bahnenUmschalten").onclick = () => { bahnenZu = false; bahnenAnzeigen(); };
 $("bahnenFertig").onclick = () => { bahnenZu = true; bahnenAnzeigen(); };
 
 function laufPanelZeichnen() {
-  const sc = $("streckenChips"); sc.innerHTML = "";
-  STRECKEN.forEach((s) => {
-    const b = document.createElement("button"); b.textContent = s + " m";
-    b.setAttribute("aria-pressed", daten.e.strecke === s);
-    b.disabled = zustand === "laeuft" || zustand === "warte";
-    b.onclick = () => { daten.e.strecke = s; speichern(); laufPanelZeichnen(); };
-    sc.appendChild(b);
-  });
+  const sw = $("streckeWahl");
+  streckenOptionen(sw, daten.e.strecke, true);
+  sw.disabled = zustand === "laeuft" || zustand === "warte";
   $("schallInfo").textContent = `Schallweg ${schallWeg(daten.e.strecke).toFixed(1).replace(".", ",")} m · Korrektur ${(schallZeit(daten.e.strecke) * 1000).toFixed(0)} ms bei ${daten.e.temp} °C`;
 
   const ks = $("laufKlasse"); const namen = Object.keys(daten.klassen).sort(sortDe);
@@ -434,6 +466,11 @@ function laufPanelZeichnen() {
   bahnenAnzeigen();
   zuordnenZeichnen();
 }
+$("streckeWahl").onchange = (e) => {
+  if (e.target.value === "neu") { const m = eigeneStrecke(); if (m) daten.e.strecke = m; }
+  else daten.e.strecke = Number(e.target.value);
+  speichern(); laufPanelZeichnen();
+};
 const sortDe = (a, b) => a.localeCompare(b, "de", { numeric: true });
 const sortSchueler = (a, b) => (a.nn + " " + a.vn).localeCompare(b.nn + " " + b.vn, "de");
 $("laufKlasse").onchange = (e) => { daten.e.klasse = e.target.value; bahnen = [null, null, null, null]; speichern(); laufPanelZeichnen(); };
@@ -880,17 +917,24 @@ function buehneZeigen() {
 }
 $("ansichtWechsel").onclick = () => { ansicht = ansicht === "kamera" ? "streifen" : "kamera"; buehneZeigen(); };
 
-function linieZeigen() { $("ziellinie").style.left = (daten.e.linie * 100) + "%"; }
+// Ziellinie über dem tatsächlich sichtbaren Videobild platzieren (object-fit: contain)
+function videoFlaeche() {
+  const r = video.getBoundingClientRect(), ar = (video.videoWidth || 16) / (video.videoHeight || 9);
+  let w = r.width, h = r.height, x0 = r.left;
+  if (h && w / h > ar) { w = h * ar; x0 = r.left + (r.width - w) / 2; }
+  return { x0, w, r };
+}
+function linieZeigen() {
+  const f = videoFlaeche(), c = $("vorschau").getBoundingClientRect();
+  $("ziellinie").style.left = f.w ? (f.x0 - c.left + daten.e.linie * f.w) + "px" : (daten.e.linie * 100) + "%";
+}
+video.addEventListener("loadedmetadata", () => setTimeout(linieZeigen, 50));
 // Ziellinie verschieben – nur in der Kamera-Ansicht und nicht während der Aufnahme
 $("vorschau").addEventListener("pointerdown", (e) => {
   if (zustand === "laeuft") return;
   const el = $("vorschau"); el.setPointerCapture(e.pointerId);
   const setzen = (ev) => {
-    const r = video.getBoundingClientRect();
-    // sichtbare Videofläche (object-fit: contain) berücksichtigen
-    const ar = (video.videoWidth || 16) / (video.videoHeight || 9);
-    let w = r.width, x0 = r.left;
-    if (r.width / r.height > ar) { w = r.height * ar; x0 = r.left + (r.width - w) / 2; }
+    const { x0, w } = videoFlaeche();
     daten.e.linie = Math.max(0.01, Math.min(0.99, (ev.clientX - x0) / w));
     linieZeigen();
   };
@@ -907,7 +951,7 @@ function groesseAnpassen() {
     c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr);
   }
 }
-window.addEventListener("resize", () => { groesseAnpassen(); zeichneBald(); });
+window.addEventListener("resize", () => { groesseAnpassen(); linieZeigen(); zeichneBald(); });
 const sichtbareSpalten = () => (cv.getBoundingClientRect().width || 800) / zoom;
 
 let zeichnenGeplant = false;
@@ -1267,9 +1311,9 @@ function auswertungZeichnen() {
   const namen = Object.keys(daten.klassen).sort(sortDe);
   if (!aw.klasse || !daten.klassen[aw.klasse]) aw.klasse = daten.e.klasse && daten.klassen[daten.e.klasse] ? daten.e.klasse : namen[0] || "";
   $("awKlasse").innerHTML = namen.map((k) => `<option ${k === aw.klasse ? "selected" : ""}>${esc(k)}</option>`).join("") || "<option>keine Klasse</option>";
-  $("awStrecken").innerHTML = STRECKEN.map((s) => `<button data-s="${s}" aria-pressed="${aw.strecke === s}">${s} m</button>`).join("");
+  streckenOptionen($("awStrecke"), aw.strecke, false);
   $("awGeschlecht").innerHTML = [["", "alle"], ["m", "Jungen"], ["w", "Mädchen"]].map(([v, t]) => `<button data-g="${v}" aria-pressed="${aw.g === v}">${t}</button>`).join("");
-  $("awStrecken").querySelectorAll("button").forEach((b) => b.onclick = () => { aw.strecke = Number(b.dataset.s); auswertungZeichnen(); });
+  $("awStrecke").onchange = (e) => { aw.strecke = Number(e.target.value); auswertungZeichnen(); };
   $("awGeschlecht").querySelectorAll("button").forEach((b) => b.onclick = () => { aw.g = b.dataset.g; auswertungZeichnen(); });
   const tage = awTage();
   if (aw.tag && !tage.includes(aw.tag)) aw.tag = tage[0] || "";
@@ -1343,7 +1387,7 @@ function einzelInhalt() {
   const s = aw.sid && schueler(aw.sid);
   if (!s) return `<p class="leise">Schüler in der Tabelle antippen, um den Verlauf zu sehen.</p>`;
   const alle = daten.ergebnisse.filter((r) => r.sid === s.id);
-  const proStrecke = STRECKEN.map((st) => {
+  const proStrecke = streckenListe().map((st) => {
     const r = alle.filter((x) => x.strecke === st);
     return r.length ? `<td>${st} m</td><td class="z">${fmtS(Math.min(...r.map((x) => x.zeit)))}</td><td>${r.length}</td>` : "";
   }).filter(Boolean);
@@ -1480,8 +1524,15 @@ function einstellungenZeigen() {
   for (const id in EFELDER) $(id).value = daten.e[EFELDER[id]];
   const c = schallGeschw();
   $("eSchallText").innerHTML = `Schallgeschwindigkeit bei ${daten.e.temp} °C: <b>${c.toFixed(1).replace(".", ",")} m/s</b>. Korrektur: ` +
-    STRECKEN.map((s) => `${s} m → ${(schallZeit(s) * 1000).toFixed(0)} ms`).join(" · ") +
-    (daten.e.autoStopp ? "" : `<br>Vorschlag Auto-Stopp: ${AUTOSTOPP_VORSCHLAG[daten.e.strecke]} s für ${daten.e.strecke} m.`);
+    streckenListe().map((s) => `${s} m → ${(schallZeit(s) * 1000).toFixed(0)} ms`).join(" · ") +
+    (daten.e.autoStopp ? "" : `<br>Vorschlag Auto-Stopp: ${autoStoppVorschlag(daten.e.strecke)} s für ${daten.e.strecke} m.`);
+  const eig = (daten.e.strecken || []);
+  $("eStrecken").innerHTML = "Eigene Strecken: " + (eig.length ? eig.map((m) => `<button class="knopf hell klein" data-weg="${m}" title="entfernen">${m} m ✕</button>`).join(" ") : "keine") +
+    ` <button class="knopf hell klein" id="eStreckeNeu">+ hinzufügen</button>`;
+  $("eStrecken").querySelectorAll("[data-weg]").forEach((b) => b.onclick = () => {
+    daten.e.strecken = eig.filter((m) => m !== Number(b.dataset.weg)); speichern(); einstellungenZeigen(); laufPanelZeichnen();
+  });
+  $("eStreckeNeu").onclick = () => { if (eigeneStrecke()) { einstellungenZeigen(); laufPanelZeichnen(); } };
 }
 for (const id in EFELDER) $(id).addEventListener("change", (e) => {
   const v = Number(e.target.value); if (!isFinite(v)) return;
@@ -1522,6 +1573,8 @@ function vollbildSetzen(an) {
 let vollbildWarAktiv = false;
 
 /* ---------- Start ---------- */
+document.body.classList.add("mess");
+if (!streckenListe().includes(daten.e.strecke)) daten.e.strecke = 50;
 schwelleZeigen();
 laufPanelZeichnen();
 buehneZeigen();

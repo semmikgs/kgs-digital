@@ -38,12 +38,13 @@ a.zurueck{color:var(--navy);font-weight:600;text-decoration:none;font-size:14px;
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chips button{border:0;background:var(--chip);color:var(--tinte);padding:9px 13px;border-radius:999px;font-weight:600;cursor:pointer}
 .chips button[aria-pressed=true]{background:var(--indigo);color:#fff}
+.panel .chips{flex-wrap:nowrap;gap:4px}.panel .chips button{padding:8px 9px;flex:1;font-size:15px}
 label.feld{display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--leise);font-weight:600}
 input[type=number],input[type=text],select{padding:9px 10px;border:1.5px solid var(--linie);border-radius:var(--rk);background:#fff;color:var(--tinte);font-size:16px;min-width:0}
 h2{margin:0 0 10px;font-size:18px;color:var(--indigo)}
 h3{margin:14px 0 8px;font-size:15px;color:var(--indigo)}
 .leise{color:var(--leise);font-size:14px}
-.ansicht[hidden]{display:none!important}
+[hidden]{display:none!important}
 
 /* Messen */
 .messen{display:grid;grid-template-columns:350px 1fr;gap:12px;align-items:start}
@@ -55,8 +56,8 @@ h3{margin:14px 0 8px;font-size:15px;color:var(--indigo)}
 .panelkopf button{border:0;background:var(--chip);border-radius:var(--rk);padding:6px 10px;font-weight:700;cursor:pointer;color:var(--navy)}
 .bahn{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:center;margin-bottom:6px}
 .punkt{width:24px;height:24px;border-radius:50%;color:#fff;font-weight:800;font-size:13px;display:grid;place-items:center}
-.status{border-radius:var(--rk);padding:12px;text-align:center;background:var(--chip);margin:10px 0}
-.status .gross{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.status{border-radius:var(--rk);padding:8px 10px;text-align:center;background:var(--chip);margin:8px 0}
+.status .gross{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
 .status.warte{background:#fef3c7}.status.laeuft{background:#dcfce7}.status.aus{background:#e0e7ff}
 .meter{position:relative;height:22px;background:#e5e7eb;border-radius:6px;overflow:hidden;cursor:pointer;touch-action:none}
 .meter .pegel{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#22c55e,#eab308 70%,#ef4444);width:0}
@@ -67,7 +68,7 @@ h3{margin:14px 0 8px;font-size:15px;color:var(--indigo)}
 .buehnenkopf{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:8px}
 .cursorzeit{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--indigo);min-width:140px}
 .vorschau{position:relative;background:#111;border-radius:10px;overflow:hidden;touch-action:none}
-.vorschau video{display:block;width:100%;height:auto;max-height:68vh;object-fit:contain}
+.vorschau video{display:block;width:100%;height:auto;max-height:calc(100vh - 190px);object-fit:contain}
 .ziellinie{position:absolute;top:0;bottom:0;width:0;border-left:3px dashed #facc15;pointer-events:none}
 .ziellinie::after{content:"Ziellinie";position:absolute;top:6px;left:6px;background:#facc15;color:#111;font-size:12px;font-weight:800;padding:2px 6px;border-radius:4px;white-space:nowrap}
 .hinweisbox{position:absolute;left:8px;bottom:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;font-size:13.5px;padding:6px 10px;border-radius:6px}
@@ -90,6 +91,15 @@ tr.klick{cursor:pointer}tr.klick:hover{background:#f6f7fb}
 .raster{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
 .melden{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#111;color:#fff;padding:10px 18px;border-radius:999px;font-weight:600;z-index:50;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
 .melden.an{opacity:1}
+/* Vollbild */
+body.vollbild{padding:6px}
+body.vollbild>.kopf{display:none}
+body.vollbild .messen{gap:6px}
+body.vollbild .karte{margin-bottom:0;padding:10px 12px}
+body.vollbild .panel{top:0;max-height:calc(100vh - 12px);overflow:auto}
+body.vollbild .vorschau video{max-height:calc(100vh - 80px)}
+body.vollbild #streifen{height:calc(100vh - 140px)}
+body.vollbild .buehne .leise{display:none}
 @media (max-width:860px){.messen,.messen.zu{grid-template-columns:1fr}.panel{position:static}.zwei{grid-template-columns:1fr}.reiter{margin-left:0}}
 </style>
 </head>
@@ -114,12 +124,6 @@ tr.klick{cursor:pointer}tr.klick:hover{background:#f6f7fb}
     <div class="chips" id="streckenChips"></div>
     <p class="leise" id="schallInfo" style="margin:6px 0 10px"></p>
 
-    <div class="reihe" style="margin-bottom:8px">
-      <select id="laufKlasse" style="flex:1"></select>
-      <button class="knopf hell klein" id="naechsteGruppe" title="Nächste 4 Schüler der Liste einsetzen">Nächste 4 ▶</button>
-    </div>
-    <div id="bahnen"></div>
-
     <div class="status" id="status"><div class="gross" id="statusGross">–</div><div id="statusText">Kamera und Mikrofon starten</div></div>
 
     <div id="steuerung">
@@ -138,6 +142,12 @@ tr.klick{cursor:pointer}tr.klick:hover{background:#f6f7fb}
         </div>
       </div>
     </div>
+
+    <div class="reihe" style="margin:12px 0 8px">
+      <select id="laufKlasse" style="flex:1"></select>
+      <button class="knopf hell klein" id="naechsteGruppe" title="Nächste 4 Schüler der Liste einsetzen">Nächste 4 ▶</button>
+    </div>
+    <div id="bahnen"></div>
 
     <div id="zuordnenBox" hidden>
       <h3>Zeit zuordnen</h3>
@@ -163,6 +173,7 @@ tr.klick{cursor:pointer}tr.klick:hover{background:#f6f7fb}
         <button class="knopf hell" id="zoomAus">−</button>
         <button class="knopf hell" id="zoomEin">+</button>
         <button class="knopf hell" id="ansichtWechsel">Kamera</button>
+        <button class="knopf" id="vollbild" title="Vollbild ein/aus">⛶ Vollbild</button>
       </div>
     </div>
     <div id="leerBox" class="leer">Kamera starten, iPad im Ziel seitlich auf die Verlängerung der Ziellinie stellen<br>und die gelbe Linie auf die Ziellinie schieben.</div>
@@ -1276,6 +1287,28 @@ $("allesLoeschen").onclick = () => {
   if (!confirm("Sicher? Das lässt sich nicht rückgängig machen.")) return;
   localStorage.removeItem(SPEICHER); daten = laden(); melden("Alle Daten gelöscht"); einstellungenZeigen();
 };
+
+/* ---------- Vollbild ---------- */
+function vollbildAktiv() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+$("vollbild").onclick = async () => {
+  const an = !document.body.classList.contains("vollbild");
+  const el = document.documentElement;
+  try {
+    if (an) { if (el.requestFullscreen) await el.requestFullscreen(); else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen(); }
+    else if (vollbildAktiv()) { if (document.exitFullscreen) await document.exitFullscreen(); else if (document.webkitExitFullscreen) document.webkitExitFullscreen(); }
+  } catch (e) {}   // ohne Vollbild-Unterstützung bleibt die kompakte Ansicht
+  vollbildSetzen(an);
+};
+function vollbildSetzen(an) {
+  document.body.classList.toggle("vollbild", an);
+  $("vollbild").textContent = an ? "✕ Vollbild" : "⛶ Vollbild";
+  setTimeout(() => { groesseAnpassen(); zeichneBald(); }, 120);
+}
+["fullscreenchange", "webkitfullscreenchange"].forEach((ev) => document.addEventListener(ev, () => {
+  if (!vollbildAktiv() && document.body.classList.contains("vollbild") && vollbildWarAktiv) vollbildSetzen(false);
+  vollbildWarAktiv = vollbildAktiv();
+}));
+let vollbildWarAktiv = false;
 
 /* ---------- Start ---------- */
 schwelleZeigen();

@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0e1621">
+<title>Technik-Analyse Weitsprung</title>
+<meta name="description" content="Videoanalyse am iPad: Körperhaltung beim Weitsprung Bild für Bild erkennen und mit einer idealisierten Vorlage (Schrittsprung) vergleichen – Aufsatz, Absprung, Flug, Landung. Läuft offline. In Entwicklung.">
+<meta name="kgs-kategorie" content="in Entwicklung">
+<style>
+:root{--bg:#0e1621;--card:#16212f;--line:#26364a;--txt:#e8eef6;--mut:#8ea3bb;--ok:#5dd39e;--warn:#ff8a00;--bad:#ff4d5e;--tpl:#ffd166;--acc:#3ec1ff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font:15px/1.35 -apple-system,system-ui,Segoe UI,Roboto,sans-serif;overflow:hidden}
+button,select{font:inherit;color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 13px;cursor:pointer}
+button:active{transform:scale(.97)}
+button.on{background:#20405e;border-color:var(--acc)}
+button.pri{background:var(--acc);color:#04121d;border-color:var(--acc);font-weight:600}
+button:disabled{opacity:.4}
+#app{display:grid;grid-template-rows:auto 1fr auto;height:100%}
+header{display:flex;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{font-size:17px;margin:0 8px 0 0;white-space:nowrap}
+header .sp{flex:1}
+#status{color:var(--mut);font-size:13px}
+#mid{display:grid;grid-template-columns:1fr 300px;min-height:0}
+@media (orientation:portrait){#mid{grid-template-columns:1fr;grid-template-rows:1fr auto}#panel{max-height:34vh}}
+#stage{position:relative;background:#000;min-height:0;overflow:hidden}
+#vid{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+#ov{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.tog{position:absolute;top:8px;left:8px;display:flex;gap:6px;flex-wrap:wrap;z-index:3}
+.tog button{padding:6px 10px;font-size:13px;background:rgba(14,22,33,.75)}
+.tog button.on{background:rgba(32,64,94,.9)}
+#legend{position:absolute;bottom:8px;left:8px;font-size:12px;background:rgba(14,22,33,.75);border-radius:8px;padding:5px 9px;z-index:3;display:none}
+#legend i{display:inline-block;width:18px;height:4px;vertical-align:middle;margin:0 4px 0 8px;border-radius:2px}
+#empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:30px;text-align:center;color:var(--mut)}
+#empty div{max-width:560px}
+#empty b{color:var(--txt)}
+#prog{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:5;flex-direction:column;gap:12px}
+#prog .bar{width:60%;height:10px;background:#222;border-radius:6px;overflow:hidden}
+#prog .bar i{display:block;height:100%;width:0;background:var(--acc)}
+#panel{border-left:1px solid var(--line);padding:12px;overflow:auto}
+#panel h2{font-size:18px;margin:0 0 4px}
+#cue{color:var(--mut);font-size:14px;margin-bottom:10px}
+.met{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:8px 10px;border-radius:10px;background:var(--card);margin-bottom:6px;border-left:5px solid var(--line)}
+.met .v{font-weight:700;font-size:18px;text-align:right}
+.met .t{grid-column:1/3;color:var(--mut);font-size:12px}
+.met.ok{border-left-color:var(--ok)}.met.warn{border-left-color:var(--warn)}.met.bad{border-left-color:var(--bad)}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.small{font-size:12px;color:var(--mut)}
+footer{border-top:1px solid var(--line);padding:8px 12px;display:grid;gap:8px}
+#phases{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+#phases button{padding:7px 12px}
+#phases button.set::after{content:" ●";color:var(--ok)}
+#ctrl{display:flex;gap:6px;align-items:center}
+#tl{position:relative;flex:1;height:34px}
+#seek{width:100%;height:34px;margin:0}
+#marks{position:absolute;left:0;right:0;top:0;height:6px;pointer-events:none}
+#marks span{position:absolute;top:0;width:3px;height:8px;background:var(--tpl);border-radius:2px;transform:translateX(-1px)}
+#tlabel{min-width:92px;text-align:right;font-variant-numeric:tabular-nums;color:var(--mut);font-size:13px}
+#rec{position:fixed;inset:0;background:#000;z-index:20;display:none}
+#rec video{width:100%;height:100%;object-fit:contain}
+#rec .bar{position:absolute;bottom:20px;left:0;right:0;display:flex;justify-content:center;gap:14px;align-items:center}
+#recBtn{width:76px;height:76px;border-radius:50%;background:#c8102e;border:5px solid #fff;padding:0}
+#recBtn.live{border-radius:18px;animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.6}}
+#recInfo{position:absolute;top:14px;left:0;right:0;text-align:center;text-shadow:0 1px 3px #000}
+#guide{position:absolute;left:8%;right:8%;bottom:22%;border-bottom:2px dashed rgba(255,209,102,.6);pointer-events:none}
+#guide::after{content:"Absprungbalken ungefähr in die Bildmitte";position:absolute;right:0;bottom:4px;font-size:12px;color:rgba(255,209,102,.8)}
+dialog{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:14px;max-width:560px}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <h1>🏃‍♂️ Technik-Analyse · Weitsprung</h1>
+  <button id="bRec" class="pri">● Aufnehmen</button>
+  <button id="bLoad">📂 Video laden</button>
+  <input id="file" type="file" accept="video/*" hidden>
+  <button id="bAna" disabled>🔍 Analysieren</button>
+  <select id="rate" title="Analysierte Bilder pro Sekunde">
+    <option value="30">30 B/s</option><option value="60" selected>60 B/s</option><option value="120">120 B/s</option>
+  </select>
+  <select id="cx" title="Modell">
+    <option value="0">schnell</option><option value="1" selected>genau</option>
+  </select>
+  <span class="sp"></span>
+  <span id="status">Lade Modell …</span>
+  <button id="bHelp">?</button>
+</header>
+
+<div id="mid">
+  <section id="stage">
+    <video id="vid" playsinline muted preload="auto"></video>
+    <canvas id="ov"></canvas>
+    <div class="tog" id="tog">
+      <button data-k="skel" class="on">Skelett</button>
+      <button data-k="tpl" class="on">Vorlage</button>
+      <button data-k="ang" class="on">Winkel</button>
+      <button data-k="path" class="on">Hüftbahn</button>
+      <button id="bSnap">📷 Bild</button>
+    </div>
+    <div id="legend"><i style="background:var(--tpl)"></i>Vorlage<i style="background:var(--ok)"></i>passt<i style="background:var(--warn)"></i>knapp<i style="background:var(--bad)"></i>abweichend</div>
+    <div id="empty"><div>
+      <p><b>So filmen:</b> iPad quer auf ein Stativ, <b>seitlich</b> zur Anlaufbahn, ca. 6–10 m entfernt, auf Höhe des Absprungbalkens. Im Bild sollten die letzten 2–3 Anlaufschritte, der Absprung und die Landung zu sehen sein – die ganze Person von Kopf bis Fuß.</p>
+      <p>Dann <b>● Aufnehmen</b> oder ein vorhandenes Video (auch Zeitlupe) über <b>📂 Video laden</b> öffnen und <b>🔍 Analysieren</b> tippen.</p>
+    </div></div>
+    <div id="prog"><div id="progTxt">Analysiere …</div><div class="bar"><i id="progBar"></i></div><button id="bCancel">Abbrechen</button></div>
+  </section>
+  <aside id="panel">
+    <h2 id="phTitle">–</h2>
+    <div id="cue">Nach der Analyse eine Phase unten antippen.</div>
+    <div id="mets"></div>
+    <div class="row"><span class="small">Sprungbein:</span>
+      <button id="bLegL">links</button><button id="bLegR">rechts</button></div>
+    <div class="row"><span class="small">Laufrichtung:</span><span id="dirTxt" class="small">–</span><button id="bDir" style="padding:4px 9px">⇄</button></div>
+    <div id="toa" class="met" style="display:none"></div>
+    <p class="small">Richtwerte für den Schrittsprung (Kinder/Jugend), angelehnt an gängige Leichtathletik-Fachliteratur und DLV-Lehrmaterial. Es sind Orientierungswerte, keine Normen – kleine Abweichungen sind normal.</p>
+  </aside>
+</div>
+
+<footer>
+  <div id="phases">
+    <span class="small">Phase:</span>
+    <span id="phBtns"></span>
+    <button id="bSetPh" title="Aktuelles Bild als diese Phase festlegen">📍 hier setzen</button>
+    <span class="sp" style="flex:1"></span>
+    <button id="bIn" title="Analyse ab hier">[ Start</button>
+    <button id="bOut" title="Analyse bis hier">Ende ]</button>
+  </div>
+  <div id="ctrl">
+    <button id="bPrev">◀︎ 1</button>
+    <button id="bPlay">▶︎</button>
+    <button id="bNext">1 ▶︎</button>
+    <select id="speed"><option value="0.1">0,1×</option><option value="0.25" selected>0,25×</option><option value="0.5">0,5×</option><option value="1">1×</option></select>
+    <div id="tl"><input id="seek" type="range" min="0" max="1000" value="0"><div id="marks"></div></div>
+    <span id="tlabel">0,00 s</span>
+  </div>
+</footer>
+</div>
+
+<div id="rec">
+  <video id="live" playsinline muted autoplay></video>
+  <div id="guide"></div>
+  <div id="recInfo">Kamera seitlich, ganze Person im Bild</div>
+  <div class="bar">
+    <button id="recClose">Abbrechen</button>
+    <button id="recBtn" aria-label="Aufnahme"></button>
+    <button id="recFlip">⟲ Kamera</button>
+  </div>
+</div>
+
+<dialog id="help">
+  <h3>Kurzanleitung</h3>
+  <ol>
+    <li><b>Aufnehmen</b> oder Video laden (seitlich, Stativ, ganze Person im Bild).</li>
+    <li>Optional mit <b>[ Start</b> / <b>Ende ]</b> den Bereich eingrenzen.</li>
+    <li><b>Analysieren</b>: Die Körperpunkte werden Bild für Bild erkannt – komplett auf dem iPad, ohne Internet.</li>
+    <li>Die Phasen (Aufsatz, Stütz, Absprung, Flug, Landung) werden automatisch gesucht. Passt ein Zeitpunkt nicht: hinspulen, Phase antippen, <b>📍 hier setzen</b>.</li>
+    <li>Gelb gestrichelt = <b>Vorlage</b> mit den Körpermaßen des Kindes, am Sprungfuß (bzw. an der Hüfte) ausgerichtet. Das erkannte Skelett ist grün/orange/rot je nach Abweichung.</li>
+    <li>Werden linkes und rechtes Bein vertauscht, bei <b>Sprungbein</b> umschalten.</li>
+  </ol>
+  <p class="small">Offline: Die Seite einmal mit Internet öffnen, danach funktioniert sie auch ohne Netz (Status oben rechts zeigt „offline bereit“).</p>
+  <form method="dialog"><button class="pri">OK</button></form>
+</dialog>
+
+<script src="lib/mediapipe-pose/pose.js"></script>
+<script>
+'use strict';
+/* ================= Vorlage (Richtwerte) =================
+ Winkel in Grad, Seitenansicht, Laufrichtung = "vorn".
+ Beinsegmente & Arme: Winkel zur Senkrechten nach UNTEN, + = nach vorn (90 = waagerecht vorn).
+ Rumpf (Hüfte→Schulter): Winkel zur Senkrechten nach OBEN, + = Vorlage.
+ st = Sprungbein-Seite, sw = Schwungbein-Seite. Th=Oberschenkel, Sh=Unterschenkel, Ua=Oberarm, Fa=Unterarm, tr=Rumpf
+*/
+const TEMPLATE = {
+  name: 'Weitsprung – Schrittsprung (Kinder/Jugend)',
+  phases: [
+    { id:'aufsatz', name:'Aufsatz', anchor:'ankle',
+      seg:{stTh:18, stSh:30, swTh:-12, swSh:-95, tr:-5, stUa:-35, stFa:15, swUa:35, swFa:115},
+      metrics:['knieSt','aufsatz','rumpf'],
+      cue:'Sprungbein fast gestreckt und aktiv „greifend“ flach auf den ganzen Fuß setzen. Fuß deutlich vor der Hüfte, Oberkörper aufrecht bis leicht zurück, Blick nach vorn.' },
+    { id:'stuetz', name:'Stütz', anchor:'ankle',
+      seg:{stTh:15, stSh:-18, swTh:25, swSh:-45, tr:0, stUa:5, stFa:70, swUa:5, swFa:60},
+      metrics:['knieSt','rumpf','schwungOS'],
+      cue:'Nur kurz und wenig im Knie nachgeben – nicht einknicken. Hüfte bleibt hoch, das Schwungbein schwingt schnell gebeugt nach vorn.' },
+    { id:'absprung', name:'Absprung', anchor:'ankle',
+      seg:{stTh:-15, stSh:-20, swTh:85, swSh:2, tr:3, stUa:100, stFa:165, swUa:-40, swFa:5},
+      metrics:['knieSt','schwungOS','knieSw','rumpf'],
+      cue:'Sprungbein vollständig strecken (Fuß–Knie–Hüfte). Schwungbein-Oberschenkel bis zur Waagerechten hochreißen, Gegenarm kräftig nach vorn-oben. Oberkörper aufrecht. Absprungwinkel ca. 18–24°.' },
+    { id:'flug', name:'Flug', anchor:'hip',
+      seg:{stTh:-10, stSh:-95, swTh:80, swSh:5, tr:0, stUa:130, stFa:165, swUa:-25, swFa:30},
+      metrics:['schwungOS','knieSt','rumpf'],
+      cue:'Schrittsprung: Schwungbein-Oberschenkel bleibt etwa waagerecht, das Sprungbein hängt gebeugt hinten. Oberkörper aufrecht – nicht nach vorn kippen.' },
+    { id:'landung', name:'Landung', anchor:'hip',
+      seg:{stTh:80, stSh:68, swTh:80, swSh:68, tr:30, stUa:60, stFa:85, swUa:60, swFa:85},
+      metrics:['beineVorn','knieSw','rumpf'],
+      cue:'Beide Beine weit nach vorn bringen, fast gestreckt. Oberkörper und Arme nach vorn, damit man nach dem Aufkommen nicht nach hinten fällt.' }
+  ],
+  tol:{ leg:10, tr:8, arm:22 }
+};
+const METRICS = {
+  knieSt:{ label:'Kniewinkel Sprungbein', unit:'°', tol:10, f:s=>joint(s.stH,s.stK,s.stA) },
+  knieSw:{ label:'Kniewinkel Schwungbein', unit:'°', tol:12, f:s=>joint(s.swH,s.swK,s.swA) },
+  rumpf:{ label:'Rumpfneigung', unit:'°', tol:8, f:s=>segAng(s.H,s.S,true), fmt:v=>(v>=0?'+':'')+Math.round(v)+'°', note:'+ = nach vorn, − = nach hinten' },
+  schwungOS:{ label:'Schwungbein-Oberschenkel', unit:'°', tol:12, f:s=>segAng(s.swH,s.swK,false), note:'90° = waagerecht' },
+  aufsatz:{ label:'Beinaufsatz (Fuß vor Hüfte)', unit:'°', tol:8, f:s=>segAng(s.stH,s.stA,false), note:'Winkel Hüfte→Fuß zur Senkrechten' },
+  beineVorn:{ label:'Beine vorn (Oberschenkel)', unit:'°', tol:15, f:s=>(segAng(s.stH,s.stK,false)+segAng(s.swH,s.swK,false))/2, note:'90° = waagerecht' }
+};
+const SEGS = [ // key, von, nach, aufwärts?, Toleranzgruppe
+  ['stTh','stH','stK',false,'leg'],['stSh','stK','stA',false,'leg'],
+  ['swTh','swH','swK',false,'leg'],['swSh','swK','swA',false,'leg'],
+  ['tr','H','S',true,'tr'],
+  ['stUa','S','stE',false,'arm'],['stFa','stE','stW',false,'arm'],
+  ['swUa','S','swE',false,'arm'],['swFa','swE','swW',false,'arm']
+];
+const I = {nose:0, ls:11, rs:12, le:13, re:14, lw:15, rw:16, lh:23, rh:24, lk:25, rk:26, la:27, ra:28, lhe:29, rhe:30, lf:31, rf:32};
+
+/* ================= Zustand ================= */
+const $ = s => document.querySelector(s);
+const vid = $('#vid'), ov = $('#ov'), ctx = ov.getContext('2d');
+const work = document.createElement('canvas'), wctx = work.getContext('2d');
+let pose = null, poseCx = -1, poseReady = false;
+const S = {
+  frames: [], fps: 60, t0: 0, dir: 1, stance: 'L', lens: null,
+  phase: {}, active: 'absprung', idx: 0, inT: null, outT: null,
+  show: {skel:true, tpl:true, ang:true, path:true}, cancel: false, toa: null, vidName: ''
+};
+
+/* ================= Geometrie ================= */
+const deg = r => r * 180 / Math.PI, rad = d => d * Math.PI / 180;
+const P = (x, y) => ({x, y});
+const mid = (a, b) => P((a.x + b.x) / 2, (a.y + b.y) / 2);
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+function segAng(p, q, up) { const dx = (q.x - p.x) * S.dir, dy = q.y - p.y; return deg(up ? Math.atan2(dx, -dy) : Math.atan2(dx, dy)); }
+function joint(a, b, c) { const v1 = Math.atan2(a.y - b.y, a.x - b.x), v2 = Math.atan2(c.y - b.y, c.x - b.x); let d = Math.abs(deg(v1 - v2)) % 360; return d > 180 ? 360 - d : d; }
+function wrap(d) { d = ((d + 180) % 360 + 360) % 360 - 180; return d; }
+function vec(a, up) { const r = rad(a); return up ? P(Math.sin(r) * S.dir, -Math.cos(r)) : P(Math.sin(r) * S.dir, Math.cos(r)); }
+const add = (a, v, l) => P(a.x + v.x * l, a.y + v.y * l);
+
+function skelFromLm(lm) {
+  if (!lm) return null;
+  const g = i => P(lm[i][0], lm[i][1]), vis = i => lm[i][2];
+  const st = S.stance === 'L' ? 'l' : 'r', sw = S.stance === 'L' ? 'r' : 'l';
+  const s = {
+    H: mid(g(I.lh), g(I.rh)), S: mid(g(I.ls), g(I.rs)), N: g(I.nose),
+    stH: g(I[st+'h']), stK: g(I[st+'k']), stA: g(I[st+'a']), stF: g(I[st+'f']), stHe: g(I[st+'he']),
+    swH: g(I[sw+'h']), swK: g(I[sw+'k']), swA: g(I[sw+'a']), swF: g(I[sw+'f']), swHe: g(I[sw+'he']),
+    stE: g(I[st+'e']), stW: g(I[st+'w']), swE: g(I[sw+'e']), swW: g(I[sw+'w']),
+    stSh: g(I[st+'s']), swSh: g(I[sw+'s'])
+  };
+  s.vis = {
+    stH: vis(I[st+'h']), stK: vis(I[st+'k']), stA: vis(I[st+'a']), swH: vis(I[sw+'h']), swK: vis(I[sw+'k']), swA: vis(I[sw+'a']),
+    stE: vis(I[st+'e']), stW: vis(I[st+'w']), swE: vis(I[sw+'e']), swW: vis(I[sw+'w']), H: 1, S: 1
+  };
+  return s;
+}
+// Schablone mit den Körpermaßen des Kindes bauen
+function buildTemplate(ph, det) {
+  const L = S.lens; if (!L || !det) return null;
+  const a = ph.seg, t = {};
+  if (ph.anchor === 'ankle') {
+    t.stA = det.stA;
+    t.stK = add(t.stA, vec(a.stSh), -L.sh);
+    t.H = add(t.stK, vec(a.stTh), -L.th);
+  } else {
+    t.H = det.H;
+    t.stK = add(t.H, vec(a.stTh), L.th);
+    t.stA = add(t.stK, vec(a.stSh), L.sh);
+  }
+  t.stH = t.swH = t.H;
+  t.swK = add(t.H, vec(a.swTh), L.th); t.swA = add(t.swK, vec(a.swSh), L.sh);
+  t.S = add(t.H, vec(a.tr, true), L.tr);
+  t.N = add(t.S, vec(a.tr + 12, true), L.tr * 0.42);
+  t.stE = add(t.S, vec(a.stUa), L.ua); t.stW = add(t.stE, vec(a.stFa), L.fa);
+  t.swE = add(t.S, vec(a.swUa), L.ua); t.swW = add(t.swE, vec(a.swFa), L.fa);
+  return t;
+}
+
+/* ================= Posen-Modell ================= */
+async function ensurePose() {
+  const cx = +$('#cx').value;
+  if (pose && poseCx === cx) return;
+  setStatus('Lade Modell …');
+  if (!pose) {
+    pose = new Pose({ locateFile: f => 'lib/mediapipe-pose/' + f });
+    pose.onResults(r => { lastRes = r.poseLandmarks || null; });
+  }
+  pose.setOptions({ modelComplexity: cx, smoothLandmarks: true, enableSegmentation: false, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+  work.width = 64; work.height = 64; wctx.fillRect(0, 0, 64, 64);
+  await pose.send({ image: work }); // Initialisierung + Aufwärmen
+  poseCx = cx; poseReady = true;
+  setStatus(offlineOk ? 'Modell bereit · offline bereit ✓' : 'Modell bereit');
+}
+let lastRes = null;
+async function detect(img) { lastRes = null; await pose.send({ image: img }); return lastRes; }
+
+/* ================= Video laden / Aufnahme ================= */
+function loadVideo(src, name) {
+  S.frames = []; S.phase = {}; S.inT = S.outT = null; S.toa = null; S.lens = null;
+  S.vidName = name || 'aufnahme';
+  vid.src = src; vid.load();
+  vid.onloadedmetadata = () => {
+    if (vid.duration === Infinity || isNaN(vid.duration)) { // Chrome-WebM-Fix
+      vid.currentTime = 1e7;
+      vid.ontimeupdate = () => { vid.ontimeupdate = null; vid.currentTime = 0; ready(); };
+    } else ready();
+  };
+  function ready() {
+    $('#empty').style.display = 'none'; $('#bAna').disabled = false;
+    setStatus(`Video ${vid.videoWidth}×${vid.videoHeight}, ${vid.duration.toFixed(1)} s – jetzt analysieren`);
+    resize(); updateUI(); draw();
+  }
+}
+$('#bLoad').onclick = () => $('#file').click();
+$('#file').onchange = e => { const f = e.target.files[0]; if (f) loadVideo(URL.createObjectURL(f), f.name.replace(/\.[^.]+$/, '')); e.target.value = ''; };
+
+let stream = null, recorder = null, chunks = [], facing = 'environment';
+async function openCam() {
+  try {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 60 } } });
+    $('#live').srcObject = stream;
+    const st = stream.getVideoTracks()[0].getSettings();
+    $('#recInfo').textContent = `Kamera ${st.width || ''}×${st.height || ''} · ${Math.round(st.frameRate || 0)} B/s – seitlich, ganze Person im Bild`;
+  } catch (err) { alert('Kamera nicht verfügbar: ' + err.message); closeCam(); }
+}
+function closeCam() { if (recorder && recorder.state === 'recording') recorder.stop(); if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; $('#rec').style.display = 'none'; }
+$('#bRec').onclick = () => { $('#rec').style.display = 'block'; openCam(); };
+$('#recClose').onclick = () => { chunks = []; if (recorder) recorder.onstop = null; closeCam(); };
+$('#recFlip').onclick = () => { facing = facing === 'environment' ? 'user' : 'environment'; openCam(); };
+$('#recBtn').onclick = () => {
+  if (!stream) return;
+  if (recorder && recorder.state === 'recording') { recorder.stop(); return; }
+  const types = ['video/mp4', 'video/webm;codecs=vp9', 'video/webm'];
+  const mt = types.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
+  recorder = new MediaRecorder(stream, mt ? { mimeType: mt, videoBitsPerSecond: 12e6 } : undefined);
+  chunks = [];
+  recorder.ondataavailable = e => e.data.size && chunks.push(e.data);
+  recorder.onstop = () => {
+    $('#recBtn').classList.remove('live');
+    const blob = new Blob(chunks, { type: recorder.mimeType || 'video/mp4' });
+    closeCam();
+    if (blob.size) loadVideo(URL.createObjectURL(blob), 'sprung_' + new Date().toTimeString().slice(0, 8).replace(/:/g, ''));
+  };
+  recorder.start(250);
+  $('#recBtn').classList.add('live');
+  const t0 = Date.now();
+  const tick = () => { if (recorder.state !== 'recording') return; $('#recInfo').textContent = `● Aufnahme ${((Date.now() - t0) / 1000).toFixed(1)} s – zum Stoppen tippen`; requestAnimationFrame(tick); };
+  tick();
+};
+
+/* ================= Analyse ================= */
+function seek(t) {
+  return new Promise(res => {
+    if (Math.abs(vid.currentTime - t) < 1e-4 && vid.readyState >= 2) return res();
+    const done = () => {
+      vid.removeEventListener('seeked', done);
+      if (vid.requestVideoFrameCallback) { let r = false; const go = () => { if (!r) { r = true; res(); } }; vid.requestVideoFrameCallback(go); setTimeout(go, 150); }
+      else setTimeout(res, 40);
+    };
+    vid.addEventListener('seeked', done);
+    vid.currentTime = t;
+  });
+}
+async function analyze() {
+  if (!vid.videoWidth) return;
+  vid.pause();
+  S.cancel = false;
+  $('#prog').style.display = 'flex'; $('#progTxt').textContent = 'Lade Modell …';
+  try { await ensurePose(); } catch (e) { $('#prog').style.display = 'none'; alert('Modell konnte nicht geladen werden: ' + e.message); return; }
+  if (pose.reset) pose.reset();
+  const W = vid.videoWidth, H = vid.videoHeight, k = Math.min(1, 960 / Math.max(W, H));
+  work.width = Math.round(W * k); work.height = Math.round(H * k);
+  S.fps = +$('#rate').value;
+  const t0 = S.inT ?? 0, t1 = Math.min(S.outT ?? vid.duration, vid.duration - 0.001);
+  const n = Math.max(1, Math.floor((t1 - t0) * S.fps) + 1);
+  S.t0 = t0; S.frames = [];
+  const tStart = performance.now();
+  for (let i = 0; i < n && !S.cancel; i++) {
+    const t = t0 + i / S.fps;
+    await seek(t);
+    wctx.drawImage(vid, 0, 0, work.width, work.height);
+    const r = await detect(work);
+    S.frames.push({ t, lm: r ? r.map(p => [p.x * W, p.y * H, p.visibility ?? 1]) : null });
+    if (i % 3 === 0) {
+      const el = (performance.now() - tStart) / 1000, rest = el / (i + 1) * (n - i - 1);
+      $('#progBar').style.width = (100 * (i + 1) / n) + '%';
+      $('#progTxt').textContent = `Analysiere Bild ${i + 1} / ${n} · noch ca. ${Math.ceil(rest)} s`;
+    }
+  }
+  $('#prog').style.display = 'none';
+  if (S.cancel) { setStatus('Analyse abgebrochen'); }
+  postProcess();
+  const hit = S.frames.filter(f => f.lm).length;
+  setStatus(`${hit} von ${S.frames.length} Bildern mit Person erkannt`);
+  gotoPhase(S.phase.absprung != null ? 'absprung' : S.active);
+}
+$('#bAna').onclick = analyze;
+$('#bCancel').onclick = () => { S.cancel = true; };
+
+function postProcess() {
+  const F = S.frames;
+  // 1) Links/Rechts-Vertauschungen der Erkennung korrigieren
+  const legPairs = [[I.lh, I.rh], [I.lk, I.rk], [I.la, I.ra], [I.lhe, I.rhe], [I.lf, I.rf]];
+  const armPairs = [[I.ls, I.rs], [I.le, I.re], [I.lw, I.rw]];
+  const fix = (pairs, test) => {
+    let prev = null;
+    for (const f of F) {
+      if (!f.lm) continue;
+      if (prev) {
+        let same = 0, swp = 0;
+        for (const [l, r] of test) {
+          same += Math.hypot(f.lm[l][0] - prev[l][0], f.lm[l][1] - prev[l][1]) + Math.hypot(f.lm[r][0] - prev[r][0], f.lm[r][1] - prev[r][1]);
+          swp += Math.hypot(f.lm[l][0] - prev[r][0], f.lm[l][1] - prev[r][1]) + Math.hypot(f.lm[r][0] - prev[l][0], f.lm[r][1] - prev[l][1]);
+        }
+        if (swp < same * 0.6) for (const [l, r] of pairs) { const t = f.lm[l]; f.lm[l] = f.lm[r]; f.lm[r] = t; }
+      }
+      prev = f.lm;
+    }
+  };
+  fix(legPairs, [[I.lk, I.rk], [I.la, I.ra], [I.lf, I.rf]]);
+  fix(armPairs, [[I.le, I.re], [I.lw, I.rw]]);
+  const V = F.filter(f => f.lm);
+  if (V.length < 3) return;
+  // 2) Laufrichtung
+  const hx = f => (f.lm[I.lh][0] + f.lm[I.rh][0]) / 2;
+  S.dir = hx(V[V.length - 1]) >= hx(V[0]) ? 1 : -1;
+  // 3) Körpermaße (Median)
+  const med = a => { a = a.filter(x => isFinite(x)).sort((x, y) => x - y); return a.length ? a[a.length >> 1] : 0; };
+  const seg = (a, b) => V.filter(f => f.lm[a][2] > .5 && f.lm[b][2] > .5).map(f => Math.hypot(f.lm[a][0] - f.lm[b][0], f.lm[a][1] - f.lm[b][1]));
+  S.lens = {
+    th: med([...seg(I.lh, I.lk), ...seg(I.rh, I.rk)]), sh: med([...seg(I.lk, I.la), ...seg(I.rk, I.ra)]),
+    ua: med([...seg(I.ls, I.le), ...seg(I.rs, I.re)]), fa: med([...seg(I.le, I.lw), ...seg(I.re, I.rw)]),
+    tr: med(V.map(f => Math.hypot((f.lm[I.ls][0] + f.lm[I.rs][0] - f.lm[I.lh][0] - f.lm[I.rh][0]) / 2, (f.lm[I.ls][1] + f.lm[I.rs][1] - f.lm[I.lh][1] - f.lm[I.rh][1]) / 2)))
+  };
+  // 4) Phasen automatisch suchen
+  autoPhases();
+}
+function autoPhases() {
+  const F = S.frames, leg = S.lens.th + S.lens.sh, thr = 0.12 * leg;
+  const low = F.map(f => f.lm ? Math.max(f.lm[I.la][1], f.lm[I.ra][1], f.lm[I.lf][1], f.lm[I.rf][1], f.lm[I.lhe][1], f.lm[I.rhe][1]) : NaN);
+  const sorted = low.filter(isFinite).sort((a, b) => a - b);
+  const ground = sorted[Math.floor(sorted.length * 0.9)];
+  const air = low.map(y => isFinite(y) ? y < ground - thr : null);
+  for (let i = 0; i < air.length; i++) if (air[i] === null) air[i] = i > 0 ? air[i - 1] : false;      // Lücken füllen
+  for (let i = 1; i < air.length - 1; i++) if (!air[i] && air[i - 1] && air[i + 1]) air[i] = true;   // Einzel-Ausreißer
+  // längste Flugphase
+  let best = null, s = -1;
+  for (let i = 0; i <= air.length; i++) {
+    if (i < air.length && air[i]) { if (s < 0) s = i; }
+    else if (s >= 0) { if (!best || i - 1 - s > best[1] - best[0]) best = [s, i - 1]; s = -1; }
+  }
+  S.phase = {};
+  if (!best || best[1] - best[0] < 3 || best[0] < 2) { S.toa = null; return; }
+  const [fs, fe] = best;
+  const to = fs - 1;
+  // Sprungbein = das am Boden befindliche Bein beim Lösen
+  const f = F[to];
+  if (f && f.lm) S.stance = f.lm[I.la][1] + f.lm[I.lf][1] > f.lm[I.ra][1] + f.lm[I.rf][1] ? 'L' : 'R';
+  // Aufsatz = erster Bodenkontakt des Sprungfußes vor dem Lösen (max. 0,3 s zurück)
+  const st = S.stance === 'L' ? ['la', 'lf', 'lhe'] : ['ra', 'rf', 'rhe'];
+  const footY = i => F[i].lm ? Math.max(...st.map(k => F[i].lm[I[k]][1])) : NaN;
+  let cs = to; const minI = Math.max(0, to - Math.round(0.3 * S.fps));
+  while (cs - 1 >= minI && !(ground - footY(cs - 1) > thr * 0.6)) cs--;
+  S.phase.aufsatz = cs;
+  S.phase.absprung = to;
+  let mi = cs, mk = 999;
+  for (let i = cs; i <= to; i++) { const sk = skelFromLm(F[i].lm); if (sk) { const kk = joint(sk.stH, sk.stK, sk.stA); if (kk < mk) { mk = kk; mi = i; } } }
+  S.phase.stuetz = (mi === cs || mi === to) && to - cs >= 2 ? Math.round((cs + to) / 2) : mi;
+  S.phase.flug = Math.round(fs + 0.35 * (fe - fs));
+  S.phase.landung = fe;
+  // Absprungwinkel aus der Hüftbahn (erstes Drittel der Flugphase)
+  const pts = []; for (let i = fs; i <= fs + Math.max(3, Math.round((fe - fs) / 3)) && i <= fe; i++) if (F[i].lm) { const h = skelFromLm(F[i].lm).H; pts.push(h); }
+  if (pts.length >= 3) {
+    const n = pts.length, mx = pts.reduce((a, p) => a + p.x, 0) / n, my = pts.reduce((a, p) => a + p.y, 0) / n;
+    let sxx = 0, sxy = 0; for (const p of pts) { sxx += (p.x - mx) ** 2; sxy += (p.x - mx) * (p.y - my); }
+    S.toa = sxx > 0 ? deg(Math.atan(-sxy / sxx * S.dir)) : null;
+    if (S.toa != null && Math.abs(S.toa) > 60) S.toa = null;
+  } else S.toa = null;
+}
+
+/* ================= Zeichnen ================= */
+let view = { k: 1, ox: 0, oy: 0 }, dpr = 1;
+function resize() {
+  const r = $('#stage').getBoundingClientRect(); dpr = window.devicePixelRatio || 1;
+  ov.width = Math.round(r.width * dpr); ov.height = Math.round(r.height * dpr);
+  const vw = vid.videoWidth || 16, vh = vid.videoHeight || 9, k = Math.min(r.width / vw, r.height / vh);
+  view = { k, ox: (r.width - vw * k) / 2, oy: (r.height - vh * k) / 2 };
+  draw();
+}
+window.addEventListener('resize', resize);
+function curFrame() { return S.frames[S.idx] || null; }
+function phaseObj() { return TEMPLATE.phases.find(p => p.id === S.active); }
+function devColor(d, tol) { const a = Math.abs(d); return a <= tol ? '#5dd39e' : a <= 2 * tol ? '#ff8a00' : '#ff4d5e'; }
+
+function draw() {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, ov.width, ov.height);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  render(ctx, p => P(view.ox + p.x * view.k, view.oy + p.y * view.k), 1);
+  updatePanel();
+}
+function render(c, map, lw) {
+  const fr = curFrame(); if (!fr) return;
+  const det = skelFromLm(fr.lm), ph = phaseObj();
+  // Hüftbahn
+  if (S.show.path) {
+    c.beginPath(); let first = true;
+    for (let i = 0; i <= S.idx; i++) { const f = S.frames[i]; if (!f.lm) continue; const h = map(skelFromLm(f.lm).H); first ? c.moveTo(h.x, h.y) : c.lineTo(h.x, h.y); first = false; }
+    c.strokeStyle = 'rgba(62,193,255,.75)'; c.lineWidth = 2.5 * lw; c.setLineDash([]); c.stroke();
+  }
+  if (!det) { label(c, map(P(20 / view.k, 60 / view.k)), 'keine Person erkannt', '#fff', lw); return; }
+  const tpl = S.show.tpl && ph ? buildTemplate(ph, det) : null;
+  // Vorlage
+  if (tpl) {
+    c.lineCap = 'round'; c.setLineDash([10 * lw, 7 * lw]);
+    for (const [k, a, b] of SEGS) {
+      const A = map(tpl[a]), B = map(tpl[b]), w = (k.endsWith('Ua') || k.endsWith('Fa') ? 5 : 8) * lw;
+      c.beginPath(); c.moveTo(A.x, A.y); c.lineTo(B.x, B.y);
+      c.strokeStyle = 'rgba(0,0,0,.55)'; c.lineWidth = w + 3 * lw; c.stroke();
+      c.strokeStyle = 'rgba(255,209,102,.95)'; c.lineWidth = w; c.stroke();
+    }
+    c.setLineDash([]);
+    const hd = map(tpl.N), sh = map(tpl.S); c.beginPath(); c.arc(hd.x, hd.y, dist(hd, sh) * 0.45, 0, 7); c.strokeStyle = 'rgba(255,209,102,.8)'; c.lineWidth = 3 * lw; c.stroke();
+    for (const j of ['H', 'stK', 'stA', 'swK', 'swA']) { const q = map(tpl[j]); c.beginPath(); c.arc(q.x, q.y, 5 * lw, 0, 7); c.fillStyle = 'rgba(255,209,102,.95)'; c.fill(); }
+  }
+  // erkanntes Skelett
+  if (S.show.skel) {
+    c.lineCap = 'round';
+    const tolOf = g => TEMPLATE.tol[g];
+    for (const [k, a, b, up, g] of SEGS) {
+      let col = 'rgba(255,255,255,.9)';
+      if (tpl) col = devColor(wrap(segAng(det[a], det[b], up) - segAng(tpl[a], tpl[b], up)), tolOf(g));
+      const lowVis = (det.vis[a] ?? 1) < .3 || (det.vis[b] ?? 1) < .3;
+      const A = map(det[a]), B = map(det[b]);
+      c.beginPath(); c.moveTo(A.x, A.y); c.lineTo(B.x, B.y);
+      c.strokeStyle = '#000'; c.globalAlpha = .45; c.lineWidth = (k.endsWith('Ua') || k.endsWith('Fa') ? 6 : 8) * lw; c.stroke(); c.globalAlpha = lowVis ? .45 : 1;
+      c.strokeStyle = col; c.lineWidth = (k.endsWith('Ua') || k.endsWith('Fa') ? 3.5 : 5) * lw; c.stroke(); c.globalAlpha = 1;
+    }
+    // Fuß
+    for (const [a, b, h] of [['stA', 'stF', 'stHe'], ['swA', 'swF', 'swHe']]) { const A = map(det[h]), B = map(det[b]); c.beginPath(); c.moveTo(A.x, A.y); c.lineTo(B.x, B.y); c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 3 * lw; c.stroke(); }
+    // Kopf
+    const hd = map(det.N); c.beginPath(); c.arc(hd.x, hd.y, 6 * lw, 0, 7); c.fillStyle = '#fff'; c.fill();
+    for (const j of ['H', 'S', 'stK', 'stA', 'swK', 'swA', 'stE', 'swE']) { const q = map(det[j]); c.beginPath(); c.arc(q.x, q.y, 4.5 * lw, 0, 7); c.fillStyle = j.startsWith('st') ? '#ff8a00' : j.startsWith('sw') ? '#3ec1ff' : '#fff'; c.fill(); }
+  }
+  // Winkel-Beschriftung
+  if (S.show.ang) {
+    const kSt = joint(det.stH, det.stK, det.stA), kSw = joint(det.swH, det.swK, det.swA), tr = segAng(det.H, det.S, true);
+    label(c, map(det.stK), Math.round(kSt) + '°', '#ff8a00', lw, 14);
+    label(c, map(det.swK), Math.round(kSw) + '°', '#3ec1ff', lw, 14);
+    label(c, map(mid(det.H, det.S)), 'Rumpf ' + (tr >= 0 ? '+' : '') + Math.round(tr) + '°', '#fff', lw, 14);
+  }
+}
+function label(c, p, txt, col, lw, dx = 0) {
+  c.font = `600 ${14 * lw}px -apple-system,system-ui,sans-serif`;
+  const w = c.measureText(txt).width + 10 * lw, x = p.x + dx * lw, y = p.y - 10 * lw;
+  c.fillStyle = 'rgba(0,0,0,.65)'; c.fillRect(x, y - 15 * lw, w, 21 * lw);
+  c.fillStyle = col; c.fillText(txt, x + 5 * lw, y);
+}
+
+/* ================= Panel / Bedienung ================= */
+function updatePanel() {
+  const ph = phaseObj(), fr = curFrame();
+  $('#phTitle').textContent = ph ? ph.name + (S.phase[ph.id] === S.idx ? '' : (S.phase[ph.id] != null ? ' (Vorlage)' : ' (nicht gesetzt)')) : '–';
+  $('#cue').textContent = ph ? ph.cue : '';
+  const box = $('#mets'); box.innerHTML = '';
+  const det = fr && skelFromLm(fr.lm);
+  if (ph && det && S.lens) {
+    const tpl = buildTemplate(ph, det);
+    for (const id of ph.metrics) {
+      const m = METRICS[id], v = m.f(det), t = m.f(tpl), d = id === 'rumpf' ? wrap(v - t) : v - t;
+      const cls = Math.abs(d) <= m.tol ? 'ok' : Math.abs(d) <= 2 * m.tol ? 'warn' : 'bad';
+      const fmt = m.fmt || (x => Math.round(x) + '°');
+      const el = document.createElement('div'); el.className = 'met ' + cls;
+      el.innerHTML = `<span>${m.label}</span><span class="v">${fmt(v)}</span><span class="t">Ziel ${fmt(t)} ± ${m.tol}°${m.note ? ' · ' + m.note : ''}</span>`;
+      box.appendChild(el);
+    }
+  }
+  const toa = $('#toa');
+  if (S.toa != null) {
+    const cls = S.toa >= 18 && S.toa <= 24 ? 'ok' : S.toa >= 13 && S.toa <= 29 ? 'warn' : 'bad';
+    toa.className = 'met ' + cls; toa.style.display = 'grid';
+    toa.innerHTML = `<span>Absprungwinkel (Hüftbahn)</span><span class="v">${Math.round(S.toa)}°</span><span class="t">Richtwert 18–24° · aus den ersten Flugbildern geschätzt</span>`;
+  } else toa.style.display = 'none';
+  $('#dirTxt').textContent = S.dir > 0 ? 'nach rechts →' : '← nach links';
+  $('#bLegL').classList.toggle('on', S.stance === 'L'); $('#bLegR').classList.toggle('on', S.stance === 'R');
+  $('#legend').style.display = S.show.tpl && S.frames.length ? 'block' : 'none';
+}
+function updateUI() {
+  const box = $('#phBtns'); box.innerHTML = '';
+  for (const ph of TEMPLATE.phases) {
+    const b = document.createElement('button'); b.textContent = ph.name;
+    b.classList.toggle('on', S.active === ph.id); b.classList.toggle('set', S.phase[ph.id] != null);
+    b.addEventListener('click', () => gotoPhase(ph.id)); box.appendChild(b);
+  }
+  const m = $('#marks'); m.innerHTML = '';
+  if (S.frames.length > 1) for (const ph of TEMPLATE.phases) if (S.phase[ph.id] != null) {
+    const s = document.createElement('span'); s.style.left = (100 * S.phase[ph.id] / (S.frames.length - 1)) + '%'; s.title = ph.name; m.appendChild(s);
+  }
+  $('#seek').max = Math.max(1, S.frames.length ? S.frames.length - 1 : 1000);
+}
+async function gotoIdx(i) {
+  if (!S.frames.length) return;
+  S.idx = Math.max(0, Math.min(S.frames.length - 1, i));
+  $('#seek').value = S.idx; $('#tlabel').textContent = fmtT(S.frames[S.idx].t);
+  await seek(S.frames[S.idx].t); draw();
+}
+function gotoPhase(id) { S.active = id; updateUI(); if (S.phase[id] != null) gotoIdx(S.phase[id]); else draw(); }
+const fmtT = t => t.toFixed(2).replace('.', ',') + ' s';
+function setStatus(t) { $('#status').textContent = t; }
+
+$('#seek').oninput = e => {
+  if (S.frames.length) gotoIdx(+e.target.value);
+  else if (vid.duration) { vid.currentTime = vid.duration * e.target.value / 1000; $('#tlabel').textContent = fmtT(vid.currentTime); }
+};
+$('#bPrev').onclick = () => S.frames.length ? gotoIdx(S.idx - 1) : (vid.currentTime -= 1 / 30);
+$('#bNext').onclick = () => S.frames.length ? gotoIdx(S.idx + 1) : (vid.currentTime += 1 / 30);
+$('#bPlay').onclick = () => {
+  if (!vid.src) return;
+  if (!vid.paused) { vid.pause(); return; }
+  vid.playbackRate = +$('#speed').value;
+  if (S.frames.length && S.idx >= S.frames.length - 1) gotoIdx(0);
+  vid.play();
+  const loop = () => {
+    if (vid.paused) { $('#bPlay').textContent = '▶︎'; return; }
+    $('#bPlay').textContent = '❚❚';
+    if (S.frames.length) {
+      const i = Math.round((vid.currentTime - S.t0) * S.fps);
+      if (i >= S.frames.length) { vid.pause(); S.idx = S.frames.length - 1; }
+      else S.idx = Math.max(0, i);
+      $('#seek').value = S.idx; draw();
+    } else $('#seek').value = 1000 * vid.currentTime / vid.duration;
+    $('#tlabel').textContent = fmtT(vid.currentTime);
+    requestAnimationFrame(loop);
+  };
+  loop();
+};
+$('#speed').onchange = e => { vid.playbackRate = +e.target.value; };
+$('#bSetPh').onclick = () => { if (!S.frames.length) return; S.phase[S.active] = S.idx; updateUI(); draw(); };
+$('#bIn').onclick = () => { S.inT = S.frames.length ? S.frames[S.idx].t : vid.currentTime; setStatus('Analyse ab ' + fmtT(S.inT)); };
+$('#bOut').onclick = () => { S.outT = S.frames.length ? S.frames[S.idx].t : vid.currentTime; setStatus('Analyse bis ' + fmtT(S.outT)); };
+$('#bLegL').onclick = () => { S.stance = 'L'; draw(); };
+$('#bLegR').onclick = () => { S.stance = 'R'; draw(); };
+$('#bDir').onclick = () => { S.dir *= -1; if (S.toa != null) S.toa = -S.toa; draw(); };
+$('#bHelp').onclick = () => $('#help').showModal();
+for (const b of document.querySelectorAll('#tog button[data-k]')) b.addEventListener('click', () => { const k = b.dataset.k; S.show[k] = !S.show[k]; b.classList.toggle('on', S.show[k]); draw(); });
+$('#bSnap').onclick = async () => {
+  if (!vid.videoWidth) return;
+  const c = document.createElement('canvas'); c.width = vid.videoWidth; c.height = vid.videoHeight;
+  const x = c.getContext('2d'); x.drawImage(vid, 0, 0);
+  render(x, p => p, Math.max(1, c.width / 900));
+  const ph = phaseObj(); const name = `${S.vidName}_${ph ? ph.id : 'bild'}.jpg`;
+  c.toBlob(async blob => {
+    const file = new File([blob], name, { type: 'image/jpeg' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: name }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  }, 'image/jpeg', 0.9);
+};
+$('#cx').onchange = () => { poseCx = -1; };
+
+/* ================= Offline (Service Worker) ================= */
+let offlineOk = false;
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('weitsprung-sw.js').then(() => navigator.serviceWorker.ready).then(() => {
+    const ch = new MessageChannel();
+    ch.port1.onmessage = e => { offlineOk = !!e.data.ok; if (poseReady) setStatus(offlineOk ? 'Modell bereit · offline bereit ✓' : 'Modell bereit'); };
+    navigator.serviceWorker.controller ? navigator.serviceWorker.controller.postMessage('status', [ch.port2]) : navigator.serviceWorker.ready.then(r => r.active && r.active.postMessage('status', [ch.port2]));
+  }).catch(() => {});
+}
+updateUI(); resize();
+ensurePose().catch(e => setStatus('Modell-Fehler: ' + e.message));
+window.__S = S; window.__T = { skelFromLm, buildTemplate, postProcess, METRICS, TEMPLATE, segAng, joint };
+</script>
+</body>
+</html>

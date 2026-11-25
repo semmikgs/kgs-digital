@@ -11,19 +11,32 @@
 <style>
 :root{--bg:#0e1621;--card:#16212f;--line:#26364a;--txt:#e8eef6;--mut:#8ea3bb;--ok:#5dd39e;--warn:#ff8a00;--bad:#ff4d5e;--tpl:#ffd166;--acc:#3ec1ff}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font:15px/1.35 -apple-system,system-ui,Segoe UI,Roboto,sans-serif;overflow:hidden}
+html,body{margin:0;height:100%;position:fixed;inset:0;overscroll-behavior:none;touch-action:manipulation;background:var(--bg);color:var(--txt);font:15px/1.35 -apple-system,system-ui,Segoe UI,Roboto,sans-serif;overflow:hidden}
 button,select{font:inherit;color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 13px;cursor:pointer}
 button:active{transform:scale(.97)}
 button.on{background:#20405e;border-color:var(--acc)}
 button.pri{background:var(--acc);color:#04121d;border-color:var(--acc);font-weight:600}
 button:disabled{opacity:.4}
-#app{display:grid;grid-template-rows:auto 1fr auto;height:100%}
+#app{display:grid;grid-template-rows:auto 1fr;height:100%;height:100dvh}
 header{display:flex;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 header h1{font-size:17px;margin:0 8px 0 0;white-space:nowrap}
 header .sp{flex:1}
 #status{color:var(--mut);font-size:13px}
-#mid{display:grid;grid-template-columns:1fr 300px;min-height:0}
-@media (orientation:portrait){#mid{grid-template-columns:1fr;grid-template-rows:1fr auto}#panel{max-height:34vh}}
+#mid{display:grid;grid-template-columns:1fr 330px;grid-template-rows:auto 1fr;grid-template-areas:"ctrl side" "stage side";min-height:0}
+#ctrl{grid-area:ctrl;border-bottom:1px solid var(--line);padding:6px 10px}
+#stage{grid-area:stage}
+#side{grid-area:side;border-left:1px solid var(--line);overflow:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+@media (orientation:portrait){#mid{grid-template-columns:1fr;grid-template-rows:1fr auto 34vh;grid-template-areas:"stage" "ctrl" "side"}#ctrl{border-top:1px solid var(--line)}#side{border-left:0;border-top:1px solid var(--line)}}
+#phases{padding:10px 12px;border-bottom:1px solid var(--line)}
+#phBtns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0}
+#phBtns button{white-space:nowrap;overflow:hidden;font-size:14px;text-align:left;border-left:6px solid var(--pc);padding:8px 10px}
+#phBtns button.on{background:color-mix(in srgb,var(--pc) 32%,var(--card));border-color:var(--pc)}
+#bSetPh{width:100%;font-weight:700;color:#04121d;border:0;padding:11px}
+.rng{display:flex;gap:6px;margin-top:8px}
+#korr{display:none;margin-top:10px!important;padding:8px 10px;background:var(--card);border-radius:12px;margin:8px 0;border:1px solid #7ef0ff}
+#korr label{display:grid;grid-template-columns:118px 1fr 40px;align-items:center;gap:6px;font-size:13px;margin:7px 0}
+#korr input{width:100%}
+#korr .ends{display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-left:124px;margin-right:46px}
 #stage{position:relative;background:#000;min-height:0;overflow:hidden}
 #vid{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 #ov{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -38,7 +51,7 @@ header .sp{flex:1}
 #prog{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:5;flex-direction:column;gap:12px}
 #prog .bar{width:60%;height:10px;background:#222;border-radius:6px;overflow:hidden}
 #prog .bar i{display:block;height:100%;width:0;background:var(--acc)}
-#panel{border-left:1px solid var(--line);padding:12px;overflow:auto}
+#panel{padding:12px}
 #panel h2{font-size:18px;margin:0 0 4px}
 #cue{color:var(--mut);font-size:14px;margin-bottom:10px}
 .met{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:8px 10px;border-radius:10px;background:var(--card);margin-bottom:6px;border-left:5px solid var(--line)}
@@ -47,18 +60,17 @@ header .sp{flex:1}
 .met.ok{border-left-color:var(--ok)}.met.warn{border-left-color:var(--warn)}.met.bad{border-left-color:var(--bad)}
 .row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:8px 0}
 .small{font-size:12px;color:var(--mut)}
-footer{border-top:1px solid var(--line);padding:8px 12px;display:grid;gap:8px}
-#phases{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+
 #phases button{padding:7px 12px}
-#phases button .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle;border:2px solid currentColor;opacity:.5}
-#phases button.set .dot{opacity:1;border-color:transparent}
-#phases button .tm{font-size:12px;color:var(--mut);margin-left:5px;font-variant-numeric:tabular-nums}
-#phases button.set .tm{color:var(--txt)}
+#phBtns button .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle;border:2px solid currentColor;opacity:.5}
+#phBtns button.set .dot{opacity:1;border-color:transparent}
+#phBtns button .tm{white-space:nowrap;font-size:12px;color:var(--mut);margin-left:5px;font-variant-numeric:tabular-nums}
+#phBtns button.set .tm{color:var(--txt)}
 #bIn.on,#bOut.on{background:rgba(62,193,255,.18);border-color:var(--acc)}
 #bClr{display:none;padding:7px 10px}
 #ctrl{display:flex;gap:6px;align-items:center}
 #tl{position:relative;flex:1;height:72px}
-#seek{position:absolute;left:0;right:0;bottom:0;width:100%;height:34px;margin:0}
+#seek{touch-action:none;position:absolute;left:0;right:0;bottom:0;width:100%;height:34px;margin:0}
 #marks{position:absolute;left:8px;right:8px;top:22px;height:24px;pointer-events:none}
 #marks .pin{position:absolute;top:0;transform:translateX(-50%);font-size:11px;font-weight:700;color:#04121d;padding:2px 6px;border-radius:6px;white-space:nowrap;pointer-events:auto;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.5)}
 #marks .pin::after{content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);border:5px solid transparent;border-top-color:inherit;border-top-color:var(--c)}
@@ -97,11 +109,19 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
     <option value="0">schnell</option><option value="1" selected>genau</option>
   </select>
   <span class="sp"></span>
-  <span id="status">Lade Modell …</span><span id="ver" class="small" style="opacity:.6">v3 · 25.11.</span>
+  <span id="status">Lade Modell …</span><span id="ver" class="small" style="opacity:.6">v4 · 25.11.</span>
   <button id="bHelp">?</button>
 </header>
 
 <div id="mid">
+  <div id="ctrl">
+    <button id="bPrev">◀︎ 1</button>
+    <button id="bPlay">▶︎</button>
+    <button id="bNext">1 ▶︎</button>
+    <select id="speed"><option value="0.1">0,1×</option><option value="0.25" selected>0,25×</option><option value="0.5">0,5×</option><option value="1">1×</option></select>
+    <div id="tl"><div id="range"></div><input id="seek" type="range" min="0" max="1000" value="0"><div id="marks"></div></div>
+    <span id="tlabel">0,00 s</span>
+  </div>
   <section id="stage">
     <video id="vid" playsinline muted preload="auto"></video>
     <canvas id="ov"></canvas>
@@ -111,6 +131,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
       <button data-k="ang" class="on">Winkel</button>
       <button data-k="path" class="on">Hüftbahn</button>
       <button data-k="ref" class="on">Soll-Figur</button>
+      <button data-k="korr" style="border-color:#7ef0ff">✏️ Korrektur</button>
       <button id="bSnap">📷 Bild</button>
     </div>
     <canvas id="ref" width="170" height="210"></canvas><div id="phBadge"></div><div id="toast"></div>
@@ -121,37 +142,45 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
     </div></div>
     <div id="prog"><div id="progTxt">Analysiere …</div><div class="bar"><i id="progBar"></i></div><button id="bCancel">Abbrechen</button></div>
   </section>
+  <div id="side">
+  <div id="phases">
+    <div class="small">Phase wählen, im Video die passende Stelle suchen, dann setzen:</div>
+    <div id="phBtns"></div>
+    <button id="bSetPh">📍 hier setzen</button>
+    <div class="rng">
+      <button id="bIn" title="Analyse ab hier">[ Start</button>
+      <button id="bOut" title="Analyse bis hier">Ende ]</button>
+      <button id="bClr" title="Bereich löschen">✕</button>
+    </div>
+  </div>
+  <div style="padding:0 12px">
+    <div id="korr">
+      <div style="display:flex;justify-content:space-between;align-items:center"><b>✏️ Korrektur zeigen</b><button id="kAnim" style="padding:5px 10px">▶︎ Ist → Soll</button></div>
+      <div class="ends"><span>Ist</span><span>Soll</span></div>
+      <label><span>Alles</span><input type="range" min="0" max="100" value="0" data-g="all"><span>0 %</span></label>
+      <label><span>Kopf &amp; Rumpf</span><input type="range" min="0" max="100" value="0" data-g="tr"><span>0 %</span></label>
+      <label><span style="color:#3ec1ff">Schwungbein</span><input type="range" min="0" max="100" value="0" data-g="sw"><span>0 %</span></label>
+      <label><span style="color:#ff8a00">Sprungbein</span><input type="range" min="0" max="100" value="0" data-g="st"><span>0 %</span></label>
+      <label><span>Arm vorn/oben</span><input type="range" min="0" max="100" value="0" data-g="armSt"><span>0 %</span></label>
+      <label><span>Arm hinten</span><input type="range" min="0" max="100" value="0" data-g="armSw"><span>0 %</span></label>
+      <div class="small">Weiße Figur = Haltung mit Korrektur, Pfeile zeigen die nötige Bewegung.</div>
+    </div>
+  </div>
   <aside id="panel">
     <h2 id="phTitle">–</h2>
-    <div id="cue">Nach der Analyse eine Phase unten antippen.</div>
+    <div id="cue">Nach der Analyse eine Phase antippen.</div>
     <div id="mets"></div>
+
     <div class="row"><span class="small">Sprungbein:</span>
       <button id="bLegL">links</button><button id="bLegR">rechts</button></div>
     <div class="row"><span class="small">Laufrichtung:</span><span id="dirTxt" class="small">–</span><button id="bDir" style="padding:4px 9px">⇄</button></div>
     <div id="toa" class="met" style="display:none"></div>
     <p class="small">Richtwerte für den Schrittsprung (Kinder/Jugend), angelehnt an gängige Leichtathletik-Fachliteratur und DLV-Lehrmaterial. Es sind Orientierungswerte, keine Normen – kleine Abweichungen sind normal.</p>
   </aside>
+  </div>
 </div>
 
-<footer>
-  <div id="phases">
-    <span class="small">Phase:</span>
-    <span id="phBtns"></span>
-    <button id="bSetPh" title="Aktuelles Bild als diese Phase festlegen">📍 hier setzen</button>
-    <span class="sp" style="flex:1"></span>
-    <button id="bIn" title="Analyse ab hier">[ Start</button>
-    <button id="bOut" title="Analyse bis hier">Ende ]</button>
-    <button id="bClr" title="Bereich löschen">✕</button>
-  </div>
-  <div id="ctrl">
-    <button id="bPrev">◀︎ 1</button>
-    <button id="bPlay">▶︎</button>
-    <button id="bNext">1 ▶︎</button>
-    <select id="speed"><option value="0.1">0,1×</option><option value="0.25" selected>0,25×</option><option value="0.5">0,5×</option><option value="1">1×</option></select>
-    <div id="tl"><div id="range"></div><input id="seek" type="range" min="0" max="1000" value="0"><div id="marks"></div></div>
-    <span id="tlabel">0,00 s</span>
-  </div>
-</footer>
+
 </div>
 
 <div id="rec">
@@ -239,7 +268,7 @@ let pose = null, poseCx = -1, poseReady = false;
 const S = {
   frames: [], fps: 60, t0: 0, dir: 1, stance: 'L', lens: null,
   phase: {}, active: 'absprung', idx: 0, inT: null, outT: null,
-  show: {skel:true, tpl:true, ang:true, path:true, ref:true}, pt: {}, man: {}, cancel: false, toa: null, vidName: ''
+  show: {skel:true, tpl:true, ang:true, path:true, ref:true, korr:false}, mix: {tr:0, sw:0, st:0, armSt:0, armSw:0}, pt: {}, man: {}, cancel: false, toa: null, vidName: ''
 };
 
 /* ================= Geometrie ================= */
@@ -271,10 +300,10 @@ function skelFromLm(lm) {
   return s;
 }
 // Schablone mit den Körpermaßen des Kindes bauen
-function buildTemplate(ph, det, L = S.lens) {
+function buildTemplate(ph, det, L = S.lens, anchor = 'hip') {
   if (!L || !det) return null;
   const a = ph.seg, t = {};
-  if (ph.anchor === 'ankle') {
+  if (anchor === 'ankle') {
     t.stA = det.stA;
     t.stK = add(t.stA, vec(a.stSh), -L.sh);
     t.H = add(t.stK, vec(a.stTh), -L.th);
@@ -401,6 +430,7 @@ async function analyze() {
   if (!vid.videoWidth) return;
   vid.pause();
   S.cancel = false;
+  S.show.ref = false; document.querySelector('#tog button[data-k="ref"]').classList.remove('on'); drawRef();
   $('#prog').style.display = 'flex'; $('#progBar').style.width = '0'; $('#progTxt').textContent = 'Lade Modell …';
   try { await ensurePose(); } catch (e) { $('#prog').style.display = 'none'; alert('Modell konnte nicht geladen werden: ' + e.message); return; }
   const W = vid.videoWidth, H = vid.videoHeight, k = Math.min(1, 720 / Math.max(W, H));
@@ -537,6 +567,7 @@ function resize() {
   draw();
 }
 window.addEventListener('resize', resize);
+if (window.ResizeObserver) new ResizeObserver(() => { resize(); updateUI(); }).observe(document.querySelector('#stage'));
 function curFrame() { return S.frames[S.idx] || null; }
 function phaseObj() { return TEMPLATE.phases.find(p => p.id === S.active); }
 function devColor(d, tol) { const a = Math.abs(d); return a <= tol ? '#5dd39e' : a <= 2 * tol ? '#ff8a00' : '#ff4d5e'; }
@@ -549,7 +580,7 @@ function drawRef() {
   if (c.width !== W * d) { c.width = W * d; c.height = H * d; }
   const x = c.getContext('2d'); x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, W, H);
   const L = { th: 1, sh: 1, tr: 1.2, ua: 0.62, fa: 0.58 };
-  const t = buildTemplate(ph, { stA: P(0, 0), H: P(0, 0) }, L);
+  const t = buildTemplate(ph, { stA: P(0, 0), H: P(0, 0) }, L, ph.anchor);
   const pts = Object.values(t); pts.push(add(t.N, P(0, -1), 0.25));
   const minX = Math.min(...pts.map(p => p.x)), maxX = Math.max(...pts.map(p => p.x)), minY = Math.min(...pts.map(p => p.y)), maxY = Math.max(...pts.map(p => p.y));
   const ground = ph.anchor === 'ankle' ? t.stA.y : Math.max(maxY + (ph.id === 'flug' ? 1.0 : 0.15), t.stA.y);
@@ -583,7 +614,10 @@ function render(c, map, lw) {
     c.strokeStyle = 'rgba(62,193,255,.75)'; c.lineWidth = 2.5 * lw; c.setLineDash([]); c.stroke();
   }
   if (!det) { label(c, map(P(20 / view.k, 60 / view.k)), 'keine Person erkannt', '#fff', lw); return; }
-  const tpl = S.show.tpl && ph ? buildTemplate(ph, det) : null;
+  const near = !ph || S.phase[ph.id] == null || Math.abs(S.idx - S.phase[ph.id]) <= 3;
+  const tplRef = ph ? buildTemplate(ph, det) : null;           // für Korrektur immer
+  const tpl = S.show.tpl && near ? tplRef : null;
+  if (S.show.tpl && !near && ph) label(c, map(add(det.S, P(0, -1), S.lens.tr * 0.9)), 'Vorlage „' + ph.name + '“ nur am Pin', PH_COL[ph.id], lw);
   // Vorlage
   if (tpl) {
     c.lineCap = 'round'; c.setLineDash([10 * lw, 7 * lw]);
@@ -623,6 +657,42 @@ function render(c, map, lw) {
     label(c, map(det.swK), Math.round(kSw) + '°', '#3ec1ff', lw, 14);
     label(c, map(mid(det.H, det.S)), 'Rumpf ' + (tr >= 0 ? '+' : '') + Math.round(tr) + '°', '#fff', lw, 14);
   }
+  if (S.show.korr && tplRef) drawKorr(c, map, lw, det, tplRef);
+}
+// Korrektur: Ist-Winkel jedes Segments in Richtung Soll verschieben (Körpermaße des Kindes, Hüfte fest)
+const KGROUP = { tr:'tr', stTh:'st', stSh:'st', swTh:'sw', swSh:'sw', stUa:'armSt', stFa:'armSt', swUa:'armSw', swFa:'armSw' };
+function korrSkel(det, tpl) {
+  const L = S.lens, A = {};
+  for (const [k, a, b, up] of SEGS) { const ist = segAng(det[a], det[b], up), soll = segAng(tpl[a], tpl[b], up); A[k] = ist + wrap(soll - ist) * S.mix[KGROUP[k]] / 100; }
+  const nIst = segAng(det.S, det.N, true), nSoll = A.tr + 12, k = {};
+  k.H = det.H;
+  k.stK = add(k.H, vec(A.stTh), L.th); k.stA = add(k.stK, vec(A.stSh), L.sh);
+  k.swK = add(k.H, vec(A.swTh), L.th); k.swA = add(k.swK, vec(A.swSh), L.sh);
+  k.stH = k.swH = k.H;
+  k.S = add(k.H, vec(A.tr, true), L.tr);
+  k.N = add(k.S, vec(nIst + wrap(nSoll - nIst) * S.mix.tr / 100, true), Math.max(dist(det.S, det.N), L.tr * 0.35));
+  k.stE = add(k.S, vec(A.stUa), L.ua); k.stW = add(k.stE, vec(A.stFa), L.fa);
+  k.swE = add(k.S, vec(A.swUa), L.ua); k.swW = add(k.swE, vec(A.swFa), L.fa);
+  return k;
+}
+function arrow(c, a, b, col, lw) {
+  const d = dist(a, b); if (d < 10 * lw) return;
+  const ang = Math.atan2(b.y - a.y, b.x - a.x), h = 11 * lw;
+  c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.strokeStyle = col; c.lineWidth = 3 * lw; c.setLineDash([]); c.stroke();
+  c.beginPath(); c.moveTo(b.x, b.y); c.lineTo(b.x - h * Math.cos(ang - .45), b.y - h * Math.sin(ang - .45)); c.lineTo(b.x - h * Math.cos(ang + .45), b.y - h * Math.sin(ang + .45)); c.closePath(); c.fillStyle = col; c.fill();
+}
+function drawKorr(c, map, lw, det, tpl) {
+  if (!Object.values(S.mix).some(v => v > 0)) return;
+  const k = korrSkel(det, tpl);
+  c.lineCap = 'round';
+  for (const [key, a, b] of SEGS) {
+    const A = map(k[a]), B = map(k[b]), w = (key.endsWith('Ua') || key.endsWith('Fa') ? 5 : 7.5) * lw;
+    c.beginPath(); c.moveTo(A.x, A.y); c.lineTo(B.x, B.y);
+    c.strokeStyle = 'rgba(0,0,0,.6)'; c.lineWidth = w + 4 * lw; c.stroke();
+    c.strokeStyle = '#f4fdff'; c.lineWidth = w; c.stroke();
+  }
+  const hd = map(k.N), sh = map(k.S); c.beginPath(); c.arc(hd.x, hd.y, Math.max(8 * lw, dist(hd, sh) * 0.4), 0, 7); c.strokeStyle = '#f4fdff'; c.lineWidth = 3.5 * lw; c.stroke();
+  for (const j of ['stK', 'stA', 'swK', 'swA', 'stW', 'swW', 'N', 'S']) arrow(c, map(det[j]), map(k[j]), '#7ef0ff', lw);
 }
 function label(c, p, txt, col, lw, dx = 0) {
   c.font = `600 ${14 * lw}px -apple-system,system-ui,sans-serif`;
@@ -670,10 +740,13 @@ function updateUI() {
   const box = $('#phBtns'); box.innerHTML = '';
   for (const ph of TEMPLATE.phases) {
     const b = document.createElement('button'), tt = phT(ph.id), set = tt != null;
+    b.style.setProperty('--pc', PH_COL[ph.id]);
     b.innerHTML = `<span class="dot" style="background:${set ? PH_COL[ph.id] : 'transparent'};color:${PH_COL[ph.id]}"></span>${ph.name}<span class="tm">${set ? fmtT(tt) : '–'}</span>`;
-    b.classList.toggle('on', S.active === ph.id); b.classList.toggle('set', !!set);
+    b.classList.toggle('on', S.active === ph.id); b.classList.toggle('set', set);
     b.addEventListener('click', () => gotoPhase(ph.id)); box.appendChild(b);
   }
+  const sp = $('#bSetPh'), ap = phaseObj();
+  sp.style.background = PH_COL[S.active]; sp.textContent = '📍 ' + (ap ? ap.name : '') + ' hier setzen';
   const m = $('#marks'); m.innerHTML = '';
   if (S.frames.length > 1 || vid.duration) for (const ph of TEMPLATE.phases) if (phT(ph.id) != null) {
     const s = document.createElement('span'); s.className = 'pin' + (S.active === ph.id ? ' act' : '');
@@ -709,6 +782,8 @@ async function gotoIdx(i) {
   if (!S.frames.length) return;
   S.idx = Math.max(0, Math.min(S.frames.length - 1, i));
   $('#seek').value = S.idx; $('#tlabel').textContent = fmtT(S.frames[S.idx].t);
+  const hit = TEMPLATE.phases.find(ph => S.phase[ph.id] === S.idx);
+  if (hit && hit.id !== S.active) { S.active = hit.id; updateUI(); }
   await seek(S.frames[S.idx].t); draw();
 }
 function gotoPhase(id) {
@@ -765,7 +840,26 @@ $('#bLegL').onclick = () => { S.stance = 'L'; draw(); };
 $('#bLegR').onclick = () => { S.stance = 'R'; draw(); };
 $('#bDir').onclick = () => { S.dir *= -1; if (S.toa != null) S.toa = -S.toa; draw(); };
 $('#bHelp').onclick = () => $('#help').showModal();
-for (const b of document.querySelectorAll('#tog button[data-k]')) b.addEventListener('click', () => { const k = b.dataset.k; S.show[k] = !S.show[k]; b.classList.toggle('on', S.show[k]); draw(); });
+for (const b of document.querySelectorAll('#tog button[data-k]')) b.addEventListener('click', () => {
+  const k = b.dataset.k; S.show[k] = !S.show[k]; b.classList.toggle('on', S.show[k]);
+  if (k === 'korr') { $('#korr').style.display = S.show.korr ? 'block' : 'none'; if (S.show.korr) $('#korr').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); if (S.show.korr && !S.frames.length) toast('Korrektur geht nach der Analyse'); }
+  draw();
+});
+function setMix(g, v) {
+  const groups = g === 'all' ? Object.keys(S.mix) : [g];
+  for (const x of groups) S.mix[x] = v;
+  for (const inp of document.querySelectorAll('#korr input')) {
+    const gg = inp.dataset.g, val = gg === 'all' ? Math.round(Object.values(S.mix).reduce((a, b) => a + b, 0) / 5) : S.mix[gg];
+    inp.value = val; inp.nextElementSibling.textContent = val + ' %';
+  }
+  draw();
+}
+for (const inp of document.querySelectorAll('#korr input')) inp.addEventListener('input', () => setMix(inp.dataset.g, +inp.value));
+$('#kAnim').onclick = () => {
+  const t0 = performance.now(), dur = 1800;
+  const step = now => { const f = Math.min(1, (now - t0) / dur), e = f < .5 ? 2 * f * f : 1 - (-2 * f + 2) ** 2 / 2; setMix('all', Math.round(e * 100)); if (f < 1) requestAnimationFrame(step); };
+  setMix('all', 0); requestAnimationFrame(step);
+};
 $('#bSnap').onclick = async () => {
   if (!vid.videoWidth) return;
   const c = document.createElement('canvas'); c.width = vid.videoWidth; c.height = vid.videoHeight;

@@ -113,7 +113,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
     <option value="0">schnell</option><option value="1" selected>genau</option>
   </select>
   <span class="sp"></span>
-  <span id="status">Lade Modell …</span><span id="ver" class="small" style="opacity:.6">v6 · 25.11.</span>
+  <span id="status">Lade Modell …</span><span id="ver" class="small" style="opacity:.6">v7 · 25.11.</span>
   <button id="bHelp">?</button>
 </header>
 
@@ -183,7 +183,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
     <div id="mets"></div>
 
     <div class="row"><span class="small">Sprungbein:</span>
-      <button id="bLegL">links</button><button id="bLegR">rechts</button></div>
+      <button id="bLegA">auto</button><button id="bLegL">links</button><button id="bLegR">rechts</button></div>
     <div class="row"><span class="small">Laufrichtung:</span><span id="dirTxt" class="small">–</span><button id="bDir" style="padding:4px 9px">⇄</button></div>
     <div id="toa" class="met" style="display:none"></div>
     <p class="small">Richtwerte für den Schrittsprung (Kinder/Jugend), angelehnt an gängige Leichtathletik-Fachliteratur und DLV-Lehrmaterial. Es sind Orientierungswerte, keine Normen – kleine Abweichungen sind normal.</p>
@@ -279,7 +279,7 @@ let pose = null, poseCx = -1, poseReady = false;
 const S = {
   frames: [], fps: 60, t0: 0, dir: 1, stance: 'L', lens: null,
   phase: {}, active: 'absprung', idx: 0, inT: null, outT: null,
-  show: {skel:true, tpl:true, ang:true, path:true, ref:true, korr:false}, mix: {tr:0, head:0, swTh:0, swSh:0, stTh:0, stSh:0, stUa:0, stFa:0, swUa:0, swFa:0}, pt: {}, man: {}, cancel: false, toa: null, vidName: ''
+  show: {skel:true, tpl:true, ang:true, path:true, ref:true, korr:false}, mix: {tr:0, head:0, swTh:0, swSh:0, stTh:0, stSh:0, stUa:0, stFa:0, swUa:0, swFa:0}, pt: {}, man: {}, legAuto: true, cancel: false, toa: null, vidName: ''
 };
 
 /* ================= Geometrie ================= */
@@ -293,20 +293,33 @@ function wrap(d) { d = ((d + 180) % 360 + 360) % 360 - 180; return d; }
 function vec(a, up) { const r = rad(a); return up ? P(Math.sin(r) * S.dir, -Math.cos(r)) : P(Math.sin(r) * S.dir, Math.cos(r)); }
 const add = (a, v, l) => P(a.x + v.x * l, a.y + v.y * l);
 
-function skelFromLm(lm) {
+// Sprung-/Schwungbein je Phase über die Lage bestimmen (Links/Rechts der Erkennung ist von der Seite oft vertauscht)
+function sideFor(lm, phId) {
+  let st = S.stance === 'L' ? 'l' : 'r', arm = st;
+  if (!S.legAuto || !phId) return { st, arm };
+  const fx = (k) => lm[I[k]][0] * S.dir, fy = (k) => Math.max(lm[I[k + 'a']][1], lm[I[k + 'f']][1], lm[I[k + 'he']][1]);
+  if (phId === 'aufsatz' || phId === 'stuetz' || phId === 'absprung') st = fy('l') >= fy('r') ? 'l' : 'r';   // Fuß am Boden
+  else if (phId === 'flug') st = fx('lk') <= fx('rk') ? 'l' : 'r';                                         // hinteres Knie
+  const wf = { l: fx('lw'), r: fx('rw') };
+  if (phId === 'absprung' || phId === 'flug') arm = wf.l >= wf.r ? 'l' : 'r';      // Arm vorn/oben = Sprungbein-Seite
+  else if (phId === 'aufsatz') arm = wf.l <= wf.r ? 'l' : 'r';                     // beim Aufsatz ist dieser Arm hinten
+  else arm = st;
+  return { st, arm };
+}
+function skelFromLm(lm, phId) {
   if (!lm) return null;
   const g = i => P(lm[i][0], lm[i][1]), vis = i => lm[i][2];
-  const st = S.stance === 'L' ? 'l' : 'r', sw = S.stance === 'L' ? 'r' : 'l';
+  const sd = sideFor(lm, phId), st = sd.st, sw = st === 'l' ? 'r' : 'l', ast = sd.arm, asw = ast === 'l' ? 'r' : 'l';
   const s = {
     H: mid(g(I.lh), g(I.rh)), S: mid(g(I.ls), g(I.rs)), N: g(I.nose),
     stH: g(I[st+'h']), stK: g(I[st+'k']), stA: g(I[st+'a']), stF: g(I[st+'f']), stHe: g(I[st+'he']),
     swH: g(I[sw+'h']), swK: g(I[sw+'k']), swA: g(I[sw+'a']), swF: g(I[sw+'f']), swHe: g(I[sw+'he']),
-    stE: g(I[st+'e']), stW: g(I[st+'w']), swE: g(I[sw+'e']), swW: g(I[sw+'w']),
+    stE: g(I[ast+'e']), stW: g(I[ast+'w']), swE: g(I[asw+'e']), swW: g(I[asw+'w']),
     stSh: g(I[st+'s']), swSh: g(I[sw+'s'])
   };
   s.vis = {
     stH: vis(I[st+'h']), stK: vis(I[st+'k']), stA: vis(I[st+'a']), swH: vis(I[sw+'h']), swK: vis(I[sw+'k']), swA: vis(I[sw+'a']),
-    stE: vis(I[st+'e']), stW: vis(I[st+'w']), swE: vis(I[sw+'e']), swW: vis(I[sw+'w']), H: 1, S: 1
+    stE: vis(I[ast+'e']), stW: vis(I[ast+'w']), swE: vis(I[asw+'e']), swW: vis(I[asw+'w']), H: 1, S: 1
   };
   return s;
 }
@@ -551,23 +564,33 @@ function autoPhases() {
   // Aufsatz = erster Bodenkontakt des Sprungfußes vor dem Lösen (max. 0,3 s zurück)
   const st = S.stance === 'L' ? ['la', 'lf', 'lhe'] : ['ra', 'rf', 'rhe'];
   const footY = i => F[i].lm ? Math.max(...st.map(k => F[i].lm[I[k]][1])) : NaN;
-  let cs = to; const minI = Math.max(0, to - Math.round(0.3 * S.fps));
-  while (cs - 1 >= minI && !(ground - footY(cs - 1) > thr * 0.6)) cs--;
+  let cs = to; const minI = Math.max(0, to - Math.max(Math.round(0.3 * S.fps), Math.round(0.4 * (fe - fs)))); // auch für Zeitlupen-Videos
+  const gLoc = footY(to); // Boden am Balken = Höhe des Sprungfußes beim Lösen
+  while (cs - 1 >= minI && !(gLoc - footY(cs - 1) > thr * 0.5)) cs--;
   S.phase.aufsatz = cs;
   S.phase.absprung = to;
   let mi = cs, mk = 999;
-  for (let i = cs; i <= to; i++) { const sk = skelFromLm(F[i].lm); if (sk) { const kk = joint(sk.stH, sk.stK, sk.stA); if (kk < mk) { mk = kk; mi = i; } } }
+  for (let i = cs; i <= to; i++) { const sk = skelFromLm(F[i].lm, 'stuetz'); if (sk) { const kk = joint(sk.stH, sk.stK, sk.stA); if (kk < mk) { mk = kk; mi = i; } } }
   S.phase.stuetz = (mi === cs || mi === to) && to - cs >= 2 ? Math.round((cs + to) / 2) : mi;
   S.phase.flug = Math.round(fs + 0.35 * (fe - fs));
   S.phase.landung = fe;
-  // Absprungwinkel aus der Hüftbahn (erstes Drittel der Flugphase)
-  const pts = []; for (let i = fs; i <= fs + Math.max(3, Math.round((fe - fs) / 3)) && i <= fe; i++) if (F[i].lm) { const h = skelFromLm(F[i].lm).H; pts.push(h); }
-  if (pts.length >= 3) {
-    const n = pts.length, mx = pts.reduce((a, p) => a + p.x, 0) / n, my = pts.reduce((a, p) => a + p.y, 0) / n;
-    let sxx = 0, sxy = 0; for (const p of pts) { sxx += (p.x - mx) ** 2; sxy += (p.x - mx) * (p.y - my); }
-    S.toa = sxx > 0 ? deg(Math.atan(-sxy / sxx * S.dir)) : null;
-    if (S.toa != null && Math.abs(S.toa) > 60) S.toa = null;
-  } else S.toa = null;
+  // Absprungwinkel: Parabel durch die Hüftbahn (erste 70 % des Flugs), Steigung direkt beim Lösen
+  const pts = []; for (let i = fs; i <= fs + Math.round(0.7 * (fe - fs)); i++) if (F[i].lm) { const h = skelFromLm(F[i].lm).H; pts.push([i - fs, h.x, h.y]); }
+  S.toa = null;
+  if (pts.length >= 4) {
+    // x(i) linear, y(i) quadratisch – kleinste Quadrate
+    const n = pts.length, sum = f => pts.reduce((a, p) => a + f(p), 0);
+    const S0 = n, S1 = sum(p => p[0]), S2 = sum(p => p[0] ** 2), S3 = sum(p => p[0] ** 3), S4 = sum(p => p[0] ** 4);
+    const vx = (n * sum(p => p[0] * p[1]) - S1 * sum(p => p[1])) / (n * S2 - S1 * S1);
+    const Y0 = sum(p => p[2]), Y1 = sum(p => p[0] * p[2]), Y2 = sum(p => p[0] ** 2 * p[2]);
+    const det3 = (m) => m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+    const M = [[S4, S3, S2], [S3, S2, S1], [S2, S1, S0]], D = det3(M);
+    const bCoef = D ? det3([[S4, Y2, S2], [S3, Y1, S1], [S2, Y0, S0]]) / D : null; // lineares Glied = Steigung bei i=0
+    if (bCoef != null && Math.abs(vx) > 1e-6) {
+      const ang = deg(Math.atan2(-bCoef, vx * S.dir));
+      if (Math.abs(ang) < 60) S.toa = ang;
+    }
+  }
 }
 
 /* ================= Zeichnen ================= */
@@ -629,7 +652,7 @@ function draw() {
 }
 function render(c, map, lw) {
   const fr = curFrame(); if (!fr) return;
-  const det = skelFromLm(fr.lm), ph = phaseObj();
+  const ph = phaseObj(), det = skelFromLm(fr.lm, ph && ph.id);
   // Hüftbahn
   if (S.show.path) {
     c.beginPath(); let first = true;
@@ -730,7 +753,7 @@ function updatePanel() {
   $('#phTitle').textContent = ph ? ph.name + (phT(ph.id) != null ? ' · ' + fmtT(phT(ph.id)) : ' (nicht gesetzt)') : '–';
   $('#cue').textContent = ph ? ph.cue : 'Phase antippen oder zu einem Pin spulen – dort erscheinen Vorlage und Werte automatisch.';
   const box = $('#mets'); box.innerHTML = '';
-  const det = fr && skelFromLm(fr.lm);
+  const det = fr && skelFromLm(fr.lm, ph && ph.id);
   if (ph && det && S.lens) {
     const tpl = buildTemplate(ph, det);
     for (const id of ph.metrics) {
@@ -750,7 +773,7 @@ function updatePanel() {
   } else toa.style.display = 'none';
   $('#dirTxt').textContent = S.dir > 0 ? 'nach rechts →' : '← nach links';
   $('#dL').classList.toggle('on', S.dir < 0); $('#dR').classList.toggle('on', S.dir > 0);
-  $('#bLegL').classList.toggle('on', S.stance === 'L'); $('#bLegR').classList.toggle('on', S.stance === 'R');
+  $('#bLegA').classList.toggle('on', S.legAuto); $('#bLegL').classList.toggle('on', !S.legAuto && S.stance === 'L'); $('#bLegR').classList.toggle('on', !S.legAuto && S.stance === 'R');
   $('#legend').style.display = S.show.tpl && S.frames.length ? 'block' : 'none';
 }
 const PH_COL = { aufsatz:'#ff8a00', stuetz:'#c77dff', absprung:'#ff4d5e', flug:'#3ec1ff', landung:'#5dd39e' };
@@ -872,8 +895,9 @@ $('#bIn').onclick = () => { if (!vid.duration) return; S.inT = S.frames.length ?
 $('#bOut').onclick = () => { if (!vid.duration) return; S.outT = S.frames.length ? S.frames[S.idx].t : vid.currentTime; if (S.inT != null && S.inT >= S.outT) S.inT = null; updateUI(); toast('Ende ] gesetzt · ' + fmtT(S.outT) + (S.frames.length ? ' – gilt bei neuer Analyse' : '')); };
 $('#bClr').onclick = () => { S.inT = S.outT = null; updateUI(); toast('Bereich gelöscht – ganzes Video'); };
 window.addEventListener('resize', () => updateUI());
-$('#bLegL').onclick = () => { S.stance = 'L'; draw(); };
-$('#bLegR').onclick = () => { S.stance = 'R'; draw(); };
+$('#bLegL').onclick = () => { S.stance = 'L'; S.legAuto = false; draw(); };
+$('#bLegR').onclick = () => { S.stance = 'R'; S.legAuto = false; draw(); };
+$('#bLegA').onclick = () => { S.legAuto = true; draw(); };
 function setDir(d) { if (d === S.dir) return; S.dir = d; if (S.toa != null) S.toa = -S.toa; try { localStorage.setItem('ws_dir', d); } catch (e) {} draw(); }
 $('#bDir').onclick = () => setDir(-S.dir);
 $('#dL').onclick = () => setDir(-1); $('#dR').onclick = () => setDir(1);

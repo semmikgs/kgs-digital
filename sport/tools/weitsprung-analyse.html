@@ -113,7 +113,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
     <option value="0">schnell</option><option value="1" selected>genau</option>
   </select>
   <span class="sp"></span>
-  <span id="status">Lade Modell …</span><span id="ver" class="small" style="opacity:.6">v5 · 25.11.</span>
+  <span id="status">Lade Modell …</span><span id="ver" class="small" style="opacity:.6">v6 · 25.11.</span>
   <button id="bHelp">?</button>
 </header>
 
@@ -151,6 +151,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
     <div class="small">Phase wählen, im Video die passende Stelle suchen, dann setzen:</div>
     <div id="phBtns"></div>
     <button id="bSetPh">📍 hier setzen</button>
+    <button id="bAna2" class="pri" style="width:100%;display:none;padding:12px">🔍 Alle Phasen gesetzt – jetzt analysieren</button>
     <div class="rng"><span class="small" style="align-self:center">Laufrichtung:</span><button id="dL">← links</button><button id="dR">rechts →</button></div>
     <div class="rng">
       <button id="bIn" title="Analyse ab hier">[ Start</button>
@@ -475,7 +476,8 @@ async function analyze() {
   const hit = S.frames.filter(f => f.lm).length;
   setStatus(`${fmtT(a)}–${fmtT(b)} analysiert (${how}) · Person in ${hit}/${S.frames.length} Bildern`);
   updateUI();
-  gotoPhase(S.phase.absprung != null ? 'absprung' : S.active);
+  S.active = null; updateUI();
+  if (S.phase.absprung != null) gotoIdx(S.phase.absprung); else draw();
 }
 $('#bAna').onclick = analyze;
 $('#bCancel').onclick = () => { S.cancel = true; };
@@ -580,7 +582,16 @@ function resize() {
 window.addEventListener('resize', resize);
 if (window.ResizeObserver) new ResizeObserver(() => { resize(); updateUI(); }).observe(document.querySelector('#stage'));
 function curFrame() { return S.frames[S.idx] || null; }
-function phaseObj() { return TEMPLATE.phases.find(p => p.id === S.active); }
+// aktive Phase (angetippt) – sonst automatisch die Phase, deren Pin gerade erreicht ist
+function phaseObj() {
+  if (S.active) return TEMPLATE.phases.find(p => p.id === S.active);
+  let best = null, bd = 1e9;
+  for (const ph of TEMPLATE.phases) {
+    const d = S.frames.length ? (S.phase[ph.id] != null ? Math.abs(S.idx - S.phase[ph.id]) : 1e9) : (S.pt[ph.id] != null ? Math.abs(vid.currentTime - S.pt[ph.id]) * 60 : 1e9);
+    if (d <= 3 && d < bd) { bd = d; best = ph; }
+  }
+  return best;
+}
 function devColor(d, tol) { const a = Math.abs(d); return a <= tol ? '#5dd39e' : a <= 2 * tol ? '#ff8a00' : '#ff4d5e'; }
 
 function drawRef() {
@@ -717,7 +728,7 @@ function label(c, p, txt, col, lw, dx = 0) {
 function updatePanel() {
   const ph = phaseObj(), fr = curFrame();
   $('#phTitle').textContent = ph ? ph.name + (phT(ph.id) != null ? ' · ' + fmtT(phT(ph.id)) : ' (nicht gesetzt)') : '–';
-  $('#cue').textContent = ph ? ph.cue : '';
+  $('#cue').textContent = ph ? ph.cue : 'Phase antippen oder zu einem Pin spulen – dort erscheinen Vorlage und Werte automatisch.';
   const box = $('#mets'); box.innerHTML = '';
   const det = fr && skelFromLm(fr.lm);
   if (ph && det && S.lens) {
@@ -758,8 +769,13 @@ function updateUI() {
     b.classList.toggle('on', S.active === ph.id); b.classList.toggle('set', set);
     b.addEventListener('click', () => gotoPhase(ph.id)); box.appendChild(b);
   }
-  const sp = $('#bSetPh'), ap = phaseObj();
-  sp.style.background = PH_COL[S.active]; sp.textContent = '📍 ' + (ap ? ap.name : '') + ' hier setzen';
+  const sp = $('#bSetPh'), ap = S.active ? phaseObj() : null;
+  const allSet = TEMPLATE.phases.every(p => phT(p.id) != null);
+  const showAna = !S.active && allSet && !S.frames.length && !!vid.duration;
+  $('#bAna2').style.display = showAna ? 'block' : 'none';
+  sp.style.display = showAna ? 'none' : 'block';
+  sp.style.background = ap ? PH_COL[ap.id] : 'var(--card)'; sp.style.color = ap ? '#04121d' : 'var(--mut)';
+  sp.textContent = ap ? '📍 ' + ap.name + ' hier setzen' : 'Phase oben wählen, um einen Pin zu setzen';
   const m = $('#marks'); m.innerHTML = '';
   if (S.frames.length > 1 || vid.duration) for (const ph of TEMPLATE.phases) if (phT(ph.id) != null) {
     const s = document.createElement('span'); s.className = 'pin' + (S.active === ph.id ? ' act' : '');
@@ -795,11 +811,10 @@ async function gotoIdx(i) {
   if (!S.frames.length) return;
   S.idx = Math.max(0, Math.min(S.frames.length - 1, i));
   $('#seek').value = S.idx; $('#tlabel').textContent = fmtT(S.frames[S.idx].t);
-  const hit = TEMPLATE.phases.find(ph => S.phase[ph.id] === S.idx);
-  if (hit && hit.id !== S.active) { S.active = hit.id; updateUI(); }
   await seek(S.frames[S.idx].t); draw();
 }
 function gotoPhase(id) {
+  if (S.active === id) { S.active = null; updateUI(); draw(); return; }  // nochmal tippen = abwählen
   S.active = id; updateUI();
   if (S.frames.length && S.phase[id] != null) gotoIdx(S.phase[id]);
   else if (!S.frames.length && S.pt[id] != null && vid.duration) { seek(S.pt[id]).then(() => { $('#tlabel').textContent = fmtT(vid.currentTime); $('#seek').value = 1000 * vid.currentTime / vid.duration; draw(); }); }
@@ -839,15 +854,19 @@ $('#bPlay').onclick = () => {
   loop();
 };
 $('#speed').onchange = e => { vid.playbackRate = +e.target.value; };
+$('#bAna2').onclick = () => analyze();
 $('#bSetPh').onclick = () => {
   if (!vid.duration) return;
+  if (!S.active) { toast('Erst eine Phase antippen'); return; }
   let t;
   if (S.frames.length) { S.phase[S.active] = S.idx; t = S.frames[S.idx].t; } else t = vid.currentTime;
   S.pt[S.active] = t; S.man[S.active] = true;
-  const done = phaseObj().name, i = TEMPLATE.phases.findIndex(p => p.id === S.active), nx = TEMPLATE.phases[i + 1];
-  if (nx) S.active = nx.id;
+  const done = phaseObj().name, i = TEMPLATE.phases.findIndex(p => p.id === S.active);
+  // weiter zur nächsten noch offenen Phase, sonst abwählen
+  const nx = TEMPLATE.phases.slice(i + 1).find(p => phT(p.id) == null) || TEMPLATE.phases.find(p => phT(p.id) == null);
+  S.active = nx ? nx.id : null;
   updateUI(); draw();
-  toast('📍 ' + done + ' gesetzt · ' + fmtT(t) + (nx ? ' → weiter: ' + nx.name : ' ✓ alle Phasen'));
+  toast('📍 ' + done + ' gesetzt · ' + fmtT(t) + (nx ? ' → weiter: ' + nx.name : ' ✓ alle Phasen gesetzt'));
 };
 $('#bIn').onclick = () => { if (!vid.duration) return; S.inT = S.frames.length ? S.frames[S.idx].t : vid.currentTime; if (S.outT != null && S.outT <= S.inT) S.outT = null; updateUI(); toast('[ Start gesetzt · ' + fmtT(S.inT) + (S.frames.length ? ' – gilt bei neuer Analyse' : '')); };
 $('#bOut').onclick = () => { if (!vid.duration) return; S.outT = S.frames.length ? S.frames[S.idx].t : vid.currentTime; if (S.inT != null && S.inT >= S.outT) S.inT = null; updateUI(); toast('Ende ] gesetzt · ' + fmtT(S.outT) + (S.frames.length ? ' – gilt bei neuer Analyse' : '')); };

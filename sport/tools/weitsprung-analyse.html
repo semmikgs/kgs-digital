@@ -34,9 +34,13 @@ header .sp{flex:1}
 #bSetPh{width:100%;font-weight:700;color:#04121d;border:0;padding:11px}
 .rng{display:flex;gap:6px;margin-top:8px}
 #korr{display:none;margin-top:10px!important;padding:8px 10px;background:var(--card);border-radius:12px;margin:8px 0;border:1px solid #7ef0ff}
-#korr label{display:grid;grid-template-columns:118px 1fr 40px;align-items:center;gap:6px;font-size:13px;margin:7px 0}
+#korr label{display:grid;grid-template-columns:150px 1fr 42px;align-items:center;gap:6px;font-size:13px;margin:7px 0}
 #korr input{width:100%}
-#korr .ends{display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-left:124px;margin-right:46px}
+#korr .sub{display:none;margin-left:10px;font-size:12px}
+#korr .sub.open{display:block}
+#korr .sub label{margin:4px 0;color:var(--mut)}
+#korr .more{padding:0 7px;font-size:12px;border-radius:7px;margin-left:4px}
+#korr .ends{display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-left:156px;margin-right:48px}
 #stage{position:relative;background:#000;min-height:0;overflow:hidden}
 #vid{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 #ov{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -77,7 +81,7 @@ header .sp{flex:1}
 #marks .pin.act{outline:2px solid #fff;z-index:2}
 #range{position:absolute;bottom:9px;height:16px;background:rgba(62,193,255,.22);border-left:3px solid var(--acc);border-right:3px solid var(--acc);pointer-events:none;display:none;border-radius:3px}
 #phBadge{position:absolute;top:8px;right:8px;z-index:3;padding:6px 12px;border-radius:10px;font-weight:700;color:#04121d;display:none;box-shadow:0 2px 6px rgba(0,0,0,.5)}
-#ref{position:absolute;right:8px;bottom:8px;width:170px;height:210px;z-index:3;background:rgba(14,22,33,.82);border:1px solid var(--line);border-radius:12px;pointer-events:none}
+#ref{position:absolute;right:8px;bottom:8px;width:170px;height:210px;z-index:3;background:rgba(14,22,33,.82);border:1px solid var(--line);border-radius:12px;cursor:pointer}
 #toast{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);background:rgba(14,22,33,.92);border:1px solid var(--acc);border-radius:12px;padding:10px 18px;font-weight:600;z-index:6;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
 #toast.show{opacity:1}
 #tlabel{min-width:92px;text-align:right;font-variant-numeric:tabular-nums;color:var(--mut);font-size:13px}
@@ -109,7 +113,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
     <option value="0">schnell</option><option value="1" selected>genau</option>
   </select>
   <span class="sp"></span>
-  <span id="status">Lade Modell …</span><span id="ver" class="small" style="opacity:.6">v4 · 25.11.</span>
+  <span id="status">Lade Modell …</span><span id="ver" class="small" style="opacity:.6">v5 · 25.11.</span>
   <button id="bHelp">?</button>
 </header>
 
@@ -147,6 +151,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
     <div class="small">Phase wählen, im Video die passende Stelle suchen, dann setzen:</div>
     <div id="phBtns"></div>
     <button id="bSetPh">📍 hier setzen</button>
+    <div class="rng"><span class="small" style="align-self:center">Laufrichtung:</span><button id="dL">← links</button><button id="dR">rechts →</button></div>
     <div class="rng">
       <button id="bIn" title="Analyse ab hier">[ Start</button>
       <button id="bOut" title="Analyse bis hier">Ende ]</button>
@@ -157,12 +162,17 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
     <div id="korr">
       <div style="display:flex;justify-content:space-between;align-items:center"><b>✏️ Korrektur zeigen</b><button id="kAnim" style="padding:5px 10px">▶︎ Ist → Soll</button></div>
       <div class="ends"><span>Ist</span><span>Soll</span></div>
-      <label><span>Alles</span><input type="range" min="0" max="100" value="0" data-g="all"><span>0 %</span></label>
-      <label><span>Kopf &amp; Rumpf</span><input type="range" min="0" max="100" value="0" data-g="tr"><span>0 %</span></label>
-      <label><span style="color:#3ec1ff">Schwungbein</span><input type="range" min="0" max="100" value="0" data-g="sw"><span>0 %</span></label>
-      <label><span style="color:#ff8a00">Sprungbein</span><input type="range" min="0" max="100" value="0" data-g="st"><span>0 %</span></label>
-      <label><span>Arm vorn/oben</span><input type="range" min="0" max="100" value="0" data-g="armSt"><span>0 %</span></label>
-      <label><span>Arm hinten</span><input type="range" min="0" max="100" value="0" data-g="armSw"><span>0 %</span></label>
+      <label><span><b>Alles</b></span><input type="range" min="0" max="100" value="0" data-g="all"><span>0 %</span></label>
+      <label class="grp"><span>Kopf &amp; Rumpf <button class="more" data-sub="gTr">⋯</button></span><input type="range" min="0" max="100" value="0" data-g="gTr"><span>0 %</span></label>
+      <div class="sub" id="sub_gTr"><label><span>– Rumpf</span><input type="range" min="0" max="100" value="0" data-g="tr"><span>0 %</span></label><label><span>– Kopf</span><input type="range" min="0" max="100" value="0" data-g="head"><span>0 %</span></label></div>
+      <label class="grp"><span style="color:#3ec1ff">Schwungbein <button class="more" data-sub="gSw">⋯</button></span><input type="range" min="0" max="100" value="0" data-g="gSw"><span>0 %</span></label>
+      <div class="sub" id="sub_gSw"><label><span>– Oberschenkel</span><input type="range" min="0" max="100" value="0" data-g="swTh"><span>0 %</span></label><label><span>– Unterschenkel</span><input type="range" min="0" max="100" value="0" data-g="swSh"><span>0 %</span></label></div>
+      <label class="grp"><span style="color:#ff8a00">Sprungbein <button class="more" data-sub="gSt">⋯</button></span><input type="range" min="0" max="100" value="0" data-g="gSt"><span>0 %</span></label>
+      <div class="sub" id="sub_gSt"><label><span>– Oberschenkel</span><input type="range" min="0" max="100" value="0" data-g="stTh"><span>0 %</span></label><label><span>– Unterschenkel</span><input type="range" min="0" max="100" value="0" data-g="stSh"><span>0 %</span></label></div>
+      <label class="grp"><span>Arm vorn/oben <button class="more" data-sub="gASt">⋯</button></span><input type="range" min="0" max="100" value="0" data-g="gASt"><span>0 %</span></label>
+      <div class="sub" id="sub_gASt"><label><span>– Oberarm</span><input type="range" min="0" max="100" value="0" data-g="stUa"><span>0 %</span></label><label><span>– Unterarm</span><input type="range" min="0" max="100" value="0" data-g="stFa"><span>0 %</span></label></div>
+      <label class="grp"><span>Arm hinten <button class="more" data-sub="gASw">⋯</button></span><input type="range" min="0" max="100" value="0" data-g="gASw"><span>0 %</span></label>
+      <div class="sub" id="sub_gASw"><label><span>– Oberarm</span><input type="range" min="0" max="100" value="0" data-g="swUa"><span>0 %</span></label><label><span>– Unterarm</span><input type="range" min="0" max="100" value="0" data-g="swFa"><span>0 %</span></label></div>
       <div class="small">Weiße Figur = Haltung mit Korrektur, Pfeile zeigen die nötige Bewegung.</div>
     </div>
   </div>
@@ -237,7 +247,7 @@ const TEMPLATE = {
       metrics:['schwungOS','knieSt','rumpf'],
       cue:'Schrittsprung: Schwungbein-Oberschenkel bleibt etwa waagerecht, das Sprungbein hängt gebeugt hinten. Oberkörper aufrecht – nicht nach vorn kippen.' },
     { id:'landung', name:'Landung', anchor:'hip',
-      seg:{stTh:80, stSh:68, swTh:80, swSh:68, tr:30, stUa:60, stFa:85, swUa:60, swFa:85},
+      seg:{stTh:74, stSh:64, swTh:86, swSh:72, tr:30, stUa:60, stFa:85, swUa:60, swFa:85},
       metrics:['beineVorn','knieSw','rumpf'],
       cue:'Beide Beine weit nach vorn bringen, fast gestreckt. Oberkörper und Arme nach vorn, damit man nach dem Aufkommen nicht nach hinten fällt.' }
   ],
@@ -268,7 +278,7 @@ let pose = null, poseCx = -1, poseReady = false;
 const S = {
   frames: [], fps: 60, t0: 0, dir: 1, stance: 'L', lens: null,
   phase: {}, active: 'absprung', idx: 0, inT: null, outT: null,
-  show: {skel:true, tpl:true, ang:true, path:true, ref:true, korr:false}, mix: {tr:0, sw:0, st:0, armSt:0, armSw:0}, pt: {}, man: {}, cancel: false, toa: null, vidName: ''
+  show: {skel:true, tpl:true, ang:true, path:true, ref:true, korr:false}, mix: {tr:0, head:0, swTh:0, swSh:0, stTh:0, stSh:0, stUa:0, stFa:0, swUa:0, swFa:0}, pt: {}, man: {}, cancel: false, toa: null, vidName: ''
 };
 
 /* ================= Geometrie ================= */
@@ -503,6 +513,7 @@ function postProcessCore() {
   // 2) Laufrichtung
   const hx = f => (f.lm[I.lh][0] + f.lm[I.rh][0]) / 2;
   S.dir = hx(V[V.length - 1]) >= hx(V[0]) ? 1 : -1;
+  try { localStorage.setItem('ws_dir', S.dir); } catch (e) {}
   // 3) Körpermaße (Median)
   const med = a => { a = a.filter(x => isFinite(x)).sort((x, y) => x - y); return a.length ? a[a.length >> 1] : 0; };
   const seg = (a, b) => V.filter(f => f.lm[a][2] > .5 && f.lm[b][2] > .5).map(f => Math.hypot(f.lm[a][0] - f.lm[b][0], f.lm[a][1] - f.lm[b][1]));
@@ -585,7 +596,7 @@ function drawRef() {
   const minX = Math.min(...pts.map(p => p.x)), maxX = Math.max(...pts.map(p => p.x)), minY = Math.min(...pts.map(p => p.y)), maxY = Math.max(...pts.map(p => p.y));
   const ground = ph.anchor === 'ankle' ? t.stA.y : Math.max(maxY + (ph.id === 'flug' ? 1.0 : 0.15), t.stA.y);
   const k = Math.min((W - 24) / (maxX - minX), (H - 52) / (ground - minY));
-  const ox = W / 2 - (minX + maxX) / 2 * k, oy = H - 14 - ground * k;
+  const ox = W / 2 - (minX + maxX) / 2 * k, oy = H - 18 - ground * k;
   const m = p => P(ox + p.x * k, oy + p.y * k);
   x.font = '600 13px -apple-system,system-ui,sans-serif'; x.fillStyle = PH_COL[ph.id]; x.fillText('Soll: ' + ph.name, 10, 18);
   x.strokeStyle = 'rgba(255,255,255,.35)'; x.lineWidth = 2; x.beginPath(); x.moveTo(8, oy + ground * k); x.lineTo(W - 8, oy + ground * k); x.stroke();
@@ -597,6 +608,7 @@ function drawRef() {
   }
   const hd = m(t.N); x.beginPath(); x.arc(hd.x, hd.y, 0.22 * k, 0, 7); x.strokeStyle = '#ffd166'; x.lineWidth = 3; x.stroke();
   x.font = '11px -apple-system,system-ui,sans-serif'; x.fillStyle = '#ff8a00'; x.fillText('Sprungbein', 10, 33); x.fillStyle = '#3ec1ff'; x.fillText('Schwungbein', 80, 33);
+  x.fillStyle = 'rgba(255,255,255,.55)'; x.fillText((S.dir > 0 ? 'läuft nach rechts →' : '← läuft nach links') + '  (tippen ⇄)', 10, H - 3);
 }
 function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, ov.width, ov.height);
@@ -660,17 +672,17 @@ function render(c, map, lw) {
   if (S.show.korr && tplRef) drawKorr(c, map, lw, det, tplRef);
 }
 // Korrektur: Ist-Winkel jedes Segments in Richtung Soll verschieben (Körpermaße des Kindes, Hüfte fest)
-const KGROUP = { tr:'tr', stTh:'st', stSh:'st', swTh:'sw', swSh:'sw', stUa:'armSt', stFa:'armSt', swUa:'armSw', swFa:'armSw' };
+const KGROUP = { gTr:['tr','head'], gSw:['swTh','swSh'], gSt:['stTh','stSh'], gASt:['stUa','stFa'], gASw:['swUa','swFa'] };
 function korrSkel(det, tpl) {
   const L = S.lens, A = {};
-  for (const [k, a, b, up] of SEGS) { const ist = segAng(det[a], det[b], up), soll = segAng(tpl[a], tpl[b], up); A[k] = ist + wrap(soll - ist) * S.mix[KGROUP[k]] / 100; }
-  const nIst = segAng(det.S, det.N, true), nSoll = A.tr + 12, k = {};
+  for (const [k, a, b, up] of SEGS) { const ist = segAng(det[a], det[b], up), soll = segAng(tpl[a], tpl[b], up); A[k] = ist + wrap(soll - ist) * S.mix[k] / 100; }
+  const nIst = segAng(det.S, det.N, true), k = {};
   k.H = det.H;
   k.stK = add(k.H, vec(A.stTh), L.th); k.stA = add(k.stK, vec(A.stSh), L.sh);
   k.swK = add(k.H, vec(A.swTh), L.th); k.swA = add(k.swK, vec(A.swSh), L.sh);
   k.stH = k.swH = k.H;
   k.S = add(k.H, vec(A.tr, true), L.tr);
-  k.N = add(k.S, vec(nIst + wrap(nSoll - nIst) * S.mix.tr / 100, true), Math.max(dist(det.S, det.N), L.tr * 0.35));
+  const rIst = wrap(nIst - segAng(det.H, det.S, true)); k.N = add(k.S, vec(A.tr + rIst + wrap(12 - rIst) * S.mix.head / 100, true), Math.max(dist(det.S, det.N), L.tr * 0.35));
   k.stE = add(k.S, vec(A.stUa), L.ua); k.stW = add(k.stE, vec(A.stFa), L.fa);
   k.swE = add(k.S, vec(A.swUa), L.ua); k.swW = add(k.swE, vec(A.swFa), L.fa);
   return k;
@@ -726,6 +738,7 @@ function updatePanel() {
     toa.innerHTML = `<span>Absprungwinkel (Hüftbahn)</span><span class="v">${Math.round(S.toa)}°</span><span class="t">Richtwert 18–24° · aus den ersten Flugbildern geschätzt</span>`;
   } else toa.style.display = 'none';
   $('#dirTxt').textContent = S.dir > 0 ? 'nach rechts →' : '← nach links';
+  $('#dL').classList.toggle('on', S.dir < 0); $('#dR').classList.toggle('on', S.dir > 0);
   $('#bLegL').classList.toggle('on', S.stance === 'L'); $('#bLegR').classList.toggle('on', S.stance === 'R');
   $('#legend').style.display = S.show.tpl && S.frames.length ? 'block' : 'none';
 }
@@ -809,13 +822,14 @@ $('#bPlay').onclick = () => {
   if (!vid.paused) { vid.pause(); return; }
   vid.playbackRate = +$('#speed').value;
   if (S.frames.length && S.idx >= S.frames.length - 1) gotoIdx(0);
+  vid.loop = !S.frames.length;
   vid.play();
   const loop = () => {
     if (vid.paused) { $('#bPlay').textContent = '▶︎'; return; }
     $('#bPlay').textContent = '❚❚';
     if (S.frames.length) {
       const i = Math.round((vid.currentTime - S.t0) * S.fps);
-      if (i >= S.frames.length) { vid.pause(); S.idx = S.frames.length - 1; }
+      if (i >= S.frames.length) { S.idx = 0; vid.currentTime = S.frames[0].t; }
       else S.idx = Math.max(0, i);
       $('#seek').value = S.idx; draw();
     } else $('#seek').value = 1000 * vid.currentTime / vid.duration;
@@ -830,7 +844,10 @@ $('#bSetPh').onclick = () => {
   let t;
   if (S.frames.length) { S.phase[S.active] = S.idx; t = S.frames[S.idx].t; } else t = vid.currentTime;
   S.pt[S.active] = t; S.man[S.active] = true;
-  updateUI(); draw(); toast('📍 ' + phaseObj().name + ' gesetzt · ' + fmtT(t) + (S.frames.length ? '' : ' – Analyse läuft dann nur um die Pins'));
+  const done = phaseObj().name, i = TEMPLATE.phases.findIndex(p => p.id === S.active), nx = TEMPLATE.phases[i + 1];
+  if (nx) S.active = nx.id;
+  updateUI(); draw();
+  toast('📍 ' + done + ' gesetzt · ' + fmtT(t) + (nx ? ' → weiter: ' + nx.name : ' ✓ alle Phasen'));
 };
 $('#bIn').onclick = () => { if (!vid.duration) return; S.inT = S.frames.length ? S.frames[S.idx].t : vid.currentTime; if (S.outT != null && S.outT <= S.inT) S.outT = null; updateUI(); toast('[ Start gesetzt · ' + fmtT(S.inT) + (S.frames.length ? ' – gilt bei neuer Analyse' : '')); };
 $('#bOut').onclick = () => { if (!vid.duration) return; S.outT = S.frames.length ? S.frames[S.idx].t : vid.currentTime; if (S.inT != null && S.inT >= S.outT) S.inT = null; updateUI(); toast('Ende ] gesetzt · ' + fmtT(S.outT) + (S.frames.length ? ' – gilt bei neuer Analyse' : '')); };
@@ -838,7 +855,11 @@ $('#bClr').onclick = () => { S.inT = S.outT = null; updateUI(); toast('Bereich g
 window.addEventListener('resize', () => updateUI());
 $('#bLegL').onclick = () => { S.stance = 'L'; draw(); };
 $('#bLegR').onclick = () => { S.stance = 'R'; draw(); };
-$('#bDir').onclick = () => { S.dir *= -1; if (S.toa != null) S.toa = -S.toa; draw(); };
+function setDir(d) { if (d === S.dir) return; S.dir = d; if (S.toa != null) S.toa = -S.toa; try { localStorage.setItem('ws_dir', d); } catch (e) {} draw(); }
+$('#bDir').onclick = () => setDir(-S.dir);
+$('#dL').onclick = () => setDir(-1); $('#dR').onclick = () => setDir(1);
+$('#ref').addEventListener('click', () => setDir(-S.dir));
+try { const d = +localStorage.getItem('ws_dir'); if (d === 1 || d === -1) S.dir = d; } catch (e) {}
 $('#bHelp').onclick = () => $('#help').showModal();
 for (const b of document.querySelectorAll('#tog button[data-k]')) b.addEventListener('click', () => {
   const k = b.dataset.k; S.show[k] = !S.show[k]; b.classList.toggle('on', S.show[k]);
@@ -846,14 +867,16 @@ for (const b of document.querySelectorAll('#tog button[data-k]')) b.addEventList
   draw();
 });
 function setMix(g, v) {
-  const groups = g === 'all' ? Object.keys(S.mix) : [g];
-  for (const x of groups) S.mix[x] = v;
+  const keys = g === 'all' ? Object.keys(S.mix) : KGROUP[g] || [g];
+  for (const x of keys) S.mix[x] = v;
+  const avg = ks => Math.round(ks.reduce((a, k) => a + S.mix[k], 0) / ks.length);
   for (const inp of document.querySelectorAll('#korr input')) {
-    const gg = inp.dataset.g, val = gg === 'all' ? Math.round(Object.values(S.mix).reduce((a, b) => a + b, 0) / 5) : S.mix[gg];
+    const gg = inp.dataset.g, val = gg === 'all' ? avg(Object.keys(S.mix)) : KGROUP[gg] ? avg(KGROUP[gg]) : S.mix[gg];
     inp.value = val; inp.nextElementSibling.textContent = val + ' %';
   }
   draw();
 }
+for (const m of document.querySelectorAll('#korr .more')) m.addEventListener('click', e => { e.preventDefault(); const sub = $('#sub_' + m.dataset.sub); sub.classList.toggle('open'); m.textContent = sub.classList.contains('open') ? '▾' : '⋯'; });
 for (const inp of document.querySelectorAll('#korr input')) inp.addEventListener('input', () => setMix(inp.dataset.g, +inp.value));
 $('#kAnim').onclick = () => {
   const t0 = performance.now(), dur = 1800;

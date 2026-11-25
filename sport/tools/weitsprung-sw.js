@@ -1,8 +1,8 @@
 // Offline-Cache für die Technik-Analyse (alles lokal, kein Netz nötig)
-const CACHE = 'weitsprung-analyse-v2';
+const CACHE = 'weitsprung-analyse-v3';
 const FILES = [
   'weitsprung-analyse.html',
-  'lib/mediapipe-pose/pose.js', 'lib/mediapipe-pose/pose_web.binarypb',
+  'lib/mediapipe-pose/pose.js', 'lib/jspdf.umd.min.js', 'lib/mediapipe-pose/pose_web.binarypb',
   'lib/mediapipe-pose/pose_solution_packed_assets.data', 'lib/mediapipe-pose/pose_solution_packed_assets_loader.js',
   'lib/mediapipe-pose/pose_solution_simd_wasm_bin.js', 'lib/mediapipe-pose/pose_solution_simd_wasm_bin.wasm',
   'lib/mediapipe-pose/pose_solution_wasm_bin.js', 'lib/mediapipe-pose/pose_solution_wasm_bin.wasm',

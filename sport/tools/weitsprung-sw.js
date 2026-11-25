@@ -1,5 +1,5 @@
 // Offline-Cache für die Technik-Analyse (alles lokal, kein Netz nötig)
-const CACHE = 'weitsprung-analyse-v1';
+const CACHE = 'weitsprung-analyse-v2';
 const FILES = [
   'weitsprung-analyse.html',
   'lib/mediapipe-pose/pose.js', 'lib/mediapipe-pose/pose_web.binarypb',
@@ -22,7 +22,7 @@ self.addEventListener('fetch', e => {
   if (!f) return; // andere Seiten (z. B. Sprint-Zeitmessung) nicht anfassen
   if (f === 'weitsprung-analyse.html') {
     // Seite: erst Netz (für Updates), ohne Netz aus dem Cache
-    e.respondWith(fetch(e.request).then(r => { const cp = r.clone(); caches.open(CACHE).then(c => c.put(f, cp)); return r; }).catch(() => caches.match(f)));
+    e.respondWith(fetch(e.request, { cache: 'no-store' }).then(r => { const cp = r.clone(); caches.open(CACHE).then(c => c.put(f, cp)); return r; }).catch(() => caches.match(f)));
   } else {
     e.respondWith(caches.match(f).then(r => r || fetch(e.request)));
   }

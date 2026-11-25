@@ -65,6 +65,7 @@ footer{border-top:1px solid var(--line);padding:8px 12px;display:grid;gap:8px}
 #marks .pin.act{outline:2px solid #fff;z-index:2}
 #range{position:absolute;bottom:9px;height:16px;background:rgba(62,193,255,.22);border-left:3px solid var(--acc);border-right:3px solid var(--acc);pointer-events:none;display:none;border-radius:3px}
 #phBadge{position:absolute;top:8px;right:8px;z-index:3;padding:6px 12px;border-radius:10px;font-weight:700;color:#04121d;display:none;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+#ref{position:absolute;right:8px;bottom:8px;width:170px;height:210px;z-index:3;background:rgba(14,22,33,.82);border:1px solid var(--line);border-radius:12px;pointer-events:none}
 #toast{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);background:rgba(14,22,33,.92);border:1px solid var(--acc);border-radius:12px;padding:10px 18px;font-weight:600;z-index:6;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
 #toast.show{opacity:1}
 #tlabel{min-width:92px;text-align:right;font-variant-numeric:tabular-nums;color:var(--mut);font-size:13px}
@@ -96,7 +97,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
     <option value="0">schnell</option><option value="1" selected>genau</option>
   </select>
   <span class="sp"></span>
-  <span id="status">Lade Modell …</span>
+  <span id="status">Lade Modell …</span><span id="ver" class="small" style="opacity:.6">v3 · 25.11.</span>
   <button id="bHelp">?</button>
 </header>
 
@@ -109,9 +110,10 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
       <button data-k="tpl" class="on">Vorlage</button>
       <button data-k="ang" class="on">Winkel</button>
       <button data-k="path" class="on">Hüftbahn</button>
+      <button data-k="ref" class="on">Soll-Figur</button>
       <button id="bSnap">📷 Bild</button>
     </div>
-    <div id="phBadge"></div><div id="toast"></div>
+    <canvas id="ref" width="170" height="210"></canvas><div id="phBadge"></div><div id="toast"></div>
     <div id="legend"><i style="background:var(--tpl)"></i>Vorlage<i style="background:var(--ok)"></i>passt<i style="background:var(--warn)"></i>knapp<i style="background:var(--bad)"></i>abweichend</div>
     <div id="empty"><div>
       <p><b>So filmen:</b> iPad quer auf ein Stativ, <b>seitlich</b> zur Anlaufbahn, ca. 6–10 m entfernt, auf Höhe des Absprungbalkens. Im Bild sollten die letzten 2–3 Anlaufschritte, der Absprung und die Landung zu sehen sein – die ganze Person von Kopf bis Fuß.</p>
@@ -237,7 +239,7 @@ let pose = null, poseCx = -1, poseReady = false;
 const S = {
   frames: [], fps: 60, t0: 0, dir: 1, stance: 'L', lens: null,
   phase: {}, active: 'absprung', idx: 0, inT: null, outT: null,
-  show: {skel:true, tpl:true, ang:true, path:true}, cancel: false, toa: null, vidName: ''
+  show: {skel:true, tpl:true, ang:true, path:true, ref:true}, pt: {}, man: {}, cancel: false, toa: null, vidName: ''
 };
 
 /* ================= Geometrie ================= */
@@ -269,15 +271,15 @@ function skelFromLm(lm) {
   return s;
 }
 // Schablone mit den Körpermaßen des Kindes bauen
-function buildTemplate(ph, det) {
-  const L = S.lens; if (!L || !det) return null;
+function buildTemplate(ph, det, L = S.lens) {
+  if (!L || !det) return null;
   const a = ph.seg, t = {};
   if (ph.anchor === 'ankle') {
     t.stA = det.stA;
     t.stK = add(t.stA, vec(a.stSh), -L.sh);
     t.H = add(t.stK, vec(a.stTh), -L.th);
   } else {
-    t.H = det.H;
+    t.H = det.H || det.stA;
     t.stK = add(t.H, vec(a.stTh), L.th);
     t.stA = add(t.stK, vec(a.stSh), L.sh);
   }
@@ -310,7 +312,7 @@ async function detect(img) { lastRes = null; await pose.send({ image: img }); re
 
 /* ================= Video laden / Aufnahme ================= */
 function loadVideo(src, name) {
-  S.frames = []; S.phase = {}; S.inT = S.outT = null; S.toa = null; S.lens = null;
+  S.frames = []; S.phase = {}; S.pt = {}; S.man = {}; S.inT = S.outT = null; S.toa = null; S.lens = null;
   S.vidName = name || 'aufnahme';
   vid.src = src; vid.load();
   vid.onloadedmetadata = () => {
@@ -369,51 +371,83 @@ function seek(t) {
     if (Math.abs(vid.currentTime - t) < 1e-4 && vid.readyState >= 2) return res();
     const done = () => {
       vid.removeEventListener('seeked', done);
-      if (vid.requestVideoFrameCallback) { let r = false; const go = () => { if (!r) { r = true; res(); } }; vid.requestVideoFrameCallback(go); setTimeout(go, 150); }
+      if (vid.requestVideoFrameCallback) { let r = false; const go = () => { if (!r) { r = true; res(); } }; vid.requestVideoFrameCallback(go); setTimeout(go, 80); }
       else setTimeout(res, 40);
     };
     vid.addEventListener('seeked', done);
     vid.currentTime = t;
   });
 }
+async function runPass(t0, t1, fps, label, part) {
+  const W = vid.videoWidth, H = vid.videoHeight;
+  const n = Math.max(1, Math.floor((t1 - t0) * fps) + 1), out = [];
+  const tStart = performance.now();
+  if (pose.reset) pose.reset();
+  for (let i = 0; i < n && !S.cancel; i++) {
+    const t = t0 + i / fps;
+    await seek(t);
+    wctx.drawImage(vid, 0, 0, work.width, work.height);
+    const r = await detect(work);
+    out.push({ t, lm: r ? r.map(p => [p.x * W, p.y * H, p.visibility ?? 1]) : null });
+    if (i % 2 === 0) {
+      const el = (performance.now() - tStart) / 1000, rest = el / (i + 1) * (n - i - 1);
+      $('#progBar').style.width = (100 * (i + 1) / n) + '%';
+      $('#progTxt').textContent = `${label} · Bild ${i + 1}/${n} · noch ca. ${Math.ceil(rest)} s`;
+    }
+  }
+  return out;
+}
 async function analyze() {
   if (!vid.videoWidth) return;
   vid.pause();
   S.cancel = false;
-  $('#prog').style.display = 'flex'; $('#progTxt').textContent = 'Lade Modell …';
+  $('#prog').style.display = 'flex'; $('#progBar').style.width = '0'; $('#progTxt').textContent = 'Lade Modell …';
   try { await ensurePose(); } catch (e) { $('#prog').style.display = 'none'; alert('Modell konnte nicht geladen werden: ' + e.message); return; }
-  if (pose.reset) pose.reset();
-  const W = vid.videoWidth, H = vid.videoHeight, k = Math.min(1, 960 / Math.max(W, H));
+  const W = vid.videoWidth, H = vid.videoHeight, k = Math.min(1, 720 / Math.max(W, H));
   work.width = Math.round(W * k); work.height = Math.round(H * k);
-  S.fps = +$('#rate').value;
-  const t0 = S.inT ?? 0, t1 = Math.min(S.outT ?? vid.duration, vid.duration - 0.001);
-  const n = Math.max(1, Math.floor((t1 - t0) * S.fps) + 1);
-  S.t0 = t0; S.frames = [];
-  const tStart = performance.now();
-  for (let i = 0; i < n && !S.cancel; i++) {
-    const t = t0 + i / S.fps;
-    await seek(t);
-    wctx.drawImage(vid, 0, 0, work.width, work.height);
-    const r = await detect(work);
-    S.frames.push({ t, lm: r ? r.map(p => [p.x * W, p.y * H, p.visibility ?? 1]) : null });
-    if (i % 3 === 0) {
-      const el = (performance.now() - tStart) / 1000, rest = el / (i + 1) * (n - i - 1);
-      $('#progBar').style.width = (100 * (i + 1) / n) + '%';
-      $('#progTxt').textContent = `Analysiere Bild ${i + 1} / ${n} · noch ca. ${Math.ceil(rest)} s`;
+  const fps = +$('#rate').value, dur = vid.duration - 0.001;
+  let a = Math.max(0, S.inT ?? 0), b = Math.min(S.outT ?? dur, dur);
+  // vorhandene Pins (auch aus früherer Analyse) als Zeiten merken
+  const pins = Object.keys(S.man).map(id => S.pt[id]).filter(t => t != null && t >= a - 0.01 && t <= b + 0.01);
+  let how;
+  if (pins.length) {
+    const lo = Math.min(...pins), hi = Math.max(...pins), pad = pins.length === 1 ? 0.8 : 0.4;
+    a = Math.max(a, lo - pad); b = Math.min(b, hi + pad); how = 'um die gesetzten Pins';
+  } else if (b - a > 1.6) {
+    // Schritt 1: grob den Sprung suchen
+    S.fps = 15; S.t0 = a; S.frames = await runPass(a, b, 15, 'Schritt 1/2: Sprung suchen', 1);
+    if (!S.cancel) {
+      postProcess();
+      if (S.phase.aufsatz != null && S.phase.landung != null) {
+        const ta = S.frames[S.phase.aufsatz].t, tl = S.frames[S.phase.landung].t;
+        a = Math.max(a, ta - 0.6); b = Math.min(b, tl + 0.35); how = 'automatisch um den Sprung';
+      } else how = 'ganzer Bereich (Sprung nicht sicher gefunden)';
     }
+    for (const id in S.pt) if (!S.man[id]) delete S.pt[id];
+  } else how = 'ganzer Bereich';
+  if (!S.cancel) {
+    S.fps = fps; S.t0 = a;
+    S.frames = await runPass(a, b, fps, (pins.length || how === 'ganzer Bereich' ? 'Analyse' : 'Schritt 2/2: Feinanalyse'), 2);
   }
   $('#prog').style.display = 'none';
   if (S.cancel) { setStatus('Analyse abgebrochen'); }
   postProcess();
   const hit = S.frames.filter(f => f.lm).length;
-  setStatus(`${hit} von ${S.frames.length} Bildern mit Person erkannt`);
+  setStatus(`${fmtT(a)}–${fmtT(b)} analysiert (${how}) · Person in ${hit}/${S.frames.length} Bildern`);
+  updateUI();
   gotoPhase(S.phase.absprung != null ? 'absprung' : S.active);
 }
 $('#bAna').onclick = analyze;
 $('#bCancel').onclick = () => { S.cancel = true; };
 
-function postProcess() {
-  const F = S.frames;
+function keepManual() { // gesetzte Pins haben Vorrang vor der Automatik
+  if (!S.frames.length) return;
+  for (const id in S.man) if (S.pt[id] != null) S.phase[id] = nearIdx(S.pt[id]);
+  for (const id in S.phase) S.pt[id] = S.frames[S.phase[id]].t;
+}
+function postProcess() { postProcessCore(); keepManual(); }
+function postProcessCore() {
+  const F = S.frames; S.phase = {};
   // 1) Links/Rechts-Vertauschungen der Erkennung korrigieren
   const legPairs = [[I.lh, I.rh], [I.lk, I.rk], [I.la, I.ra], [I.lhe, I.rhe], [I.lf, I.rf]];
   const armPairs = [[I.ls, I.rs], [I.le, I.re], [I.lw, I.rw]];
@@ -507,11 +541,37 @@ function curFrame() { return S.frames[S.idx] || null; }
 function phaseObj() { return TEMPLATE.phases.find(p => p.id === S.active); }
 function devColor(d, tol) { const a = Math.abs(d); return a <= tol ? '#5dd39e' : a <= 2 * tol ? '#ff8a00' : '#ff4d5e'; }
 
+function drawRef() {
+  const c = $('#ref'), ph = phaseObj();
+  c.style.display = S.show.ref && ph && vid.src ? 'block' : 'none';
+  if (c.style.display === 'none') return;
+  const d = window.devicePixelRatio || 1, W = 170, H = 210;
+  if (c.width !== W * d) { c.width = W * d; c.height = H * d; }
+  const x = c.getContext('2d'); x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, W, H);
+  const L = { th: 1, sh: 1, tr: 1.2, ua: 0.62, fa: 0.58 };
+  const t = buildTemplate(ph, { stA: P(0, 0), H: P(0, 0) }, L);
+  const pts = Object.values(t); pts.push(add(t.N, P(0, -1), 0.25));
+  const minX = Math.min(...pts.map(p => p.x)), maxX = Math.max(...pts.map(p => p.x)), minY = Math.min(...pts.map(p => p.y)), maxY = Math.max(...pts.map(p => p.y));
+  const ground = ph.anchor === 'ankle' ? t.stA.y : Math.max(maxY + (ph.id === 'flug' ? 1.0 : 0.15), t.stA.y);
+  const k = Math.min((W - 24) / (maxX - minX), (H - 52) / (ground - minY));
+  const ox = W / 2 - (minX + maxX) / 2 * k, oy = H - 14 - ground * k;
+  const m = p => P(ox + p.x * k, oy + p.y * k);
+  x.font = '600 13px -apple-system,system-ui,sans-serif'; x.fillStyle = PH_COL[ph.id]; x.fillText('Soll: ' + ph.name, 10, 18);
+  x.strokeStyle = 'rgba(255,255,255,.35)'; x.lineWidth = 2; x.beginPath(); x.moveTo(8, oy + ground * k); x.lineTo(W - 8, oy + ground * k); x.stroke();
+  x.lineCap = 'round';
+  for (const [key, a, b] of SEGS) {
+    const A = m(t[a]), B = m(t[b]); x.beginPath(); x.moveTo(A.x, A.y); x.lineTo(B.x, B.y);
+    x.strokeStyle = key.startsWith('st') ? '#ff8a00' : key.startsWith('sw') ? '#3ec1ff' : '#ffd166';
+    x.lineWidth = key.endsWith('Ua') || key.endsWith('Fa') ? 3 : 5; x.stroke();
+  }
+  const hd = m(t.N); x.beginPath(); x.arc(hd.x, hd.y, 0.22 * k, 0, 7); x.strokeStyle = '#ffd166'; x.lineWidth = 3; x.stroke();
+  x.font = '11px -apple-system,system-ui,sans-serif'; x.fillStyle = '#ff8a00'; x.fillText('Sprungbein', 10, 33); x.fillStyle = '#3ec1ff'; x.fillText('Schwungbein', 80, 33);
+}
 function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, ov.width, ov.height);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   render(ctx, p => P(view.ox + p.x * view.k, view.oy + p.y * view.k), 1);
-  updatePanel(); updateBadge();
+  updatePanel(); updateBadge(); drawRef();
 }
 function render(c, map, lw) {
   const fr = curFrame(); if (!fr) return;
@@ -574,7 +634,7 @@ function label(c, p, txt, col, lw, dx = 0) {
 /* ================= Panel / Bedienung ================= */
 function updatePanel() {
   const ph = phaseObj(), fr = curFrame();
-  $('#phTitle').textContent = ph ? ph.name + (S.phase[ph.id] === S.idx ? '' : (S.phase[ph.id] != null ? ' (Vorlage)' : ' (nicht gesetzt)')) : '–';
+  $('#phTitle').textContent = ph ? ph.name + (phT(ph.id) != null ? ' · ' + fmtT(phT(ph.id)) : ' (nicht gesetzt)') : '–';
   $('#cue').textContent = ph ? ph.cue : '';
   const box = $('#mets'); box.innerHTML = '';
   const det = fr && skelFromLm(fr.lm);
@@ -609,16 +669,16 @@ function tPos(t) { // Zeit -> Anteil auf der Zeitleiste
 function updateUI() {
   const box = $('#phBtns'); box.innerHTML = '';
   for (const ph of TEMPLATE.phases) {
-    const b = document.createElement('button'), set = S.phase[ph.id] != null && S.frames[S.phase[ph.id]];
-    b.innerHTML = `<span class="dot" style="background:${set ? PH_COL[ph.id] : 'transparent'};color:${PH_COL[ph.id]}"></span>${ph.name}<span class="tm">${set ? fmtT(S.frames[S.phase[ph.id]].t) : '–'}</span>`;
+    const b = document.createElement('button'), tt = phT(ph.id), set = tt != null;
+    b.innerHTML = `<span class="dot" style="background:${set ? PH_COL[ph.id] : 'transparent'};color:${PH_COL[ph.id]}"></span>${ph.name}<span class="tm">${set ? fmtT(tt) : '–'}</span>`;
     b.classList.toggle('on', S.active === ph.id); b.classList.toggle('set', !!set);
     b.addEventListener('click', () => gotoPhase(ph.id)); box.appendChild(b);
   }
   const m = $('#marks'); m.innerHTML = '';
-  if (S.frames.length > 1) for (const ph of TEMPLATE.phases) if (S.phase[ph.id] != null) {
+  if (S.frames.length > 1 || vid.duration) for (const ph of TEMPLATE.phases) if (phT(ph.id) != null) {
     const s = document.createElement('span'); s.className = 'pin' + (S.active === ph.id ? ' act' : '');
     s.textContent = S.active === ph.id ? ph.name : PH_SHORT[ph.id]; s.title = ph.name; s.style.background = PH_COL[ph.id]; s.style.setProperty('--c', PH_COL[ph.id]);
-    s.style.left = (100 * S.phase[ph.id] / (S.frames.length - 1)) + '%';
+    s.style.left = (100 * tPos(phT(ph.id))) + '%';
     s.addEventListener('click', () => gotoPhase(ph.id)); m.appendChild(s);
   }
   // Pins, die sich überlappen, versetzt anordnen
@@ -640,7 +700,7 @@ function updateUI() {
   updateBadge();
 }
 function updateBadge() {
-  const bd = $('#phBadge'); const hit = TEMPLATE.phases.find(ph => S.frames.length && S.phase[ph.id] === S.idx);
+  const bd = $('#phBadge'); const hit = TEMPLATE.phases.find(ph => S.frames.length ? S.phase[ph.id] === S.idx : (S.pt[ph.id] != null && Math.abs(S.pt[ph.id] - vid.currentTime) < 0.009));
   if (hit) { bd.style.display = 'block'; bd.style.background = PH_COL[hit.id]; bd.textContent = '📍 ' + hit.name; } else bd.style.display = 'none';
 }
 let toastT = 0;
@@ -651,16 +711,24 @@ async function gotoIdx(i) {
   $('#seek').value = S.idx; $('#tlabel').textContent = fmtT(S.frames[S.idx].t);
   await seek(S.frames[S.idx].t); draw();
 }
-function gotoPhase(id) { S.active = id; updateUI(); if (S.phase[id] != null) gotoIdx(S.phase[id]); else draw(); }
+function gotoPhase(id) {
+  S.active = id; updateUI();
+  if (S.frames.length && S.phase[id] != null) gotoIdx(S.phase[id]);
+  else if (!S.frames.length && S.pt[id] != null && vid.duration) { seek(S.pt[id]).then(() => { $('#tlabel').textContent = fmtT(vid.currentTime); $('#seek').value = 1000 * vid.currentTime / vid.duration; draw(); }); }
+  else { draw(); if (vid.src) toast('Soll-Haltung „' + phaseObj().name + '“ im Video suchen, dann 📍 hier setzen'); }
+}
+function phT(id) { if (S.frames.length) return S.phase[id] != null && S.frames[S.phase[id]] ? S.frames[S.phase[id]].t : null; return S.pt[id] ?? null; }
+function nearIdx(t) { let b = 0; for (let i = 1; i < S.frames.length; i++) if (Math.abs(S.frames[i].t - t) < Math.abs(S.frames[b].t - t)) b = i; return b; }
 const fmtT = t => t.toFixed(2).replace('.', ',') + ' s';
 function setStatus(t) { $('#status').textContent = t; }
 
 $('#seek').oninput = e => {
   if (S.frames.length) gotoIdx(+e.target.value);
-  else if (vid.duration) { vid.currentTime = vid.duration * e.target.value / 1000; $('#tlabel').textContent = fmtT(vid.currentTime); }
+  else if (vid.duration) { vid.currentTime = vid.duration * e.target.value / 1000; $('#tlabel').textContent = fmtT(vid.currentTime); updateBadge(); }
 };
-$('#bPrev').onclick = () => S.frames.length ? gotoIdx(S.idx - 1) : (vid.currentTime -= 1 / 30);
-$('#bNext').onclick = () => S.frames.length ? gotoIdx(S.idx + 1) : (vid.currentTime += 1 / 30);
+function stepRaw(d) { if (!vid.duration) return; seek(Math.max(0, Math.min(vid.duration, vid.currentTime + d / 60))).then(() => { $('#tlabel').textContent = fmtT(vid.currentTime); $('#seek').value = 1000 * vid.currentTime / vid.duration; updateBadge(); }); }
+$('#bPrev').onclick = () => S.frames.length ? gotoIdx(S.idx - 1) : stepRaw(-1);
+$('#bNext').onclick = () => S.frames.length ? gotoIdx(S.idx + 1) : stepRaw(1);
 $('#bPlay').onclick = () => {
   if (!vid.src) return;
   if (!vid.paused) { vid.pause(); return; }
@@ -682,7 +750,13 @@ $('#bPlay').onclick = () => {
   loop();
 };
 $('#speed').onchange = e => { vid.playbackRate = +e.target.value; };
-$('#bSetPh').onclick = () => { if (!S.frames.length) { toast('Erst analysieren, dann Phasen setzen'); return; } S.phase[S.active] = S.idx; updateUI(); draw(); toast('📍 ' + phaseObj().name + ' gesetzt · ' + fmtT(S.frames[S.idx].t)); };
+$('#bSetPh').onclick = () => {
+  if (!vid.duration) return;
+  let t;
+  if (S.frames.length) { S.phase[S.active] = S.idx; t = S.frames[S.idx].t; } else t = vid.currentTime;
+  S.pt[S.active] = t; S.man[S.active] = true;
+  updateUI(); draw(); toast('📍 ' + phaseObj().name + ' gesetzt · ' + fmtT(t) + (S.frames.length ? '' : ' – Analyse läuft dann nur um die Pins'));
+};
 $('#bIn').onclick = () => { if (!vid.duration) return; S.inT = S.frames.length ? S.frames[S.idx].t : vid.currentTime; if (S.outT != null && S.outT <= S.inT) S.outT = null; updateUI(); toast('[ Start gesetzt · ' + fmtT(S.inT) + (S.frames.length ? ' – gilt bei neuer Analyse' : '')); };
 $('#bOut').onclick = () => { if (!vid.duration) return; S.outT = S.frames.length ? S.frames[S.idx].t : vid.currentTime; if (S.inT != null && S.inT >= S.outT) S.inT = null; updateUI(); toast('Ende ] gesetzt · ' + fmtT(S.outT) + (S.frames.length ? ' – gilt bei neuer Analyse' : '')); };
 $('#bClr').onclick = () => { S.inT = S.outT = null; updateUI(); toast('Bereich gelöscht – ganzes Video'); };

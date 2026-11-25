@@ -50,12 +50,23 @@ header .sp{flex:1}
 footer{border-top:1px solid var(--line);padding:8px 12px;display:grid;gap:8px}
 #phases{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 #phases button{padding:7px 12px}
-#phases button.set::after{content:" ●";color:var(--ok)}
+#phases button .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle;border:2px solid currentColor;opacity:.5}
+#phases button.set .dot{opacity:1;border-color:transparent}
+#phases button .tm{font-size:12px;color:var(--mut);margin-left:5px;font-variant-numeric:tabular-nums}
+#phases button.set .tm{color:var(--txt)}
+#bIn.on,#bOut.on{background:rgba(62,193,255,.18);border-color:var(--acc)}
+#bClr{display:none;padding:7px 10px}
 #ctrl{display:flex;gap:6px;align-items:center}
-#tl{position:relative;flex:1;height:34px}
-#seek{width:100%;height:34px;margin:0}
-#marks{position:absolute;left:0;right:0;top:0;height:6px;pointer-events:none}
-#marks span{position:absolute;top:0;width:3px;height:8px;background:var(--tpl);border-radius:2px;transform:translateX(-1px)}
+#tl{position:relative;flex:1;height:72px}
+#seek{position:absolute;left:0;right:0;bottom:0;width:100%;height:34px;margin:0}
+#marks{position:absolute;left:8px;right:8px;top:22px;height:24px;pointer-events:none}
+#marks .pin{position:absolute;top:0;transform:translateX(-50%);font-size:11px;font-weight:700;color:#04121d;padding:2px 6px;border-radius:6px;white-space:nowrap;pointer-events:auto;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.5)}
+#marks .pin::after{content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);border:5px solid transparent;border-top-color:inherit;border-top-color:var(--c)}
+#marks .pin.act{outline:2px solid #fff;z-index:2}
+#range{position:absolute;bottom:9px;height:16px;background:rgba(62,193,255,.22);border-left:3px solid var(--acc);border-right:3px solid var(--acc);pointer-events:none;display:none;border-radius:3px}
+#phBadge{position:absolute;top:8px;right:8px;z-index:3;padding:6px 12px;border-radius:10px;font-weight:700;color:#04121d;display:none;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+#toast{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);background:rgba(14,22,33,.92);border:1px solid var(--acc);border-radius:12px;padding:10px 18px;font-weight:600;z-index:6;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1}
 #tlabel{min-width:92px;text-align:right;font-variant-numeric:tabular-nums;color:var(--mut);font-size:13px}
 #rec{position:fixed;inset:0;background:#000;z-index:20;display:none}
 #rec video{width:100%;height:100%;object-fit:contain}
@@ -100,6 +111,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
       <button data-k="path" class="on">Hüftbahn</button>
       <button id="bSnap">📷 Bild</button>
     </div>
+    <div id="phBadge"></div><div id="toast"></div>
     <div id="legend"><i style="background:var(--tpl)"></i>Vorlage<i style="background:var(--ok)"></i>passt<i style="background:var(--warn)"></i>knapp<i style="background:var(--bad)"></i>abweichend</div>
     <div id="empty"><div>
       <p><b>So filmen:</b> iPad quer auf ein Stativ, <b>seitlich</b> zur Anlaufbahn, ca. 6–10 m entfernt, auf Höhe des Absprungbalkens. Im Bild sollten die letzten 2–3 Anlaufschritte, der Absprung und die Landung zu sehen sein – die ganze Person von Kopf bis Fuß.</p>
@@ -127,13 +139,14 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
     <span class="sp" style="flex:1"></span>
     <button id="bIn" title="Analyse ab hier">[ Start</button>
     <button id="bOut" title="Analyse bis hier">Ende ]</button>
+    <button id="bClr" title="Bereich löschen">✕</button>
   </div>
   <div id="ctrl">
     <button id="bPrev">◀︎ 1</button>
     <button id="bPlay">▶︎</button>
     <button id="bNext">1 ▶︎</button>
     <select id="speed"><option value="0.1">0,1×</option><option value="0.25" selected>0,25×</option><option value="0.5">0,5×</option><option value="1">1×</option></select>
-    <div id="tl"><input id="seek" type="range" min="0" max="1000" value="0"><div id="marks"></div></div>
+    <div id="tl"><div id="range"></div><input id="seek" type="range" min="0" max="1000" value="0"><div id="marks"></div></div>
     <span id="tlabel">0,00 s</span>
   </div>
 </footer>
@@ -498,7 +511,7 @@ function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, ov.width, ov.height);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   render(ctx, p => P(view.ox + p.x * view.k, view.oy + p.y * view.k), 1);
-  updatePanel();
+  updatePanel(); updateBadge();
 }
 function render(c, map, lw) {
   const fr = curFrame(); if (!fr) return;
@@ -586,19 +599,52 @@ function updatePanel() {
   $('#bLegL').classList.toggle('on', S.stance === 'L'); $('#bLegR').classList.toggle('on', S.stance === 'R');
   $('#legend').style.display = S.show.tpl && S.frames.length ? 'block' : 'none';
 }
+const PH_COL = { aufsatz:'#ff8a00', stuetz:'#c77dff', absprung:'#ff4d5e', flug:'#3ec1ff', landung:'#5dd39e' };
+const PH_SHORT = { aufsatz:'A', stuetz:'S', absprung:'Ab', flug:'F', landung:'L' };
+function tPos(t) { // Zeit -> Anteil auf der Zeitleiste
+  const F = S.frames;
+  if (F.length > 1) return Math.max(0, Math.min(1, (t - F[0].t) / (F[F.length - 1].t - F[0].t)));
+  return vid.duration ? Math.max(0, Math.min(1, t / vid.duration)) : 0;
+}
 function updateUI() {
   const box = $('#phBtns'); box.innerHTML = '';
   for (const ph of TEMPLATE.phases) {
-    const b = document.createElement('button'); b.textContent = ph.name;
-    b.classList.toggle('on', S.active === ph.id); b.classList.toggle('set', S.phase[ph.id] != null);
+    const b = document.createElement('button'), set = S.phase[ph.id] != null && S.frames[S.phase[ph.id]];
+    b.innerHTML = `<span class="dot" style="background:${set ? PH_COL[ph.id] : 'transparent'};color:${PH_COL[ph.id]}"></span>${ph.name}<span class="tm">${set ? fmtT(S.frames[S.phase[ph.id]].t) : '–'}</span>`;
+    b.classList.toggle('on', S.active === ph.id); b.classList.toggle('set', !!set);
     b.addEventListener('click', () => gotoPhase(ph.id)); box.appendChild(b);
   }
   const m = $('#marks'); m.innerHTML = '';
   if (S.frames.length > 1) for (const ph of TEMPLATE.phases) if (S.phase[ph.id] != null) {
-    const s = document.createElement('span'); s.style.left = (100 * S.phase[ph.id] / (S.frames.length - 1)) + '%'; s.title = ph.name; m.appendChild(s);
+    const s = document.createElement('span'); s.className = 'pin' + (S.active === ph.id ? ' act' : '');
+    s.textContent = S.active === ph.id ? ph.name : PH_SHORT[ph.id]; s.title = ph.name; s.style.background = PH_COL[ph.id]; s.style.setProperty('--c', PH_COL[ph.id]);
+    s.style.left = (100 * S.phase[ph.id] / (S.frames.length - 1)) + '%';
+    s.addEventListener('click', () => gotoPhase(ph.id)); m.appendChild(s);
   }
+  // Pins, die sich überlappen, versetzt anordnen
+  const pins = [...m.children].sort((a, b) => parseFloat(a.style.left) - parseFloat(b.style.left));
+  const rowEnd = [-1e9, -1e9];
+  for (const p of pins) { const r = p.getBoundingClientRect(); let row = rowEnd.findIndex(e => r.left > e + 3); if (row < 0) row = rowEnd.indexOf(Math.min(...rowEnd)); rowEnd[row] = r.right; p.style.top = (-22 * row) + 'px'; p.style.zIndex = 3 - row; }
+  // Analyse-Bereich
+  const rg = $('#range'), tl = $('#tl').clientWidth - 16;
+  $('#bIn').innerHTML = S.inT != null ? '[ Start <b>' + fmtT(S.inT) + '</b>' : '[ Start';
+  $('#bOut').innerHTML = S.outT != null ? 'Ende <b>' + fmtT(S.outT) + '</b> ]' : 'Ende ]';
+  $('#bIn').classList.toggle('on', S.inT != null); $('#bOut').classList.toggle('on', S.outT != null);
+  $('#bClr').style.display = S.inT != null || S.outT != null ? 'inline-block' : 'none';
+  if ((S.inT != null || S.outT != null) && vid.duration) {
+    const a = tPos(S.inT ?? 0), b = tPos(S.outT ?? vid.duration);
+    rg.style.display = 'block'; rg.style.left = (8 + a * tl) + 'px'; rg.style.width = Math.max(4, (b - a) * tl) + 'px';
+    rg.style.borderLeftWidth = S.inT != null ? '3px' : '0'; rg.style.borderRightWidth = S.outT != null ? '3px' : '0';
+  } else rg.style.display = 'none';
   $('#seek').max = Math.max(1, S.frames.length ? S.frames.length - 1 : 1000);
+  updateBadge();
 }
+function updateBadge() {
+  const bd = $('#phBadge'); const hit = TEMPLATE.phases.find(ph => S.frames.length && S.phase[ph.id] === S.idx);
+  if (hit) { bd.style.display = 'block'; bd.style.background = PH_COL[hit.id]; bd.textContent = '📍 ' + hit.name; } else bd.style.display = 'none';
+}
+let toastT = 0;
+function toast(txt) { const t = $('#toast'); t.textContent = txt; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1600); }
 async function gotoIdx(i) {
   if (!S.frames.length) return;
   S.idx = Math.max(0, Math.min(S.frames.length - 1, i));
@@ -636,9 +682,11 @@ $('#bPlay').onclick = () => {
   loop();
 };
 $('#speed').onchange = e => { vid.playbackRate = +e.target.value; };
-$('#bSetPh').onclick = () => { if (!S.frames.length) return; S.phase[S.active] = S.idx; updateUI(); draw(); };
-$('#bIn').onclick = () => { S.inT = S.frames.length ? S.frames[S.idx].t : vid.currentTime; setStatus('Analyse ab ' + fmtT(S.inT)); };
-$('#bOut').onclick = () => { S.outT = S.frames.length ? S.frames[S.idx].t : vid.currentTime; setStatus('Analyse bis ' + fmtT(S.outT)); };
+$('#bSetPh').onclick = () => { if (!S.frames.length) { toast('Erst analysieren, dann Phasen setzen'); return; } S.phase[S.active] = S.idx; updateUI(); draw(); toast('📍 ' + phaseObj().name + ' gesetzt · ' + fmtT(S.frames[S.idx].t)); };
+$('#bIn').onclick = () => { if (!vid.duration) return; S.inT = S.frames.length ? S.frames[S.idx].t : vid.currentTime; if (S.outT != null && S.outT <= S.inT) S.outT = null; updateUI(); toast('[ Start gesetzt · ' + fmtT(S.inT) + (S.frames.length ? ' – gilt bei neuer Analyse' : '')); };
+$('#bOut').onclick = () => { if (!vid.duration) return; S.outT = S.frames.length ? S.frames[S.idx].t : vid.currentTime; if (S.inT != null && S.inT >= S.outT) S.inT = null; updateUI(); toast('Ende ] gesetzt · ' + fmtT(S.outT) + (S.frames.length ? ' – gilt bei neuer Analyse' : '')); };
+$('#bClr').onclick = () => { S.inT = S.outT = null; updateUI(); toast('Bereich gelöscht – ganzes Video'); };
+window.addEventListener('resize', () => updateUI());
 $('#bLegL').onclick = () => { S.stance = 'L'; draw(); };
 $('#bLegR').onclick = () => { S.stance = 'R'; draw(); };
 $('#bDir').onclick = () => { S.dir *= -1; if (S.toa != null) S.toa = -S.toa; draw(); };

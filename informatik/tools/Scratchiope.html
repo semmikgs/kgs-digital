@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <!--
-  Calliope-Blöcke: Editor und Simulator (Stufe 5)
+  Calliope-Blöcke: Editor und Simulator (Stufe 6)
   Enthält Blockly (Copyright Google LLC / Raspberry Pi Foundation, Apache-2.0),
   @blockly/continuous-toolbox (Apache-2.0), MicroPython für den Calliope mini 3
   (MIT, Micro:bit Educational Foundation / Calliope gGmbH), microbit-fs (MIT),
@@ -244,6 +244,79 @@
   .modalBody li { margin-bottom: 4px; }
 
 
+
+  /* Jacdac-Modulkarten */
+  .panel[hidden] { display: none; }
+  .jdCards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .jdCards.empty { display: none; }
+  .jdCard {
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px;
+    display: flex; flex-direction: column; gap: 6px; background: #FCFCFD; min-width: 0;
+  }
+  .jdDrawing { width: 100%; max-width: 118px; height: auto; display: block; margin: 0 auto; }
+  .jdHead { display: flex; align-items: baseline; gap: 2px 6px; font-size: 12px; min-width: 0; flex-wrap: wrap; }
+  .jdName { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .jdValue { margin-left: auto; color: #B2186C; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .jdControls { display: flex; flex-direction: column; gap: 5px; }
+  .jdHint { margin: 0; font-size: 11px; color: var(--ink-soft); line-height: 1.35; }
+  .jdSlider { display: grid; grid-template-columns: 1fr auto; gap: 1px 6px; font-size: 11px; align-items: center; }
+  .jdSlider span { color: var(--ink-soft); }
+  .jdSlider output { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .jdSlider input { grid-column: 1 / -1; width: 100%; accent-color: #E0218A; }
+  .jdPress {
+    height: 26px; border-radius: 13px; border: 1px solid #98A1AB; background: #EEF1F4;
+    font-size: 11px; font-weight: 600; cursor: pointer; padding: 0 10px; touch-action: none;
+  }
+  .jdPress:active { background: #E0218A; border-color: #B2186C; color: #fff; }
+  .jdBtnRow { display: flex; gap: 4px; flex-wrap: wrap; }
+
+  /* Zeichnung der Module */
+  .jdPlate { fill: #1F5E6B; stroke: #174A55; stroke-width: 1.5; }
+  .jdSocket { fill: #C9CFD6; stroke: #98A1AB; stroke-width: 1; }
+  .jdChip { fill: #2B2F33; stroke: #15181B; stroke-width: 1; }
+  .jdTrack { fill: rgba(0,0,0,.35); }
+  .jdKnob { fill: #E8F1F2; stroke: #9FB3B8; stroke-width: 1; }
+  .jdDial { fill: #2F3338; stroke: #15181B; stroke-width: 1.5; }
+  .jdDialMark { stroke: #FFD500; stroke-width: 2; stroke-linecap: round; }
+  .jdLed { stroke: rgba(0,0,0,.3); stroke-width: .6; }
+  .jdBtnPlate { fill: #C9CFD6; stroke: #98A1AB; stroke-width: 1; }
+  .jdBtnCap { fill: #2F3338; stroke: #15181B; stroke-width: 1.5; }
+  .jdBtnCap.down { fill: #E0218A; stroke: #B2186C; }
+  .jdMagnet { fill: #B0483F; stroke: #7E332D; stroke-width: 1; }
+  .jdField { fill: none; stroke: #7FD4E8; stroke-width: 2; stroke-dasharray: 3 3; }
+  .jdSunCore { fill: #FFD500; }
+  .jdSunRay { stroke: #FFD500; stroke-width: 1.6; stroke-linecap: round; }
+  .jdSonar { fill: #2F3338; stroke: #9FB3B8; stroke-width: 1.2; }
+  .jdBeam { fill: none; stroke: #7FD4E8; stroke-width: 2; stroke-linecap: round; }
+  .jdLevelRing { fill: rgba(0,0,0,.3); stroke: #8FA7AD; stroke-width: 1; }
+  .jdBubble { fill: #FFD500; }
+  .jdTerm { fill: #D4A64A; stroke: #B7892F; stroke-width: 1; }
+  .jdLever { stroke: #E8F1F2; stroke-width: 2.2; stroke-linecap: round; }
+  .jdRelayLamp { fill: #3A4A50; stroke: rgba(0,0,0,.3); stroke-width: .6; }
+  .jdRelayLamp.on { fill: #4CBF56; filter: drop-shadow(0 0 3px #4CBF56); }
+  .jdVent { fill: #0E1113; }
+  .jdDrop { fill: #4C97FF; }
+  .jdVibBody { fill: #2F3338; stroke: #15181B; stroke-width: 1.5; }
+  .jdVibBody.on { fill: #E0218A; stroke: #B2186C; }
+  .jdVibWave { fill: none; stroke: #E8F1F2; stroke-width: 2; stroke-linecap: round; }
+  .jdServoHub { fill: #C9CFD6; stroke: #98A1AB; stroke-width: 1; }
+  .jdServoArm { stroke: #E8F1F2; stroke-width: 3; stroke-linecap: round; }
+  .jdServoArm.off { stroke: #5E767C; }
+  .jdWheel { fill: #2F3338; stroke: #15181B; stroke-width: 1.5; }
+
+  /* Auswahl der Erweiterungen */
+  .extList { display: grid; gap: 4px; max-height: 46vh; overflow-y: auto; margin-bottom: 12px; }
+  .extKit { font-size: 12px; font-weight: 700; color: var(--ink-soft); margin: 8px 0 2px; }
+  .extKit:first-child { margin-top: 0; }
+  .extRow {
+    display: flex; gap: 9px; align-items: flex-start; padding: 7px 8px;
+    border: 1px solid var(--line); border-radius: 7px; cursor: pointer;
+  }
+  .extRow:hover { background: #FDF2F8; border-color: #E0218A; }
+  .extRow input { width: 18px; height: 18px; margin-top: 1px; accent-color: #E0218A; flex: none; }
+  .extRow b { display: block; font-size: 13px; }
+  .extRow small { color: var(--ink-soft); font-size: 12px; line-height: 1.35; }
+
   /* Zwei Calliopes auf der Bühne */
   .boards { display: flex; gap: 6px; width: 100%; height: 100%; min-height: 0; align-items: stretch; justify-content: center; }
   .boardBox { margin: 0; flex: 1 1 0; min-width: 0; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px 0; }
@@ -438,6 +511,7 @@
       <button type="button" role="menuitem" data-action="hex">Als .hex-Datei für den Calliope herunterladen</button>
     </div>
   </div>
+  <button id="extBtn" class="menuBtn" type="button">Erweiterungen</button>
   <label class="projectNameWrap">
     <span class="visuallyHidden">Projektname</span>
     <input id="projectName" class="projectName" type="text" value="Calliope-Projekt" maxlength="60" spellcheck="false">
@@ -544,6 +618,10 @@
         <label class="grow">Nachricht <input id="radioText" type="text" value="Hallo!" maxlength="60"></label>
         <button id="radioSendBtn" class="smallBtn" type="button" title="Nachricht an alle Calliopes auf diesem Kanal schicken">Senden</button>
       </div>
+    </details>
+    <details class="inputs panel" id="jdPanel" hidden>
+      <summary>Jacdac-Module <span id="jdCount" class="radioStatus"></span></summary>
+      <div id="jdCards" class="jdCards empty"></div>
     </details>
   </aside>
 </main>
@@ -3078,6 +3156,7 @@ return Blockly.Msg;
     sound:     ['#CF63CF', '#C94FC9', '#BD42BD'],
     sensing:   ['#5CB1D6', '#47A8D1', '#2E8EB8'],
     radio:     ['#0FBD8C', '#0DA57A', '#0B8E69'],
+    jacdac:    ['#E0218A', '#C91C7B', '#B2186C'],
     operators: ['#59C059', '#46B946', '#389438'],
     variables: ['#FF8C1A', '#FF8000', '#DB6E00']
   };
@@ -3094,6 +3173,8 @@ return Blockly.Msg;
       sensing_blocks: style(C.sensing),
       radio_blocks: style(C.radio),
       radio_hat_blocks: style(C.radio, { hat: 'cap' }),
+      jacdac_blocks: style(C.jacdac),
+      jacdac_hat_blocks: style(C.jacdac, { hat: 'cap' }),
       operator_blocks: style(C.operators),
       variable_blocks: style(C.variables),
       shadow_blocks: { colourPrimary: '#FFFFFF', colourSecondary: '#FFFFFF', colourTertiary: '#FFFFFF' }
@@ -3105,6 +3186,7 @@ return Blockly.Msg;
       sound: { colour: C.sound[0] },
       sensing: { colour: C.sensing[0] },
       radio: { colour: C.radio[0] },
+      jacdac: { colour: C.jacdac[0] },
       operators: { colour: C.operators[0] },
       variables: { colour: C.variables[0] }
     },
@@ -3622,10 +3704,12 @@ return Blockly.Msg;
     return items;
   }
 
+  const JACDAC_CATEGORY = { kind: 'category', name: 'Jacdac', categorystyle: 'jacdac', custom: 'CAL_JACDAC' };
   const toolbox = {
     kind: 'categoryToolbox',
     contents: staticToolbox.concat([
-      { kind: 'category', name: 'Variablen', categorystyle: 'variables', custom: 'CAL_VARIABLES' }
+      { kind: 'category', name: 'Variablen', categorystyle: 'variables', custom: 'CAL_VARIABLES' },
+      JACDAC_CATEGORY
     ])
   };
   const toolboxWithoutVariables = { kind: 'categoryToolbox', contents: staticToolbox };
@@ -3639,6 +3723,738 @@ return Blockly.Msg;
   };
 
   window.CalBlocks = { theme, toolbox, toolboxWithoutVariables, variablesFlyout, starter, GESTURES };
+})();
+
+</script>
+<script>
+/* src/jacdac.js */
+/* Jacdac-Erweiterungen: die Module aus den Starter-Boxen I und II.
+   Jedes Modul beschreibt sich selbst: Zustand, Bedienelemente, Zeichnung und Blöcke.
+   Aktiviert werden sie über „Erweiterungen"; nur aktive Module zeigen ihre Blöcke. */
+(function () {
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  };
+  /* Kleine Platine als Hintergrund jeder Modulzeichnung, mit Jacdac-Buchse oben */
+  function plate(svg, label) {
+    svg.setAttribute('viewBox', '0 0 72 54');
+    el('rect', { x: 1, y: 7, width: 70, height: 46, rx: 6, class: 'jdPlate' }, svg);
+    el('rect', { x: 28, y: 1, width: 16, height: 8, rx: 2, class: 'jdSocket' }, svg);
+    if (label) {
+      const t = el('title', {}, svg);
+      t.textContent = label;
+    }
+    return el('g', {}, svg);
+  }
+
+  /* ---------- Bedienelemente auf der Modulkarte ---------- */
+  const slider = (key, label, min, max, step, unit) => ({ kind: 'slider', key, label, min, max, step, unit });
+  const press = (key, label) => ({ kind: 'press', key, label });
+  const gestures = () => ({ kind: 'gestures' });
+
+  /* ---------- Hilfen für Blockdefinitionen ---------- */
+  const stmt = { previousStatement: null, nextStatement: null, inputsInline: true };
+  const S = 'jacdac_blocks', H = 'jacdac_hat_blocks';
+  const value = (type, message0, tooltip, args0) =>
+    Object.assign({ type, message0, output: 'Value', style: S, tooltip }, args0 ? { args0, inputsInline: true } : {});
+  const bool = (type, message0, tooltip, args0) =>
+    Object.assign({ type, message0, output: 'Boolean', style: S, tooltip }, args0 ? { args0, inputsInline: true } : {});
+  const act = (type, message0, tooltip, args0) =>
+    Object.assign({ type, message0, style: S, tooltip }, stmt, args0 ? { args0 } : {});
+  const hat = (type, message0, tooltip, args0) =>
+    Object.assign({ type, message0, nextStatement: null, style: H, tooltip },
+      args0 ? { args0, inputsInline: true } : {});
+  const numIn = name => ({ type: 'input_value', name });
+  const colourIn = name => ({ type: 'input_value', name });
+  const drop = (name, options) => ({ type: 'field_dropdown', name, options });
+
+  /* Schattenblöcke für die Palette */
+  const num = (name, n) => ({ [name]: { shadow: { type: 'cal_num', fields: { NUM: n } } } });
+  const col = (name, hex) => ({ [name]: { shadow: { type: 'cal_colour', fields: { COLOUR: hex } } } });
+  const merge = (...p) => Object.assign({}, ...p);
+  const B = (type, extra) => Object.assign({ kind: 'block', type }, extra || {});
+
+  /* Lagen des Beschleunigungssensors, wie sie Jacdac meldet */
+  const JD_GESTURES = [
+    ['geschüttelt', 'shake'],
+    ['nach oben gekippt', 'tilt up'],
+    ['nach unten gekippt', 'tilt down'],
+    ['nach links gekippt', 'tilt left'],
+    ['nach rechts gekippt', 'tilt right'],
+    ['Oberseite oben', 'face up'],
+    ['Oberseite unten', 'face down'],
+    ['im freien Fall', 'freefall']
+  ];
+
+  /* ===================================================================
+     Die Module. Reihenfolge wie in den Starter-Boxen.
+     =================================================================== */
+  const MODULES = [
+    /* ---------- Starter-Box I ---------- */
+    {
+      id: 'slider', name: 'Schieberegler', kit: 1,
+      blurb: 'Liefert die Position des Schiebereglers in Prozent.',
+      state: { position: 50 },
+      controls: [slider('position', 'Position', 0, 100, 1, ' %')],
+      readout: s => Math.round(s.position) + ' %',
+      draw(svg, s) {
+        const g = plate(svg, 'Schieberegler');
+        el('rect', { x: 14, y: 29, width: 44, height: 4, rx: 2, class: 'jdTrack' }, g);
+        this.knob = el('rect', { x: 14, y: 23, width: 8, height: 16, rx: 2, class: 'jdKnob' }, g);
+        this.update(s);
+      },
+      update(s) {
+        if (this.knob) this.knob.setAttribute('x', String(14 + (s.position / 100) * 36));
+      },
+      blocks: [
+        value('jd_slider_position', 'Schieberegler Position (%)', 'Position des Schiebereglers: 0 % links, 100 % rechts.'),
+        hat('jd_when_slider', 'Wenn Schieberegler sich um %1 % ändert',
+          'Läuft los, sobald sich die Position um den angegebenen Wert verschoben hat.', [numIn('THRESHOLD')])
+      ],
+      toolbox: [B('jd_slider_position'), B('jd_when_slider', { inputs: num('THRESHOLD', 10) })]
+    },
+
+    {
+      id: 'rotary', name: 'Drehregler', kit: 1,
+      blurb: 'Zählt Rastungen: im Uhrzeigersinn +1, dagegen −1. Start bei 0.',
+      state: { position: 0 },
+      controls: [press('left', '← eine Rastung'), press('right', 'eine Rastung →')],
+      readout: s => String(s.position),
+      draw(svg, s) {
+        const g = plate(svg, 'Drehregler');
+        el('circle', { cx: 36, cy: 30, r: 13, class: 'jdDial' }, g);
+        this.mark = el('line', { x1: 36, y1: 30, x2: 36, y2: 19, class: 'jdDialMark' }, g);
+        this.update(s);
+      },
+      update(s) {
+        if (this.mark) this.mark.setAttribute('transform', `rotate(${s.position * 15} 36 30)`);
+      },
+      blocks: [
+        value('jd_rotary_position', 'Drehregler Position (#)', 'Zählerstand des Drehreglers. Beim Start 0.'),
+        hat('jd_when_rotary', 'Wenn Drehregler gedreht wird', 'Läuft los, sobald der Drehregler eine Rastung weiterspringt.')
+      ],
+      toolbox: [B('jd_rotary_position'), B('jd_when_rotary')]
+    },
+
+    {
+      id: 'ring', name: 'RGB-Ring', kit: 1, actuator: true, pixels: 8,
+      blurb: 'Ring aus 8 RGB-LEDs. Alle zusammen oder einzeln ansteuerbar.',
+      state: { pixels: Array(8).fill('#000000'), brightness: 20 },
+      controls: [],
+      readout: s => 'Helligkeit ' + Math.round(s.brightness),
+      draw(svg, s) {
+        const g = plate(svg, 'RGB-Ring');
+        this.leds = [];
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * Math.PI * 2 - Math.PI / 2;
+          this.leds.push(el('circle', {
+            cx: 36 + Math.cos(a) * 13, cy: 30 + Math.sin(a) * 13, r: 3.4, class: 'jdLed'
+          }, g));
+        }
+        this.update(s);
+      },
+      update(s) { paintPixels(this.leds, s); },
+      blocks: [
+        act('jd_ring_all', 'setze RGB-Ring auf %1', 'Lässt alle 8 LEDs in derselben Farbe leuchten.', [colourIn('COLOUR')]),
+        act('jd_ring_one', 'setze RGB-Ring LED %1 auf %2', 'Eine einzelne LED des Rings: 0 bis 7.',
+          [numIn('INDEX'), colourIn('COLOUR')]),
+        act('jd_ring_brightness', 'setze RGB-Ring Helligkeit auf %1', 'Helligkeit von 0 bis 100. Hohe Werte brauchen am echten Ring das Power-Modul.', [numIn('VALUE')]),
+        act('jd_ring_off', 'schalte RGB-Ring aus', 'Schaltet alle LEDs des Rings aus.')
+      ],
+      toolbox: [
+        B('jd_ring_all', { inputs: col('COLOUR', '#FF0000') }),
+        B('jd_ring_one', { inputs: merge(num('INDEX', 0), col('COLOUR', '#00FF00')) }),
+        B('jd_ring_brightness', { inputs: num('VALUE', 20) }),
+        B('jd_ring_off')
+      ]
+    },
+
+    {
+      id: 'button', name: 'Taster', kit: 1,
+      blurb: 'Erkennt gedrückt, gehalten und losgelassen.',
+      state: { down: false, holdMs: 0 },
+      controls: [press('down', 'Taster drücken und halten')],
+      readout: s => s.down ? 'gedrückt' : 'offen',
+      draw(svg, s) {
+        const g = plate(svg, 'Taster');
+        el('rect', { x: 22, y: 16, width: 28, height: 28, rx: 4, class: 'jdBtnPlate' }, g);
+        this.cap = el('circle', { cx: 36, cy: 30, r: 9, class: 'jdBtnCap' }, g);
+        this.update(s);
+      },
+      update(s) { if (this.cap) this.cap.classList.toggle('down', !!s.down); },
+      blocks: [
+        bool('jd_button_pressed', 'Taster gedrückt?', 'Wahr, solange der Taster gedrückt ist.'),
+        value('jd_button_hold', 'Taster Haltedauer (ms)', 'Wie lange der Taster schon gedrückt ist, in Millisekunden.'),
+        hat('jd_when_button', 'Wenn Taster %1',
+          'Läuft los, sobald der Taster gedrückt, gehalten oder losgelassen wird.',
+          [drop('EVENT', [['gedrückt wird', 'down'], ['gehalten wird', 'hold'], ['losgelassen wird', 'up']])])
+      ],
+      toolbox: [B('jd_when_button'), B('jd_button_pressed'), B('jd_button_hold')]
+    },
+
+    {
+      id: 'magnet', name: 'Magnetsensor', kit: 1,
+      blurb: 'Misst die Stärke eines Magnetfelds in Prozent.',
+      state: { strength: 0 },
+      controls: [slider('strength', 'Stärke', 0, 100, 1, ' %')],
+      readout: s => Math.round(s.strength) + ' %',
+      draw(svg, s) {
+        const g = plate(svg, 'Magnetsensor');
+        el('path', { d: 'M24 38 v-8 a12 12 0 0 1 24 0 v8 h-7 v-8 a5 5 0 0 0 -10 0 v8 z', class: 'jdMagnet' }, g);
+        this.wave = el('circle', { cx: 36, cy: 30, r: 16, class: 'jdField' }, g);
+        this.update(s);
+      },
+      update(s) { if (this.wave) this.wave.style.opacity = String(0.1 + (s.strength / 100) * 0.7); },
+      blocks: [
+        value('jd_magnet_strength', 'Magnetsensor Stärke (%)', 'Stärke des Magnetfelds: 0 % ohne Magnet, 100 % direkt am Magneten.'),
+        bool('jd_magnet_active', 'Magnet erkannt?', 'Wahr, sobald die Stärke über 50 % liegt.'),
+        hat('jd_when_magnet', 'Wenn Magnet %1',
+          'Läuft los, sobald ein Magnet in die Nähe kommt oder sich entfernt.',
+          [drop('EVENT', [['erkannt wird', 'active'], ['verschwindet', 'inactive']])])
+      ],
+      toolbox: [B('jd_magnet_strength'), B('jd_magnet_active'), B('jd_when_magnet')]
+    },
+
+    {
+      id: 'light', name: 'Lichtsensor', kit: 1,
+      blurb: 'Misst die Helligkeit des Umgebungslichts in Prozent.',
+      state: { level: 50 },
+      controls: [slider('level', 'Helligkeit', 0, 100, 1, ' %')],
+      readout: s => Math.round(s.level) + ' %',
+      draw(svg, s) {
+        const g = plate(svg, 'Lichtsensor');
+        this.sun = el('g', { transform: 'translate(36 29)' }, g);
+        el('circle', { cx: 0, cy: 0, r: 5, class: 'jdSunCore' }, this.sun);
+        for (let i = 0; i < 8; i++) {
+          const a = i * Math.PI / 4;
+          el('line', {
+            x1: Math.cos(a) * 7.5, y1: Math.sin(a) * 7.5,
+            x2: Math.cos(a) * 11, y2: Math.sin(a) * 11, class: 'jdSunRay'
+          }, this.sun);
+        }
+        this.update(s);
+      },
+      update(s) { if (this.sun) this.sun.style.opacity = String(0.25 + (s.level / 100) * 0.75); },
+      blocks: [
+        value('jd_light_level', 'Lichtsensor Helligkeit (%)', 'Helligkeit des Umgebungslichts: 0 % dunkel, 100 % sehr hell.'),
+        hat('jd_when_light', 'Wenn Lichtsensor sich um %1 % ändert',
+          'Läuft los, sobald sich die Helligkeit um den angegebenen Wert ändert.', [numIn('THRESHOLD')])
+      ],
+      toolbox: [B('jd_light_level'), B('jd_when_light', { inputs: num('THRESHOLD', 10) })]
+    },
+
+    /* ---------- Starter-Box II ---------- */
+    {
+      id: 'distance', name: 'Ultraschallsensor', kit: 2,
+      blurb: 'Misst die Entfernung zum nächsten Gegenstand in Metern.',
+      state: { distance: 0.5 },
+      controls: [slider('distance', 'Entfernung', 0.02, 4, 0.01, ' m')],
+      readout: s => s.distance.toFixed(2) + ' m',
+      draw(svg, s) {
+        const g = plate(svg, 'Ultraschall');
+        el('circle', { cx: 25, cy: 29, r: 7, class: 'jdSonar' }, g);
+        el('circle', { cx: 47, cy: 29, r: 7, class: 'jdSonar' }, g);
+        this.beam = el('path', { d: 'M54 24 a9 9 0 0 1 0 10', class: 'jdBeam' }, g);
+        this.update(s);
+      },
+      update(s) {
+        if (this.beam) this.beam.style.opacity = String(Math.max(0.15, 1 - s.distance / 4));
+      },
+      blocks: [
+        value('jd_distance', 'Ultraschall Entfernung (m)', 'Entfernung zum nächsten Gegenstand, von 0,02 m bis 4 m.'),
+        hat('jd_when_distance', 'Wenn Ultraschall sich um %1 m ändert',
+          'Läuft los, sobald sich die Entfernung um den angegebenen Wert ändert.', [numIn('THRESHOLD')])
+      ],
+      toolbox: [B('jd_distance'), B('jd_when_distance', { inputs: num('THRESHOLD', 0.1) })]
+    },
+
+    {
+      id: 'accel', name: 'Beschleunigung', kit: 2,
+      blurb: 'Beschleunigungssensor: misst in g auf drei Achsen und erkennt Lagen.',
+      state: { roll: 0, pitch: 0, gesture: '', gestureUntil: 0 },
+      controls: [
+        slider('roll', 'Neigung links/rechts', -180, 180, 1, ' °'),
+        slider('pitch', 'Neigung vorn/hinten', -180, 180, 1, ' °'),
+        gestures()
+      ],
+      /* Aus den beiden Neigungswinkeln folgen die drei Achsen; die Summe ist immer 1 g. */
+      axes(s) {
+        if (s.gestureUntil > performance.now()) {
+          if (s.gesture === 'freefall') return { x: 0, y: 0, z: 0 };
+          if (s.gesture === 'shake') {
+            const r = () => Math.round((Math.random() * 2 - 1) * 200) / 100;
+            return { x: r(), y: r(), z: r() };
+          }
+        }
+        const r = s.roll * Math.PI / 180, p = s.pitch * Math.PI / 180;
+        return {
+          x: Math.round(Math.sin(r) * Math.cos(p) * 100) / 100,
+          y: Math.round(Math.sin(p) * 100) / 100,
+          z: Math.round(-Math.cos(r) * Math.cos(p) * 100) / 100
+        };
+      },
+      /* Lage aus den Achsen, wie der echte Sensor sie meldet */
+      gestureNow(s) {
+        if (s.gestureUntil > performance.now()) return s.gesture;
+        const v = this.axes(s);
+        const axis = ['x', 'y', 'z'].reduce((a, b) => Math.abs(v[b]) > Math.abs(v[a]) ? b : a);
+        if (Math.abs(v[axis]) < 0.78) return '';
+        if (axis === 'z') return v.z < 0 ? 'face up' : 'face down';
+        if (axis === 'y') return v.y < 0 ? 'tilt up' : 'tilt down';
+        return v.x < 0 ? 'tilt left' : 'tilt right';
+      },
+      readout(s) {
+        const v = this.axes(s);
+        return `x ${v.x.toFixed(2)}  y ${v.y.toFixed(2)}  z ${v.z.toFixed(2)}`;
+      },
+      draw(svg, s) {
+        const g = plate(svg, 'Beschleunigung');
+        el('rect', { x: 24, y: 18, width: 24, height: 24, rx: 3, class: 'jdChip' }, g);
+        el('circle', { cx: 36, cy: 30, r: 9, class: 'jdLevelRing' }, g);
+        this.bubble = el('circle', { cx: 36, cy: 30, r: 2.6, class: 'jdBubble' }, g);
+        this.update(s);
+      },
+      update(s) {
+        if (!this.bubble) return;
+        const v = this.axes(s);
+        this.bubble.setAttribute('cx', String(36 + Math.max(-1, Math.min(1, v.x)) * 5.5));
+        this.bubble.setAttribute('cy', String(30 + Math.max(-1, Math.min(1, v.y)) * 5.5));
+      },
+      blocks: [
+        value('jd_accel', 'Beschleunigung %1 (g)',
+          'Beschleunigung auf einer Achse in g. Flach liegend ist z etwa −1.',
+          [drop('AXIS', [['x', 'x'], ['y', 'y'], ['z', 'z']])]),
+        bool('jd_accel_is', 'Beschleunigungssensor ist %1 ?', 'Wahr, solange der Sensor in dieser Lage ist.',
+          [drop('GESTURE', JD_GESTURES)]),
+        hat('jd_when_accel', 'Wenn Beschleunigungssensor %1',
+          'Läuft los, sobald der Sensor in diese Lage kommt.', [drop('GESTURE', JD_GESTURES)])
+      ],
+      toolbox: [B('jd_accel'), B('jd_accel_is'), B('jd_when_accel')]
+    },
+
+    {
+      id: 'relay', name: 'Relais', kit: 2, actuator: true,
+      blurb: 'Schaltet einen Stromkreis ein und aus.',
+      state: { on: false },
+      controls: [],
+      readout: s => s.on ? 'geschlossen' : 'offen',
+      draw(svg, s) {
+        const g = plate(svg, 'Relais');
+        el('circle', { cx: 22, cy: 34, r: 3, class: 'jdTerm' }, g);
+        el('circle', { cx: 50, cy: 34, r: 3, class: 'jdTerm' }, g);
+        this.lever = el('line', { x1: 22, y1: 34, x2: 50, y2: 34, class: 'jdLever' }, g);
+        this.lampOn = el('circle', { cx: 36, cy: 18, r: 3.4, class: 'jdRelayLamp' }, g);
+        this.update(s);
+      },
+      update(s) {
+        if (!this.lever) return;
+        this.lever.setAttribute('y2', s.on ? '34' : '22');
+        this.lampOn.classList.toggle('on', !!s.on);
+      },
+      blocks: [
+        act('jd_relay_set', 'schalte Relais %1',
+          'Schließt oder öffnet den Stromkreis.', [drop('STATE', [['ein', 'on'], ['aus', 'off']])]),
+        bool('jd_relay_on', 'Relais eingeschaltet?', 'Wahr, solange das Relais geschlossen ist.')
+      ],
+      toolbox: [B('jd_relay_set'), B('jd_relay_on')]
+    },
+
+    {
+      id: 'env', name: 'Umweltsensor', kit: 2,
+      blurb: 'Misst Temperatur, Luftfeuchte und Luftdruck.',
+      state: { temperature: 21, humidity: 45, pressure: 1013 },
+      controls: [
+        slider('temperature', 'Temperatur', -10, 50, 0.5, ' °C'),
+        slider('humidity', 'Luftfeuchte', 0, 100, 1, ' %'),
+        slider('pressure', 'Luftdruck', 950, 1050, 1, ' hPa')
+      ],
+      readout: s => `${s.temperature.toFixed(1)} °C  ${Math.round(s.humidity)} %  ${Math.round(s.pressure)} hPa`,
+      draw(svg, s) {
+        const g = plate(svg, 'Umweltsensor');
+        el('rect', { x: 26, y: 18, width: 20, height: 20, rx: 3, class: 'jdChip' }, g);
+        for (let i = 0; i < 3; i++) el('circle', { cx: 31 + i * 5, cy: 28, r: 1.6, class: 'jdVent' }, g);
+        this.drop = el('path', { d: 'M36 31 l3.5 5 a3.5 3.5 0 0 1 -7 0 z', class: 'jdDrop' }, g);
+        this.update(s);
+      },
+      update(s) {
+        if (this.drop) this.drop.style.opacity = String(0.2 + (s.humidity / 100) * 0.8);
+      },
+      blocks: [
+        value('jd_env_temperature', 'Umweltsensor Temperatur (°C)', 'Gemessene Temperatur in Grad Celsius.'),
+        value('jd_env_humidity', 'Umweltsensor Luftfeuchte (%)', 'Relative Luftfeuchte in Prozent.'),
+        value('jd_env_pressure', 'Umweltsensor Luftdruck (hPa)', 'Luftdruck in Hektopascal. Normal sind etwa 1013 hPa.'),
+        hat('jd_when_env_temperature', 'Wenn Umweltsensor Temperatur sich um %1 °C ändert',
+          'Läuft los, sobald sich die Temperatur um den angegebenen Wert ändert.', [numIn('THRESHOLD')])
+      ],
+      toolbox: [
+        B('jd_env_temperature'), B('jd_env_humidity'), B('jd_env_pressure'),
+        B('jd_when_env_temperature', { inputs: num('THRESHOLD', 1) })
+      ]
+    },
+
+    {
+      id: 'vibration', name: 'Vibrationsmodul', kit: 2, actuator: true,
+      blurb: 'Lässt einen kleinen Motor spürbar vibrieren.',
+      state: { until: 0, intensity: 0 },
+      controls: [],
+      readout: s => s.until > performance.now() ? 'vibriert' : 'still',
+      draw(svg, s) {
+        const g = plate(svg, 'Vibration');
+        this.body = el('circle', { cx: 36, cy: 30, r: 10, class: 'jdVibBody' }, g);
+        this.waveL = el('path', { d: 'M20 25 a7 7 0 0 0 0 10', class: 'jdVibWave' }, g);
+        this.waveR = el('path', { d: 'M52 25 a7 7 0 0 1 0 10', class: 'jdVibWave' }, g);
+        this.update(s);
+      },
+      update(s) {
+        const on = s.until > performance.now();
+        if (this.body) this.body.classList.toggle('on', on);
+        [this.waveL, this.waveR].forEach(w => w && (w.style.opacity = on ? '1' : '0.15'));
+      },
+      blocks: [
+        act('jd_vibrate', 'lasse Vibration %1 s mit %2 %% laufen',
+          'Vibriert für die angegebene Zeit. Die Stärke geht von 0 bis 100 %.',
+          [numIn('SECS'), numIn('INTENSITY')])
+      ],
+      toolbox: [B('jd_vibrate', { inputs: merge(num('SECS', 0.5), num('INTENSITY', 100)) })]
+    },
+
+    {
+      id: 'servo', name: 'Servo 180°', kit: 2, actuator: true,
+      blurb: 'Stellt einen Arm auf einen Winkel zwischen 0° und 180°.',
+      state: { angle: 90, enabled: true },
+      controls: [],
+      readout: s => s.enabled ? Math.round(s.angle) + ' °' : 'aus',
+      draw(svg, s) {
+        const g = plate(svg, 'Servo 180°');
+        el('rect', { x: 26, y: 26, width: 20, height: 16, rx: 2, class: 'jdChip' }, g);
+        el('circle', { cx: 36, cy: 26, r: 4, class: 'jdServoHub' }, g);
+        this.arm = el('line', { x1: 36, y1: 26, x2: 36, y2: 12, class: 'jdServoArm' }, g);
+        this.update(s);
+      },
+      update(s) {
+        /* 0° zeigt nach links, 180° nach rechts */
+        if (this.arm) this.arm.setAttribute('transform', `rotate(${s.angle - 90} 36 26)`);
+        if (this.arm) this.arm.classList.toggle('off', !s.enabled);
+      },
+      blocks: [
+        act('jd_servo_angle', 'stelle Servo auf %1 °', 'Winkel von 0 bis 180 Grad.', [numIn('ANGLE')]),
+        value('jd_servo_get', 'Servo Winkel (°)', 'Der zuletzt eingestellte Winkel.'),
+        act('jd_servo_off', 'schalte Servo aus', 'Der Servo hält den Arm nicht mehr fest.')
+      ],
+      toolbox: [B('jd_servo_angle', { inputs: num('ANGLE', 90) }), B('jd_servo_get'), B('jd_servo_off')]
+    },
+
+    {
+      id: 'servo360', name: 'Servo 360°', kit: 2, actuator: true,
+      blurb: 'Dreht dauerhaft; der Wert gibt Richtung und Geschwindigkeit an.',
+      state: { speed: 0, phase: 0 },
+      controls: [],
+      readout: s => Math.round(s.speed) + ' %',
+      draw(svg, s) {
+        const g = plate(svg, 'Servo 360°');
+        el('rect', { x: 26, y: 30, width: 20, height: 12, rx: 2, class: 'jdChip' }, g);
+        el('circle', { cx: 36, cy: 26, r: 11, class: 'jdWheel' }, g);
+        this.spoke = el('g', {}, g);
+        el('line', { x1: 36, y1: 26, x2: 36, y2: 16, class: 'jdServoArm' }, this.spoke);
+        el('line', { x1: 36, y1: 26, x2: 36, y2: 36, class: 'jdServoArm' }, this.spoke);
+        this.update(s);
+      },
+      update(s) {
+        if (this.spoke) this.spoke.setAttribute('transform', `rotate(${s.phase} 36 26)`);
+      },
+      /* dreht sich sichtbar weiter, solange eine Geschwindigkeit eingestellt ist */
+      tick(s, dt) {
+        if (s.speed) { s.phase = (s.phase + s.speed * dt * 0.36) % 360; return true; }
+        return false;
+      },
+      blocks: [
+        act('jd_servo360_speed', 'drehe Servo 360° mit %1 %%',
+          'Von −100 (links, volle Kraft) über 0 (Stopp) bis 100 (rechts).', [numIn('SPEED')]),
+        act('jd_servo360_stop', 'stoppe Servo 360°', 'Hält die Drehung an.')
+      ],
+      toolbox: [B('jd_servo360_speed', { inputs: num('SPEED', 50) }), B('jd_servo360_stop')]
+    },
+
+    {
+      id: 'strip', name: 'RGB-Streifen', kit: 2, actuator: true, pixels: 30,
+      blurb: 'Streifen mit 30 RGB-LEDs, auch als Balkenanzeige nutzbar.',
+      state: { pixels: Array(30).fill('#000000'), brightness: 20 },
+      controls: [],
+      readout: s => 'Helligkeit ' + Math.round(s.brightness),
+      draw(svg, s) {
+        const g = plate(svg, 'RGB-Streifen');
+        this.leds = [];
+        /* 30 LEDs in zwei Reihen à 15, damit sie auf die Karte passen */
+        for (let i = 0; i < 30; i++) {
+          const r = Math.floor(i / 15), c = i % 15;
+          this.leds.push(el('rect', {
+            x: 6 + c * 4.2, y: r === 0 ? 22 : 32, width: 3, height: 7, rx: 1, class: 'jdLed'
+          }, g));
+        }
+        this.update(s);
+      },
+      update(s) { paintPixels(this.leds, s); },
+      blocks: [
+        act('jd_strip_all', 'setze RGB-Streifen auf %1', 'Lässt alle 30 LEDs in derselben Farbe leuchten.', [colourIn('COLOUR')]),
+        act('jd_strip_one', 'setze RGB-Streifen LED %1 auf %2', 'Eine einzelne LED des Streifens: 0 bis 29.',
+          [numIn('INDEX'), colourIn('COLOUR')]),
+        act('jd_strip_bar', 'zeige am RGB-Streifen Balken %1 von %2',
+          'Zeigt einen Messwert als Balken. Der zweite Wert ist der Höchstwert.', [numIn('VALUE'), numIn('MAX')]),
+        act('jd_strip_brightness', 'setze RGB-Streifen Helligkeit auf %1', 'Helligkeit von 0 bis 100.', [numIn('VALUE')]),
+        act('jd_strip_off', 'schalte RGB-Streifen aus', 'Schaltet alle LEDs des Streifens aus.')
+      ],
+      toolbox: [
+        B('jd_strip_all', { inputs: col('COLOUR', '#0000FF') }),
+        B('jd_strip_one', { inputs: merge(num('INDEX', 0), col('COLOUR', '#FFFF00')) }),
+        B('jd_strip_bar', { inputs: merge(num('VALUE', 50), num('MAX', 100)) }),
+        B('jd_strip_brightness', { inputs: num('VALUE', 20) }),
+        B('jd_strip_off')
+      ]
+    }
+  ];
+
+  /* LEDs einfärben, Helligkeit als Deckkraft und Schein */
+  function paintPixels(leds, s) {
+    if (!leds) return;
+    const b = Math.max(0, Math.min(100, s.brightness)) / 100;
+    leds.forEach((e, i) => {
+      const hex = s.pixels[i] || '#000000';
+      const on = hex !== '#000000' && b > 0;
+      e.setAttribute('fill', on ? hex : '#2A3A3F');
+      e.style.opacity = on ? String(0.35 + b * 0.65) : '1';
+      e.style.filter = on && b > 0.25 ? `drop-shadow(0 0 2px ${hex})` : '';
+    });
+  }
+
+  const BY_ID = {};
+  MODULES.forEach(m => { BY_ID[m.id] = m; });
+
+  /* Welcher Block gehört zu welchem Modul – für Palette und Projektladen */
+  const OWNER = {};
+  MODULES.forEach(m => m.blocks.forEach(b => { OWNER[b.type] = m.id; }));
+
+  /* ---------- Blöcke bei Blockly anmelden ---------- */
+  function defineBlocks() {
+    const all = [];
+    MODULES.forEach(m => all.push(...m.blocks));
+    Blockly.common.defineBlocksWithJsonArray(all);
+  }
+
+  /* ---------- Palette: ein Abschnitt je aktives Modul ---------- */
+  function flyout(activeIds) {
+    const items = [{ kind: 'button', text: 'Erweiterungen wählen', callbackkey: 'CAL_JACDAC_PICK' }];
+    MODULES.forEach(m => {
+      if (!activeIds.has(m.id)) return;
+      items.push({ kind: 'label', text: m.name });
+      items.push(...m.toolbox);
+    });
+    if (activeIds.size === 0) {
+      items.push({ kind: 'label', text: 'Noch kein Modul aktiv' });
+    }
+    return items;
+  }
+
+  /* ===================================================================
+     Der Hub: hält den Zustand der aktiven Module und zeichnet ihre Karten.
+     =================================================================== */
+  const clone = v => JSON.parse(JSON.stringify(v));
+
+  class JacdacHub {
+    constructor(container) {
+      this.container = container;
+      this.active = new Set();
+      this.states = {};
+      this.views = {};          // je Modul die Zeichnung (eigene Instanz der draw/update-Methoden)
+      this.listeners = [];
+      this.buttonDownAt = {};
+      this.lastTick = performance.now();
+      this.render();
+      this.loop();
+    }
+
+    onChange(fn) { this.listeners.push(fn); }
+    emit() { this.listeners.forEach(fn => fn([...this.active])); }
+
+    /* ---------- Aktive Module ---------- */
+    setActive(ids) {
+      const next = new Set(ids.filter(id => BY_ID[id]));
+      /* Zustand neu aktivierter Module frisch anlegen, abgeschalteter verwerfen */
+      next.forEach(id => { if (!this.states[id]) this.states[id] = clone(BY_ID[id].state); });
+      Object.keys(this.states).forEach(id => { if (!next.has(id)) delete this.states[id]; });
+      this.active = next;
+      this.render();
+      this.emit();
+    }
+    isActive(id) { return this.active.has(id); }
+    activate(id) { if (BY_ID[id] && !this.active.has(id)) this.setActive([...this.active, id]); }
+    state(id) { return this.states[id]; }
+
+    reset() {
+      this.active.forEach(id => { this.states[id] = clone(BY_ID[id].state); });
+      this.buttonDownAt = {};
+      this.render();
+    }
+
+    /* ---------- Karten aufbauen ---------- */
+    render() {
+      const cards = [];
+      this.views = {};
+      MODULES.forEach(m => {
+        if (!this.active.has(m.id)) return;
+        const s = this.states[m.id];
+        const card = document.createElement('div');
+        card.className = 'jdCard';
+
+        const svg = document.createElementNS(NS, 'svg');
+        svg.setAttribute('class', 'jdDrawing');
+        svg.setAttribute('role', 'img');
+        svg.setAttribute('aria-label', m.name);
+        /* eigene Instanz, damit jedes Modul seine Zeichenelemente behält */
+        const view = Object.create(m);
+        view.draw(svg, s);
+        this.views[m.id] = view;
+
+        const head = document.createElement('div');
+        head.className = 'jdHead';
+        const name = document.createElement('span');
+        name.className = 'jdName';
+        name.textContent = m.name;
+        head.appendChild(name);
+        /* Zeigen die Regler den Wert schon, braucht die Kopfzeile ihn nicht noch einmal. */
+        const sliderOnly = (m.controls || []).length > 0 && m.controls.every(c => c.kind === 'slider');
+        if (!sliderOnly) {
+          const val = document.createElement('span');
+          val.className = 'jdValue';
+          val.textContent = m.readout(s);
+          head.appendChild(val);
+          view.valueEl = val;
+        }
+
+        const body = document.createElement('div');
+        body.className = 'jdControls';
+        (m.controls || []).forEach(c => body.appendChild(this.control(m, s, c)));
+        if (!(m.controls || []).length) {
+          const hint = document.createElement('p');
+          hint.className = 'jdHint';
+          hint.textContent = m.actuator ? 'Wird vom Programm gesteuert.' : m.blurb;
+          body.appendChild(hint);
+        }
+
+        card.append(svg, head, body);
+        cards.push(card);
+      });
+      this.container.replaceChildren(...cards);
+      this.container.classList.toggle('empty', cards.length === 0);
+    }
+
+    /* ein einzelnes Bedienelement */
+    control(m, s, c) {
+      if (c.kind === 'slider') {
+        const wrap = document.createElement('label');
+        wrap.className = 'jdSlider';
+        const lab = document.createElement('span');
+        lab.textContent = c.label;
+        const input = document.createElement('input');
+        input.type = 'range';
+        input.min = c.min; input.max = c.max; input.step = c.step;
+        input.value = s[c.key];
+        const out = document.createElement('output');
+        const show = () => { out.textContent = fmt(Number(input.value), c); };
+        input.addEventListener('input', () => { s[c.key] = Number(input.value); show(); this.touch(m.id); });
+        show();
+        wrap.append(lab, out, input);
+        return wrap;
+      }
+      if (c.kind === 'press') {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'jdPress';
+        b.textContent = c.label;
+        if (c.key === 'down') {
+          const down = e => { e.preventDefault(); b.setPointerCapture(e.pointerId); s.down = true; this.buttonDownAt[m.id] = performance.now(); this.touch(m.id); };
+          const up = () => { if (s.down) { s.down = false; this.touch(m.id); } };
+          b.addEventListener('pointerdown', down);
+          b.addEventListener('pointerup', up);
+          b.addEventListener('pointercancel', up);
+          b.addEventListener('lostpointercapture', up);
+        } else {
+          b.addEventListener('click', () => { s.position += (c.key === 'right' ? 1 : -1); this.touch(m.id); });
+        }
+        return b;
+      }
+      if (c.kind === 'gestures') {
+        const row = document.createElement('div');
+        row.className = 'jdBtnRow';
+        [['Schütteln', 'shake'], ['Freier Fall', 'freefall'], ['Flach legen', '']].forEach(([label, g]) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'jdPress';
+          b.textContent = label;
+          b.addEventListener('click', () => {
+            if (g) { s.gesture = g; s.gestureUntil = performance.now() + 500; }
+            else { s.roll = 0; s.pitch = 0; this.render(); }
+            this.touch(m.id);
+          });
+          row.appendChild(b);
+        });
+        return row;
+      }
+      return document.createElement('span');
+    }
+
+    touch(id) {
+      const view = this.views[id], s = this.states[id];
+      if (!view || !s) return;
+      view.update(s);
+      if (view.valueEl) view.valueEl.textContent = view.readout(s);
+    }
+
+    /* alle Karten auffrischen (nach Programmzugriffen und für laufende Animationen) */
+    loop() {
+      const now = performance.now();
+      const dt = (now - this.lastTick) / 1000;
+      this.lastTick = now;
+      this.active.forEach(id => {
+        const m = BY_ID[id], s = this.states[id];
+        if (m.tick) m.tick(s, dt);
+        this.touch(id);
+      });
+      requestAnimationFrame(() => this.loop());
+    }
+
+    /* ---------- Zugriffe aus dem Programm ---------- */
+    setPixel(id, index, hex) {
+      const s = this.states[id];
+      if (!s) return;
+      const i = Math.round(index);
+      if (i >= 0 && i < s.pixels.length) s.pixels[i] = hex;
+    }
+    setAllPixels(id, hex) {
+      const s = this.states[id];
+      if (s) s.pixels.fill(hex);
+    }
+    bar(id, value, max) {
+      const s = this.states[id];
+      if (!s) return;
+      const n = s.pixels.length;
+      const lit = max > 0 ? Math.max(0, Math.min(n, Math.round(value / max * n))) : 0;
+      for (let i = 0; i < n; i++) {
+        /* von grün nach rot, damit der Balken auch ohne Zahl ablesbar ist */
+        s.pixels[i] = i < lit ? `hsl(${Math.round(120 - (i / Math.max(1, n - 1)) * 120)}, 90%, 50%)` : '#000000';
+      }
+    }
+  }
+
+  const fmt = (v, c) => {
+    const dec = c.step < 1 ? (c.step < 0.1 ? 2 : 1) : 0;
+    return v.toFixed(dec) + (c.unit || '');
+  };
+
+  window.CalJacdac = { MODULES, BY_ID, OWNER, defineBlocks, flyout, JacdacHub, JD_GESTURES };
 })();
 
 </script>
@@ -3991,7 +4807,10 @@ return Blockly.Msg;
     stop() { this.stopped = true; if (this.cancelSleep) this.cancelSleep(); }
   }
 
-  const HATS = new Set(['cal_when_start', 'cal_when_button', 'cal_when_sensor', 'cal_when_gesture', 'cal_when_radio']);
+  const JD_HATS = ['jd_when_slider', 'jd_when_rotary', 'jd_when_button', 'jd_when_magnet',
+    'jd_when_light', 'jd_when_distance', 'jd_when_accel', 'jd_when_env_temperature'];
+  const HATS = new Set(['cal_when_start', 'cal_when_button', 'cal_when_sensor', 'cal_when_gesture',
+    'cal_when_radio', ...JD_HATS]);
 
   /* Alle Calliopes im Fenster – für die Hervorhebung laufender Skripte */
   const RUNTIMES = new Set();
@@ -4041,6 +4860,7 @@ return Blockly.Msg;
       this.sim = sim;
       this.name = options.name || 'Calliope';
       this.radio = options.radio || null;
+      this.jd = options.jacdac || null;
       this.lastRadio = '';
       if (this.radio) this.radio.join(this);
       RUNTIMES.add(this);
@@ -4050,10 +4870,11 @@ return Blockly.Msg;
       this.monitors = new Set();
       this.monitorListeners = [];
       this.sensorHatState = new Map();
+      this.jdHatState = new Map();
       this.lastGesture = '';
       this.bubbleHandler = null;
       sim.onButton(code => this.trigger('cal_when_button', b => b.getFieldValue('BTN') === code));
-      setInterval(() => { this.pollSensorHats(); this.pollGestureHats(); }, 50);
+      setInterval(() => { this.pollSensorHats(); this.pollGestureHats(); this.pollJacdacHats(); }, 50);
     }
 
     onChange(fn) { this.listeners.push(fn); }
@@ -4111,6 +4932,8 @@ return Blockly.Msg;
       this.vars.clear();
       this.emitMonitors();
       this.sensorHatState.clear();
+      this.jdHatState.clear();
+      if (this.jd) this.jd.reset();
       this.lastGesture = '';
       this.lastRadio = '';
       for (const b of this.ws.getTopBlocks(true)) {
@@ -4146,6 +4969,72 @@ return Blockly.Msg;
       this.lastGesture = now;
       if (!now) return;
       this.trigger('cal_when_gesture', b => b.getFieldValue('GESTURE') === now);
+    }
+
+    /* ---------- Jacdac-Ereignisse ----------
+       „ändert sich um X": feuert, sobald der Messwert sich seit dem letzten Mal
+       um mindestens X bewegt hat. Taster und Magnet feuern beim Zustandswechsel. */
+    pollJacdacHats() {
+      if (!this.jd) return;
+      const seen = new Set();
+      for (const b of this.ws.getTopBlocks(false)) {
+        if (!JD_HATS.includes(b.type) || !b.isEnabled()) continue;
+        const mod = CalJacdac.OWNER[b.type];
+        if (!this.jd.isActive(mod)) continue;
+        seen.add(b.id);
+        const st = this.jd.state(mod);
+        let fire = false, keep;
+        switch (b.type) {
+          case 'jd_when_slider':
+          case 'jd_when_light':
+          case 'jd_when_distance':
+          case 'jd_when_env_temperature': {
+            const key = b.type === 'jd_when_slider' ? 'position'
+              : b.type === 'jd_when_light' ? 'level'
+                : b.type === 'jd_when_distance' ? 'distance' : 'temperature';
+            const now = toNum(st[key]);
+            const thr = Math.abs(this.num(b, 'THRESHOLD'));
+            const base = this.jdHatState.get(b.id);
+            if (base === undefined) keep = now;
+            else if (thr > 0 && Math.abs(now - base) >= thr) { fire = true; keep = now; }
+            else keep = base;
+            break;
+          }
+          case 'jd_when_rotary': {
+            const now = st.position;
+            const base = this.jdHatState.get(b.id);
+            if (base !== undefined && now !== base) fire = true;
+            keep = now;
+            break;
+          }
+          case 'jd_when_button': {
+            const want = b.getFieldValue('EVENT');
+            const held = performance.now() - (this.jd.buttonDownAt[mod] || 0);
+            const now = st.down ? (held >= 500 ? 'hold' : 'down') : 'up';
+            const base = this.jdHatState.get(b.id);
+            if (base !== undefined && now !== base && now === want) fire = true;
+            keep = now;
+            break;
+          }
+          case 'jd_when_magnet': {
+            const now = toNum(st.strength) > 50 ? 'active' : 'inactive';
+            const base = this.jdHatState.get(b.id);
+            if (base !== undefined && now !== base && now === b.getFieldValue('EVENT')) fire = true;
+            keep = now;
+            break;
+          }
+          case 'jd_when_accel': {
+            const now = CalJacdac.BY_ID.accel.gestureNow(st);
+            const base = this.jdHatState.get(b.id);
+            if (base !== undefined && now !== base && now === b.getFieldValue('GESTURE')) fire = true;
+            keep = now;
+            break;
+          }
+        }
+        this.jdHatState.set(b.id, keep);
+        if (fire && !this.isRunning(b)) this.start(b);
+      }
+      for (const id of [...this.jdHatState.keys()]) if (!seen.has(id)) this.jdHatState.delete(id);
     }
 
     /* Funk: eine ankommende Nachricht startet die Empfangsskripte neu */
@@ -4195,6 +5084,19 @@ return Blockly.Msg;
       return target ? toBool(this.evaluate(target)) : false;
     }
 
+    /* Ein nicht angeschlossenes Modul liefert 0 bzw. falsch, statt das Skript abzubrechen. */
+    jdState(mod) {
+      return this.jd && this.jd.isActive(mod) ? this.jd.state(mod) : null;
+    }
+    jdColour(b, name) {
+      const v = toText(this.input(b, name)).trim();
+      return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toUpperCase() : '#000000';
+    }
+    jdNum(mod, read, fallback = 0) {
+      if (!this.jd || !this.jd.isActive(mod)) return fallback;
+      return read(this.jd.state(mod));
+    }
+
     evaluate(b) {
       const sim = this.sim;
       switch (b.type) {
@@ -4216,6 +5118,26 @@ return Blockly.Msg;
         case 'cal_gesture_is': return sim.currentGesture() === b.getFieldValue('GESTURE');
         case 'cal_compass': return sim.compassHeading();
         case 'cal_radio_message': return this.lastRadio;
+
+        /* Jacdac-Module */
+        case 'jd_slider_position': return this.jdNum('slider', st => st.position);
+        case 'jd_rotary_position': return this.jdNum('rotary', st => st.position);
+        case 'jd_button_pressed': return this.jdNum('button', st => !!st.down, false);
+        case 'jd_button_hold': return this.jdNum('button',
+          st => st.down ? Math.round(performance.now() - (this.jd.buttonDownAt.button || 0)) : 0);
+        case 'jd_magnet_strength': return this.jdNum('magnet', st => st.strength);
+        case 'jd_magnet_active': return this.jdNum('magnet', st => toNum(st.strength) > 50, false);
+        case 'jd_light_level': return this.jdNum('light', st => st.level);
+        case 'jd_distance': return this.jdNum('distance', st => Math.round(st.distance * 100) / 100);
+        case 'jd_accel': return this.jdNum('accel',
+          st => CalJacdac.BY_ID.accel.axes(st)[b.getFieldValue('AXIS')]);
+        case 'jd_accel_is': return this.jdNum('accel',
+          st => CalJacdac.BY_ID.accel.gestureNow(st) === b.getFieldValue('GESTURE'), false);
+        case 'jd_relay_on': return this.jdNum('relay', st => !!st.on, false);
+        case 'jd_env_temperature': return this.jdNum('env', st => Math.round(st.temperature * 10) / 10);
+        case 'jd_env_humidity': return this.jdNum('env', st => Math.round(st.humidity));
+        case 'jd_env_pressure': return this.jdNum('env', st => Math.round(st.pressure));
+        case 'jd_servo_get': return this.jdNum('servo', st => Math.round(st.angle));
 
         /* Operatoren */
         case 'cal_add': return this.num(b, 'A') + this.num(b, 'B');
@@ -4393,6 +5315,68 @@ return Blockly.Msg;
           if (this.radio) this.radio.send(this, toText(this.input(b, 'TEXT')));
           break;
 
+        /* ---------- Jacdac-Aktoren ---------- */
+        case 'jd_ring_all':
+        case 'jd_strip_all': {
+          const mod = b.type === 'jd_ring_all' ? 'ring' : 'strip';
+          if (this.jd) this.jd.setAllPixels(mod, this.jdColour(b, 'COLOUR'));
+          break;
+        }
+        case 'jd_ring_one':
+        case 'jd_strip_one': {
+          const mod = b.type === 'jd_ring_one' ? 'ring' : 'strip';
+          if (this.jd) this.jd.setPixel(mod, this.num(b, 'INDEX'), this.jdColour(b, 'COLOUR'));
+          break;
+        }
+        case 'jd_ring_brightness':
+        case 'jd_strip_brightness': {
+          const st = this.jdState(b.type === 'jd_ring_brightness' ? 'ring' : 'strip');
+          if (st) st.brightness = Math.max(0, Math.min(100, this.num(b, 'VALUE')));
+          break;
+        }
+        case 'jd_ring_off':
+        case 'jd_strip_off':
+          if (this.jd) this.jd.setAllPixels(b.type === 'jd_ring_off' ? 'ring' : 'strip', '#000000');
+          break;
+        case 'jd_strip_bar':
+          if (this.jd) this.jd.bar('strip', this.num(b, 'VALUE'), this.num(b, 'MAX'));
+          break;
+        case 'jd_relay_set': {
+          const st = this.jdState('relay');
+          if (st) st.on = b.getFieldValue('STATE') === 'on';
+          break;
+        }
+        case 'jd_vibrate': {
+          const st = this.jdState('vibration');
+          const ms = Math.max(0, this.num(b, 'SECS') * 1000);
+          if (st) {
+            st.intensity = Math.max(0, Math.min(100, this.num(b, 'INTENSITY')));
+            st.until = performance.now() + ms;
+          }
+          await t.sleep(ms);
+          break;
+        }
+        case 'jd_servo_angle': {
+          const st = this.jdState('servo');
+          if (st) { st.angle = Math.max(0, Math.min(180, this.num(b, 'ANGLE'))); st.enabled = true; }
+          break;
+        }
+        case 'jd_servo_off': {
+          const st = this.jdState('servo');
+          if (st) st.enabled = false;
+          break;
+        }
+        case 'jd_servo360_speed': {
+          const st = this.jdState('servo360');
+          if (st) st.speed = Math.max(-100, Math.min(100, this.num(b, 'SPEED')));
+          break;
+        }
+        case 'jd_servo360_stop': {
+          const st = this.jdState('servo360');
+          if (st) st.speed = 0;
+          break;
+        }
+
         /* Variablen */
         case 'cal_var_set':
           this.setVar(b.getFieldValue('VAR'), this.input(b, 'VALUE'));
@@ -4507,6 +5491,14 @@ window.CAL_PY_PRELUDE = "from calliopemini import *\nimport music, neopixel, ran
       return images.get(bits);
     };
     const warnings = new Set();
+    const jdModules = new Set();
+    /* Alle Jacdac-Blöcke eines Skripts melden, auch wenn das Skript ganz entfällt */
+    const jacdacInScript = top => top.getDescendants(false).forEach(d => noteJacdac(d.type));
+    const noteJacdac = type => {
+      const mod = CalJacdac.OWNER[type];
+      if (mod) { jdModules.add(CalJacdac.BY_ID[mod].name); return true; }
+      return false;
+    };
     const varName = id => {
       const v = workspace.getVariableMap().getVariableById(id);
       return v ? v.getName() : 'Variable';
@@ -4559,7 +5551,7 @@ window.CAL_PY_PRELUDE = "from calliopemini import *\nimport music, neopixel, ran
         case 'cal_mathop': return `_math(${py(b.getFieldValue('OP'))}, ${input(b, 'A')})`;
         case 'cal_var_get': return `_v.get(${py(varName(b.getFieldValue('VAR')))}, 0)`;
         default:
-          warnings.add(b.type);
+          if (!noteJacdac(b.type)) warnings.add(b.type);
           return "''";
       }
     }
@@ -4636,6 +5628,7 @@ window.CAL_PY_PRELUDE = "from calliopemini import *\nimport music, neopixel, ran
         case 'cal_var_hide':
           return L('pass  # Variablenanzeige gibt es nur im Simulator');
         default:
+          if (noteJacdac(b.type)) return L(`pass  # Jacdac-Modul, nur im Simulator`);
           warnings.add(b.type);
           return L(`pass  # nicht übertragbar: ${b.type}`);
       }
@@ -4653,7 +5646,7 @@ window.CAL_PY_PRELUDE = "from calliopemini import *\nimport music, neopixel, ran
       else if (top.type === 'cal_when_sensor') title = `Wenn ${SENSOR_LABEL[top.getFieldValue('SENSOR')]} > …`;
       else if (top.type === 'cal_when_gesture') title = `Wenn ${GESTURE_LABEL[top.getFieldValue('GESTURE')] || '…'}`;
       else if (top.type === 'cal_when_radio') title = 'Wenn Funk-Nachricht empfangen wird';
-      else return;
+      else { jacdacInScript(top); return; }
       const name = `_skript${scripts.length + 1}`;
       const lines = [`def ${name}():  # ${title}`];
       const first = top.getNextBlock();
@@ -4697,7 +5690,7 @@ window.CAL_PY_PRELUDE = "from calliopemini import *\nimport music, neopixel, ran
     const compact = code
       .replace(/^( {4})+/gm, m => ' '.repeat(m.length / 4))
       .replace(/\n{2,}/g, '\n');
-    return { code: compact, warnings: [...warnings], scriptCount: scripts.length };
+    return { code: compact, warnings: [...warnings], jacdacModules: [...jdModules], scriptCount: scripts.length };
   }
 
   window.CalExport = { generate };
@@ -4776,7 +5769,7 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
     /* ---------- Programm übersetzen und in die Firmware einbetten ---------- */
     function translate() {
       const result = CalExport.generate(workspace);
-      if (result.scriptCount === 0) {
+      if (result.scriptCount === 0 && !result.jacdacModules.length) {
         openModal({
           title: 'Noch kein Programm',
           body: [para('Auf den Calliope kommen nur Skripte, die mit einem Ereignis-Block beginnen, zum Beispiel „Wenn Calliope startet“.')],
@@ -4785,6 +5778,31 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
         return null;
       }
       return result;
+    }
+
+    /* Jacdac steckt nicht in der MicroPython-Firmware des Calliope. Solche Blöcke
+       laufen nur im Simulator; vor dem Übertragen wird das deutlich gesagt. */
+    function askAboutJacdac(result, proceed) {
+      if (!result.jacdacModules.length) { proceed(); return; }
+      const names = result.jacdacModules.join(', ');
+      const body = [
+        para(`Jacdac-Blöcke lassen sich nicht auf den Calliope übertragen, weil die MicroPython-Firmware des Geräts kein Jacdac kennt. Betroffen sind: ${names}.`),
+        para('Diese Blöcke werden übersprungen, der übrige Teil des Programms kommt normal auf das Gerät. Im Simulator bleibt alles wie gewohnt.')
+      ];
+      if (result.scriptCount === 0) {
+        openModal({
+          title: 'Nichts zu übertragen',
+          body: [body[0], para('Ohne weitere Skripte bleibt nichts übrig, was auf den Calliope könnte.')],
+          cancel: false
+        });
+        return;
+      }
+      openModal({
+        title: 'Jacdac bleibt im Simulator',
+        body,
+        okText: 'Rest übertragen',
+        onOk: proceed
+      });
     }
 
     async function buildFs(code) {
@@ -4809,9 +5827,13 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
     }
 
     /* ---------- .hex herunterladen ---------- */
-    async function downloadHex({ quiet = false } = {}) {
+    async function downloadHex({ quiet = false, confirmed = false } = {}) {
       const result = translate();
       if (!result) return;
+      if (!confirmed && result.jacdacModules.length) {
+        askAboutJacdac(result, () => downloadHex({ quiet, confirmed: true }));
+        return;
+      }
       let fs;
       try {
         fs = await buildFs(result.code);
@@ -4876,7 +5898,7 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
       });
     }
 
-    async function flash() {
+    async function flash(opts = {}) {
       if (busy) return;
       if (!navigator.usb) {
         openModal({
@@ -4890,6 +5912,10 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
       }
       const result = translate();
       if (!result) return;
+      if (!opts.confirmed && result.jacdacModules.length) {
+        askAboutJacdac(result, () => flash({ confirmed: true }));
+        return;
+      }
 
       /* Gerät zuerst wählen: der Browser verlangt dafür den direkten Klick */
       let device;
@@ -5005,7 +6031,8 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
         name: projectName(),
         savedAt: new Date().toISOString(),
         workspace: Blockly.serialization.workspaces.save(workspace),
-        monitors: [...runtime.monitors]
+        monitors: [...runtime.monitors],
+        jacdac: app.jacdacActive()
       };
     }
 
@@ -5022,10 +6049,12 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
       runtime.monitors.clear();
       runtime.emitMonitors();
       workspace.clear();
+      app.setJacdacModules(data.jacdac || []);
       Blockly.serialization.workspaces.load(data.workspace, workspace);
       nameInput.value = data.name || DEFAULT_NAME;
       /* Blockly meldet Ereignisse verzögert, daher erst danach wieder scharf schalten */
       setTimeout(() => {
+        app.activateUsedModules();
         const map = workspace.getVariableMap();
         (data.monitors || []).forEach(id => { if (map.getVariableById(id)) runtime.monitors.add(id); });
         runtime.emitMonitors();
@@ -5052,7 +6081,7 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
     /* ---------- Neu ---------- */
     function newProject() {
       confirmDiscard('Beim Anlegen eines neuen Projekts geht es verloren.', () => {
-        applyProject({ name: DEFAULT_NAME, workspace: CalBlocks.starter, monitors: [] });
+        applyProject({ name: DEFAULT_NAME, workspace: CalBlocks.starter, monitors: [], jacdac: [] });
         touched = false;
         clearAutosave();
       });
@@ -5117,7 +6146,7 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
             body: [para('Das Projekt enthält Blöcke, die diese Version nicht kennt. Es wurde ein leeres Projekt geöffnet.')],
             cancel: false
           });
-          applyProject({ name: DEFAULT_NAME, workspace: CalBlocks.starter, monitors: [] });
+          applyProject({ name: DEFAULT_NAME, workspace: CalBlocks.starter, monitors: [], jacdac: [] });
         }
       };
       reader.readAsText(file);
@@ -5313,6 +6342,8 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
     openModal({ title: 'Bitte bestätigen', body: [para(message)], onOk: () => callback(true), onCancel: () => callback(false) });
   });
 
+  CalJacdac.defineBlocks();
+
   /* ---------- Arbeitsfläche ---------- */
   const workspace = Blockly.inject('blocklyDiv', {
     toolbox: CalBlocks.toolboxWithoutVariables,
@@ -5334,8 +6365,9 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
   });
 
   const radioBus = new CalRuntime.RadioBus();
+  const jacdac = new CalJacdac.JacdacHub(document.getElementById('jdCards'));
   const sim = new CalRuntime.CalliopeSim(document.getElementById('board'));
-  const runtime = new CalRuntime.Runtime(workspace, sim, { name: 'Calliope 1', radio: radioBus });
+  const runtime = new CalRuntime.Runtime(workspace, sim, { name: 'Calliope 1', radio: radioBus, jacdac });
 
   /* Der zweite Calliope entsteht erst, wenn er gebraucht wird */
   const boards = [{ sim, runtime }];
@@ -5343,7 +6375,7 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
   function partnerBoard() {
     if (!partner) {
       const sim2 = new CalRuntime.CalliopeSim(document.getElementById('board2'));
-      const runtime2 = new CalRuntime.Runtime(workspace, sim2, { name: 'Calliope 2', radio: radioBus });
+      const runtime2 = new CalRuntime.Runtime(workspace, sim2, { name: 'Calliope 2', radio: radioBus, jacdac });
       partner = { sim: sim2, runtime: runtime2 };
       applySensors();
     }
@@ -5355,6 +6387,8 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
   workspace.registerToolboxCategoryCallback('CAL_VARIABLES', CalBlocks.variablesFlyout);
   workspace.registerButtonCallback('CAL_NEW_VAR', () => Blockly.Variables.createVariableButtonHandler(workspace, null, ''));
   workspace.registerButtonCallback('CAL_MONITORS', () => openMonitorDialog());
+  workspace.registerToolboxCategoryCallback('CAL_JACDAC', () => CalJacdac.flyout(jacdac.active));
+  workspace.registerButtonCallback('CAL_JACDAC_PICK', () => openExtensionDialog());
   workspace.updateToolbox(CalBlocks.toolbox);
 
   Blockly.serialization.workspaces.load(CalBlocks.starter, workspace);
@@ -5425,6 +6459,76 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
       onOk: () => boxes.forEach(b => runtime.setMonitor(b.dataset.id, b.checked))
     });
   }
+
+  /* ---------- Erweiterungen wählen ---------- */
+  const jdPanel = document.getElementById('jdPanel');
+  const jdCount = document.getElementById('jdCount');
+  const extBtn = document.getElementById('extBtn');
+
+  function openExtensionDialog() {
+    const list = document.createElement('div');
+    list.className = 'extList';
+    const boxes = [];
+    let kit = 0;
+    CalJacdac.MODULES.forEach(m => {
+      if (m.kit !== kit) {
+        kit = m.kit;
+        const h = document.createElement('div');
+        h.className = 'extKit';
+        h.textContent = 'Starter-Box ' + (kit === 1 ? 'I' : 'II');
+        list.appendChild(h);
+      }
+      const row = document.createElement('label');
+      row.className = 'extRow';
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.checked = jacdac.isActive(m.id);
+      box.dataset.id = m.id;
+      const text = document.createElement('span');
+      const b = document.createElement('b');
+      b.textContent = m.name;
+      const small = document.createElement('small');
+      small.textContent = m.blurb;
+      text.append(b, small);
+      row.append(box, text);
+      list.appendChild(row);
+      boxes.push(box);
+    });
+    openModal({
+      title: 'Erweiterungen',
+      body: [para('Welche Jacdac-Module sind angeschlossen? Nur aktive Module zeigen ihre Blöcke in der Palette.'), list],
+      okText: 'Übernehmen',
+      focus: boxes[0],
+      onOk: () => setModules(boxes.filter(b => b.checked).map(b => b.dataset.id))
+    });
+  }
+
+  /* Aktive Module setzen: Panel, Palette und Anzeige folgen */
+  function setModules(ids) {
+    jacdac.setActive(ids);
+    refreshToolbox();
+    Blockly.svgResize(workspace);
+  }
+  jacdac.onChange(ids => {
+    jdPanel.hidden = ids.length === 0;
+    if (ids.length) jdPanel.open = true;
+    jdCount.textContent = ids.length === 1 ? '1 Modul' : ids.length + ' Module';
+    extBtn.textContent = ids.length ? `Erweiterungen (${ids.length})` : 'Erweiterungen';
+  });
+  extBtn.addEventListener('click', openExtensionDialog);
+
+  /* Lädt ein Projekt Blöcke eines abgeschalteten Moduls, wird es mit aktiviert. */
+  function activateUsedModules() {
+    const want = new Set(jacdac.active);
+    workspace.getAllBlocks(false).forEach(b => {
+      const mod = CalJacdac.OWNER[b.type];
+      if (mod) want.add(mod);
+    });
+    if (want.size !== jacdac.active.size) setModules([...want]);
+  }
+  app.activateUsedModules = activateUsedModules;
+  app.jacdacActive = () => [...jacdac.active];
+  app.setJacdacModules = setModules;
 
   /* ---------- Start / Stopp ---------- */
   const flagBtn = document.getElementById('flagBtn');
@@ -5580,7 +6684,7 @@ window.CAL_FIRMWARE_GZ_B64 = "H4sICHaQomoCA2NhbGxpb3BlLXYzLmhleACM/dmCLC2ONADez9
   });
 
   window.addEventListener('resize', () => Blockly.svgResize(workspace));
-  window.calApp = Object.assign(app, { workspace, sim, runtime, radioBus, boards: active, openModal, para, isModalOpen: () => !modal.hidden });
+  window.calApp = Object.assign(app, { workspace, sim, runtime, radioBus, jacdac, boards: active, openModal, para, isModalOpen: () => !modal.hidden });
   CalProject.init(window.calApp);
   CalDevice.init(window.calApp);
 })();

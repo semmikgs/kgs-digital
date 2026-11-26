@@ -1,0 +1,2063 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0e1621">
+<title>Technik-Analyse Hochsprung</title>
+<meta name="description" content="Videoanalyse am iPad: Flop-Technik beim Hochsprung Bild für Bild erkennen und mit einer idealisierten Vorlage vergleichen – Stemmschritt, Absprung, Steigen, Lattenüberquerung, Landung. Zwei Perspektiven (Seite/Frontal), Leistungserfassung, läuft offline. In Entwicklung.">
+<meta name="kgs-kategorie" content="in Entwicklung">
+<style>
+:root{--bg:#0e1621;--card:#16212f;--line:#26364a;--txt:#e8eef6;--mut:#8ea3bb;--ok:#5dd39e;--warn:#ff8a00;--bad:#ff4d5e;--tpl:#ffd166;--acc:#3ec1ff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;position:fixed;inset:0;overscroll-behavior:none;touch-action:manipulation;background:var(--bg);color:var(--txt);font:15px/1.35 -apple-system,system-ui,Segoe UI,Roboto,sans-serif;overflow:hidden}
+button,select{font:inherit;color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 13px;cursor:pointer}
+button:active{transform:scale(.97)}
+button.on{background:#20405e;border-color:var(--acc)}
+button.pri{background:var(--acc);color:#04121d;border-color:var(--acc);font-weight:600}
+button:disabled{opacity:.4}
+#app{display:grid;grid-template-rows:auto 1fr;height:100%;height:100dvh}
+header{display:flex;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{font-size:16px;margin:0 4px 0 0;white-space:nowrap}
+header button,header select{padding:7px 10px;font-size:14px}
+header{gap:6px!important}
+header .sp{flex:1}
+#status{flex:1 1 0;min-width:60px;text-align:right;color:var(--mut);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#mid{display:grid;grid-template-columns:1fr 330px;grid-template-rows:auto 1fr;grid-template-areas:"ctrl side" "stage side";min-height:0}
+#ctrl{grid-area:ctrl;border-bottom:1px solid var(--line);padding:6px 10px}
+#stage{grid-area:stage}
+#side{grid-area:side;border-left:1px solid var(--line);overflow:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+@media (orientation:portrait){#mid{grid-template-columns:1fr;grid-template-rows:1fr auto 34vh;grid-template-areas:"stage" "ctrl" "side"}#ctrl{border-top:1px solid var(--line)}#side{border-left:0;border-top:1px solid var(--line)}}
+#phases{padding:10px 12px;border-bottom:1px solid var(--line)}
+#phBtns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0}
+#phBtns button{white-space:nowrap;overflow:hidden;font-size:14px;text-align:left;border-left:6px solid var(--pc);padding:8px 10px}
+#phBtns button.on{background:color-mix(in srgb,var(--pc) 32%,var(--card));border-color:var(--pc)}
+#bSetPh{width:100%;font-weight:700;color:#04121d;border:0;padding:11px}
+.rng{display:flex;gap:6px;margin-top:8px}
+#korr{display:none;margin-top:10px!important;padding:8px 10px;background:var(--card);border-radius:12px;margin:8px 0;border:1px solid #7ef0ff}
+#korr label{display:grid;grid-template-columns:150px 1fr 42px;align-items:center;gap:6px;font-size:13px;margin:7px 0}
+#korr input{width:100%}
+#korr .sub{display:none;margin-left:10px;font-size:12px}
+#korr .sub.open{display:block}
+#korr .sub label{margin:4px 0;color:var(--mut)}
+#korr .more{padding:0 7px;font-size:12px;border-radius:7px;margin-left:4px}
+#korr .ends{display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-left:156px;margin-right:48px}
+#stage{position:relative;background:#000;min-height:0;overflow:hidden}
+#vid{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+#ov{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.tog{position:absolute;top:8px;left:8px;display:flex;gap:6px;flex-wrap:wrap;z-index:3}
+.tog button{padding:6px 10px;font-size:13px;background:rgba(14,22,33,.75)}
+.tog button.on{background:rgba(32,64,94,.9)}
+#legend{position:absolute;bottom:8px;left:8px;font-size:12px;background:rgba(14,22,33,.75);border-radius:8px;padding:5px 9px;z-index:3;display:none}
+#legend i{display:inline-block;width:18px;height:4px;vertical-align:middle;margin:0 4px 0 8px;border-radius:2px}
+#empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:30px;text-align:center;color:var(--mut)}
+#empty div{max-width:560px}
+#empty b{color:var(--txt)}
+#prog{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:5;flex-direction:column;gap:12px}
+#prog .bar{width:60%;height:10px;background:#222;border-radius:6px;overflow:hidden}
+#prog .bar i{display:block;height:100%;width:0;background:var(--acc)}
+#panel{padding:12px}
+#panel h2{font-size:18px;margin:0 0 4px}
+#cue{color:var(--mut);font-size:14px;margin-bottom:10px}
+.met{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:8px 10px;border-radius:10px;background:var(--card);margin-bottom:6px;border-left:5px solid var(--line)}
+.met .v{font-weight:700;font-size:18px;text-align:right}
+.met .t{grid-column:1/3;color:var(--mut);font-size:12px}
+.met.ok{border-left-color:var(--ok)}.met.warn{border-left-color:var(--warn)}.met.bad{border-left-color:var(--bad)}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.small{font-size:12px;color:var(--mut)}
+
+#phases button{padding:7px 12px}
+#phBtns button .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle;border:2px solid currentColor;opacity:.5}
+#phBtns button.set .dot{opacity:1;border-color:transparent}
+#phBtns button .tm{white-space:nowrap;font-size:12px;color:var(--mut);margin-left:5px;font-variant-numeric:tabular-nums}
+#phBtns button.set .tm{color:var(--txt)}
+#bIn.on,#bOut.on{background:rgba(62,193,255,.18);border-color:var(--acc)}
+#bClr{display:none;padding:7px 10px}
+#ctrl{display:flex;gap:6px;align-items:center}
+#tl{position:relative;flex:1;height:72px}
+#seek{touch-action:none;position:absolute;left:0;right:0;bottom:0;width:100%;height:34px;margin:0}
+#marks{position:absolute;left:8px;right:8px;top:22px;height:24px;pointer-events:none}
+#marks .pin{position:absolute;top:0;transform:translateX(-50%);font-size:11px;font-weight:700;color:#04121d;padding:2px 6px;border-radius:6px;white-space:nowrap;pointer-events:auto;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.5)}
+#marks .pin::after{content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);border:5px solid transparent;border-top-color:inherit;border-top-color:var(--c)}
+#marks .pin.act{outline:2px solid #fff;z-index:2}
+#range{position:absolute;bottom:9px;height:16px;background:rgba(62,193,255,.22);border-left:3px solid var(--acc);border-right:3px solid var(--acc);pointer-events:none;display:none;border-radius:3px}
+#phBadge{position:absolute;top:8px;right:8px;z-index:3;padding:6px 12px;border-radius:10px;font-weight:700;color:#04121d;display:none;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+#ref{position:absolute;right:8px;bottom:8px;width:170px;height:210px;z-index:3;background:rgba(14,22,33,.82);border:1px solid var(--line);border-radius:12px;cursor:pointer}
+#toast{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);background:rgba(14,22,33,.92);border:1px solid var(--acc);border-radius:12px;padding:10px 18px;font-weight:600;z-index:6;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1}
+#tlabel{min-width:92px;text-align:right;font-variant-numeric:tabular-nums;color:var(--mut);font-size:13px}
+#rec{position:fixed;inset:0;background:#000;z-index:20;display:none}
+#rec video{width:100%;height:100%;object-fit:contain}
+#rec .bar{position:absolute;bottom:20px;left:0;right:0;display:flex;justify-content:center;gap:14px;align-items:center}
+#recBtn{width:76px;height:76px;border-radius:50%;background:#c8102e;border:5px solid #fff;padding:0}
+#recBtn.live{border-radius:18px;animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.6}}
+#recInfo{position:absolute;top:14px;left:0;right:0;text-align:center;text-shadow:0 1px 3px #000}
+#setup{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.slab{position:absolute;transform:translate(-50%,-100%);font-size:13px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(0,0,0,.55);white-space:nowrap;pointer-events:none}
+#level{position:absolute;top:56px;left:50%;transform:translateX(-50%);display:none;align-items:center;gap:12px;background:rgba(0,0,0,.6);padding:8px 14px;border-radius:12px;font-weight:600}
+#level .vial{position:relative;width:120px;height:120px;border-radius:50%;border:2px solid rgba(255,255,255,.6)}
+#level .vial::before,#level .vial::after{content:"";position:absolute;background:rgba(255,255,255,.35)}
+#level .vial::before{left:50%;top:0;bottom:0;width:1px}#level .vial::after{top:50%;left:0;right:0;height:1px}
+#level .ring{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px;border-radius:50%;border:2px dashed rgba(255,255,255,.7)}
+#level .bub{position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px;border-radius:50%;background:#ff4d5e;transition:transform .08s}
+#level.ok .bub{background:#5dd39e}
+#recTop{position:absolute;top:44px;right:10px;display:flex;gap:8px}
+#nav{display:flex;gap:4px}
+#nav button{padding:8px 12px}
+#nav button.on{background:var(--acc);color:#04121d;border-color:var(--acc);font-weight:700}
+a.back{color:var(--mut);text-decoration:none;border:1px solid var(--line);border-radius:10px;padding:8px 11px;font-size:14px}
+.hctl{display:contents}
+body:not(.ana) .hctl{display:none}
+#mid,.view{grid-row:2}
+.view{overflow:auto;-webkit-overflow-scrolling:touch;padding:12px;padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+.view[hidden],#mid[hidden]{display:none!important}
+.karte{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+.karte h2{margin:0 0 10px;font-size:18px}.karte h3{margin:14px 0 8px;font-size:15px;color:var(--acc)}
+.zwei{display:grid;grid-template-columns:minmax(260px,1fr) 1.6fr;gap:12px;align-items:start}
+@media (max-width:900px),(orientation:portrait){.zwei{grid-template-columns:1fr}}
+.view table{border-collapse:collapse;width:100%;font-size:14.5px}
+.view th,.view td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left}
+.view th{font-size:12.5px;color:var(--mut)}
+.view td.z{font-variant-numeric:tabular-nums;font-weight:700}
+.view tr.klick{cursor:pointer}.view tr.sel{background:#20405e}
+.view input[type=text],.view input[type=number],.view textarea,#athl input,#athl select{font:inherit;color:var(--txt);background:#0e1621;border:1px solid var(--line);border-radius:9px;padding:8px 10px;min-width:0}
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.chips button[aria-pressed=true]{background:#20405e;border-color:var(--acc)}
+.besser{color:var(--ok)}.schlechter{color:var(--bad)}
+.hinweisleiste{background:#3a2e10;border-radius:8px;padding:8px 10px;margin:0 0 8px;font-size:14px}
+.klein{padding:5px 9px;font-size:13px}
+.rot{background:#5a1820;border-color:#ff4d5e}
+#athl{padding:10px 12px;border-bottom:1px solid var(--line)}
+#athl select{padding:7px 8px}
+#saveBox{margin-top:8px;padding:8px;border-radius:10px;background:#12301f;border:1px solid var(--ok)}
+#lListe td{vertical-align:middle}
+#lListe .lin{display:flex;gap:5px;align-items:center}
+#lListe .lin input{width:88px;font-size:16px;padding:7px 8px}
+#lListe .lin button{padding:6px 12px;font-weight:700}
+#lListe .vs{display:flex;gap:4px;flex-wrap:wrap}
+#lListe .vs button{padding:3px 8px;font-size:13px;border-radius:7px;font-variant-numeric:tabular-nums}
+#lListe .vs button.ana{border-color:#7ef0ff}
+#lListe tr.neu{background:rgba(93,211,158,.12)}
+dialog{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:14px;max-width:560px}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+</style>
+</head>
+<body class="ana">
+<div id="app">
+<header>
+  <a class="back" href="../" title="Zurück zu Sport">←</a>
+  <h1>🤸 Hochsprung</h1>
+  <nav id="nav"><button data-v="analyse" class="on">Analyse</button><button data-v="leistung">Leistung</button><button data-v="klassen">Klassen</button><button data-v="auswertung">Auswertung</button><button data-v="aufbau">Aufbau</button></nav>
+  <span class="hctl">
+  <button id="bRec" class="pri">● Aufnehmen</button>
+  <button id="bLoad">📂 Video</button>
+  <input id="file" type="file" accept="video/*" hidden>
+  <button id="bAna" disabled>🔍 Analysieren</button>
+  <select id="rate" title="Analysierte Bilder pro Sekunde">
+    <option value="30">30 B/s</option><option value="60" selected>60 B/s</option><option value="120">120 B/s</option>
+  </select>
+  <select id="cx" title="Modell">
+    <option value="0">schnell</option><option value="1" selected>genau</option>
+  </select>
+  </span>
+  <span id="status">Lade Modell …</span>
+  <button id="bHelp" title="Hilfe · Version 1">?</button>
+</header>
+
+<div id="mid">
+  <div id="ctrl">
+    <button id="bPrev">◀︎ 1</button>
+    <button id="bPlay">▶︎</button>
+    <button id="bNext">1 ▶︎</button>
+    <select id="speed"><option value="0.1">0,1×</option><option value="0.25" selected>0,25×</option><option value="0.5">0,5×</option><option value="1">1×</option></select>
+    <div id="tl"><div id="range"></div><input id="seek" type="range" min="0" max="1000" value="0"><div id="marks"></div></div>
+    <span id="tlabel">0,00 s</span>
+  </div>
+  <section id="stage">
+    <video id="vid" playsinline muted preload="auto"></video>
+    <canvas id="ov"></canvas>
+    <div class="tog" id="tog">
+      <button data-k="skel" class="on">Skelett</button>
+      <button data-k="tpl" class="on">Vorlage</button>
+      <button data-k="ang" class="on">Winkel</button>
+      <button data-k="path" class="on">Hüftbahn</button>
+      <button data-k="ref" class="on">Soll-Figur</button>
+      <button data-k="korr" style="border-color:#7ef0ff">✏️ Korrektur</button>
+      <button id="bSnap">📷 Bild</button>
+    </div>
+    <canvas id="ref" width="170" height="210"></canvas><div id="phBadge"></div><div id="toast"></div>
+    <div id="legend"><i style="background:var(--tpl)"></i>Vorlage<i style="background:var(--ok)"></i>passt<i style="background:var(--warn)"></i>knapp<i style="background:var(--bad)"></i>abweichend</div>
+    <div id="empty"><div id="emptyTxt"></div></div>
+    <div id="prog"><div id="progTxt">Analysiere …</div><div class="bar"><i id="progBar"></i></div><button id="bCancel">Abbrechen</button></div>
+  </section>
+  <div id="side">
+  <div id="athl">
+    <div class="small" style="margin-bottom:4px">Springer</div>
+    <div class="rng" style="margin-top:0"><select id="aKl" style="max-width:40%"></select><select id="aSid" style="flex:1"></select></div>
+    <div class="rng"><button id="aPrev" class="klein">◀</button><button id="aNext" class="klein">▶</button><span id="aInfo" class="small" style="align-self:center"></span></div>
+    <div id="saveBox" hidden>
+      <div class="rng" style="margin-top:0;align-items:center"><span class="small">Höhe (optional)</span><input id="aHoehe" type="text" inputmode="decimal" placeholder="z. B. 1,15" style="width:100px"><span class="small">m</span></div>
+      <button id="aSave" class="pri" style="width:100%;margin-top:8px">💾 Sprung speichern</button>
+    </div>
+    <div id="aHeute" class="small" style="margin-top:6px"></div>
+  </div>
+  <div id="phases">
+    <div class="small">Phase wählen, im Video die passende Stelle suchen, dann setzen:</div>
+    <div class="rng" style="margin:4px 0 2px"><span class="small" style="align-self:center">Perspektive:</span><button id="pS" title="Kamera in Verlängerung der Latte">Seite</button><button id="pF" title="Kamera rechtwinklig zur Latte, hinter dem Absprungpunkt">Frontal</button></div>
+    <div id="phBtns"></div>
+    <button id="bSetPh">📍 hier setzen</button>
+    <button id="bAna2" class="pri" style="width:100%;display:none;padding:12px">🔍 Alle Phasen gesetzt – jetzt analysieren</button>
+    <div class="rng"><span class="small" style="align-self:center">Laufrichtung:</span><button id="dL">← links</button><button id="dR">rechts →</button></div>
+    <div class="rng">
+      <button id="bIn" title="Analyse ab hier">[ Start</button>
+      <button id="bOut" title="Analyse bis hier">Ende ]</button>
+      <button id="bClr" title="Bereich löschen">✕</button>
+    </div>
+  </div>
+  <div style="padding:0 12px">
+    <div id="korr">
+      <div style="display:flex;justify-content:space-between;align-items:center"><b>✏️ Korrektur zeigen</b><button id="kAnim" style="padding:5px 10px">▶︎ Ist → Soll</button></div>
+      <div class="ends"><span>Ist</span><span>Soll</span></div>
+      <label><span><b>Alles</b></span><input type="range" min="0" max="100" value="0" data-g="all"><span>0 %</span></label>
+      <label class="grp"><span>Kopf &amp; Rumpf <button class="more" data-sub="gTr">⋯</button></span><input type="range" min="0" max="100" value="0" data-g="gTr"><span>0 %</span></label>
+      <div class="sub" id="sub_gTr"><label><span>– Rumpf</span><input type="range" min="0" max="100" value="0" data-g="tr"><span>0 %</span></label><label><span>– Kopf</span><input type="range" min="0" max="100" value="0" data-g="head"><span>0 %</span></label></div>
+      <label class="grp"><span style="color:#3ec1ff">Schwungbein <button class="more" data-sub="gSw">⋯</button></span><input type="range" min="0" max="100" value="0" data-g="gSw"><span>0 %</span></label>
+      <div class="sub" id="sub_gSw"><label><span>– Oberschenkel</span><input type="range" min="0" max="100" value="0" data-g="swTh"><span>0 %</span></label><label><span>– Unterschenkel</span><input type="range" min="0" max="100" value="0" data-g="swSh"><span>0 %</span></label></div>
+      <label class="grp"><span style="color:#ff8a00">Sprungbein <button class="more" data-sub="gSt">⋯</button></span><input type="range" min="0" max="100" value="0" data-g="gSt"><span>0 %</span></label>
+      <div class="sub" id="sub_gSt"><label><span>– Oberschenkel</span><input type="range" min="0" max="100" value="0" data-g="stTh"><span>0 %</span></label><label><span>– Unterschenkel</span><input type="range" min="0" max="100" value="0" data-g="stSh"><span>0 %</span></label></div>
+      <label class="grp"><span>Arm Sprungbeinseite <button class="more" data-sub="gASt">⋯</button></span><input type="range" min="0" max="100" value="0" data-g="gASt"><span>0 %</span></label>
+      <div class="sub" id="sub_gASt"><label><span>– Oberarm</span><input type="range" min="0" max="100" value="0" data-g="stUa"><span>0 %</span></label><label><span>– Unterarm</span><input type="range" min="0" max="100" value="0" data-g="stFa"><span>0 %</span></label></div>
+      <label class="grp"><span>Arm Schwungbeinseite <button class="more" data-sub="gASw">⋯</button></span><input type="range" min="0" max="100" value="0" data-g="gASw"><span>0 %</span></label>
+      <div class="sub" id="sub_gASw"><label><span>– Oberarm</span><input type="range" min="0" max="100" value="0" data-g="swUa"><span>0 %</span></label><label><span>– Unterarm</span><input type="range" min="0" max="100" value="0" data-g="swFa"><span>0 %</span></label></div>
+      <div class="small">Weiße Figur = Haltung mit Korrektur, Pfeile zeigen die nötige Bewegung.</div>
+    </div>
+  </div>
+  <aside id="panel">
+    <h2 id="phTitle">–</h2>
+    <div id="cue">Nach der Analyse eine Phase antippen.</div>
+    <div id="mets"></div>
+
+    <div class="row"><span class="small">Sprungbein:</span>
+      <button id="bLegA">auto</button><button id="bLegL">links</button><button id="bLegR">rechts</button></div>
+    <div class="row"><span class="small">Laufrichtung:</span><span id="dirTxt" class="small">–</span><button id="bDir" style="padding:4px 9px">⇄</button></div>
+    <div id="toa" class="met" style="display:none"></div>
+    <p class="small">Richtwerte für den Flop (Kinder/Jugend), angelehnt an gängige Leichtathletik-Fachliteratur und DLV-Lehrmaterial. Die Kamera sieht den Springer wegen der Kurve leicht schräg – es sind Orientierungswerte, keine Normen.</p>
+  </aside>
+  </div>
+</div>
+
+<!-- ===================== LEISTUNG ===================== -->
+<div id="v-leistung" class="view" hidden>
+  <div class="karte">
+    <div class="row" style="justify-content:space-between;margin:0"><h2 style="margin:0" id="lTitel">Leistung eintragen</h2><span class="small" id="lDatum"></span></div>
+    <p class="small" id="lHinweis" style="margin:6px 0 8px"></p>
+    <div class="row"><select id="lKl"></select><div class="chips" id="lG"></div></div>
+    <div id="lListe"></div>
+  </div>
+</div>
+
+<!-- ===================== KLASSEN ===================== -->
+<div id="v-klassen" class="view" hidden>
+ <div class="zwei">
+  <div class="karte">
+    <h2>Klassen</h2>
+    <p class="small" style="margin-top:0">Gleiche Listen wie in der Sprint-Zeitmessung (auf diesem iPad). Import aus WebUntis (CSV), Excel (.xlsx) oder kopiertem Text. Erkannt werden Langname/Nachname, Vorname, Klasse, Geschlecht. Gleiche Schüler werden nicht doppelt angelegt.</p>
+    <div class="row">
+      <label class="pri" style="display:inline-block;padding:9px 13px;border-radius:10px;background:var(--acc);color:#04121d;font-weight:600;cursor:pointer">📄 Liste importieren<input type="file" id="importDatei" accept=".csv,.txt,.xlsx,text/csv" hidden></label>
+      <button id="textImport">📋 Text einfügen</button>
+      <button id="neueKlasse">+ Neue Klasse</button>
+    </div>
+    <div id="textBox" hidden style="margin-top:12px">
+      <p class="small" style="margin:0 0 6px">WebUntis-Liste anzeigen, alles markieren, kopieren und hier einfügen. Zusätzliche Spalten und # hinter Namen werden ignoriert.</p>
+      <textarea id="textEingabe" rows="7" style="width:100%;font-size:14px" placeholder="Langname;Vorname;Klasse;Geschlecht;…&#10;Röpke;Anna;10R1;w;…"></textarea>
+      <div class="row">
+        <input type="text" id="textKlasse" placeholder="Klasse (nur nötig, wenn nicht im Text)" style="flex:1 1 100%">
+        <button class="pri" id="textUebernehmen" disabled>✓ Übernehmen</button>
+        <button id="textAbbrechen">Abbrechen</button>
+      </div>
+      <div id="textVorschau"></div>
+    </div>
+    <h3>Vorhandene Klassen</h3>
+    <div id="klassenListe"></div>
+  </div>
+  <div class="karte" id="klassenDetail"><p class="small">Klasse auswählen.</p></div>
+ </div>
+</div>
+
+<!-- ===================== AUSWERTUNG ===================== -->
+<div id="v-auswertung" class="view" hidden>
+  <div class="karte">
+    <div class="row" style="justify-content:space-between;margin:0">
+      <h2 style="margin:0">Auswertung</h2>
+      <div class="row" style="margin:0">
+        <select id="pdfSort"><option value="liste">PDF nach Klassenliste</option><option value="best">PDF nach Bestwert</option><option value="entw">PDF nach Entwicklung</option></select>
+        <button class="klein" id="pdfBericht">📄 PDF-Bericht</button>
+        <button class="klein" id="exportCsv">CSV</button>
+        <button class="klein" id="sicherungExport">Sicherung speichern</button>
+        <label class="klein" style="display:inline-block;border:1px solid var(--line);border-radius:10px;cursor:pointer">Sicherung laden<input type="file" id="sicherungImport" accept=".json,application/json" hidden></label>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <select id="awKlasse"></select>
+      <select id="awMg" style="font-weight:700"></select>
+      <div class="chips" id="awGeschlecht"></div>
+    </div>
+  </div>
+  <div class="zwei">
+    <div class="karte"><div id="awTabelle"></div></div>
+    <div class="karte" id="awDetail"></div>
+  </div>
+</div>
+
+<!-- ===================== AUFBAU ===================== -->
+<div id="v-aufbau" class="view" hidden>
+ <div class="zwei">
+  <div class="karte">
+    <h2>Aufbau</h2>
+    <svg viewBox="0 0 560 330" style="width:100%;height:auto;background:#0e1621;border-radius:10px" font-family="sans-serif" font-size="12">
+      <text x="16" y="22" fill="#3ec1ff" font-weight="700">Von oben</text>
+      <rect x="215" y="40" width="190" height="70" fill="#2b4a78"/><text x="285" y="80" fill="#cfe0ff">Matte</text>
+      <line x1="220" y1="112" x2="400" y2="112" stroke="#ffd166" stroke-width="4"/><text x="300" y="104" fill="#ffd166">Latte</text>
+      <rect x="213" y="106" width="10" height="12" fill="#fff"/><rect x="397" y="106" width="10" height="12" fill="#fff"/>
+      <path d="M 130 325 L 130 260 Q 136 150 256 136" fill="none" stroke="#ff8a00" stroke-width="3" stroke-dasharray="7 5"/>
+      <text x="140" y="300" fill="#ff8a00">Anlauf</text><text x="140" y="314" fill="#ff8a00">(J-Kurve)</text>
+      <circle cx="262" cy="136" r="6" fill="#ff4d5e"/><text x="272" y="140" fill="#ff4d5e">Absprung</text>
+      <line x1="80" y1="112" x2="213" y2="112" stroke="#7ef0ff" stroke-dasharray="5 4"/>
+      <rect x="54" y="102" width="26" height="20" rx="3" fill="#3ec1ff"/><text x="18" y="142" fill="#e8eef6">① Seite</text><text x="18" y="156" fill="#8ea3bb" font-size="11">in Verlängerung der Latte</text><text x="18" y="170" fill="#8ea3bb" font-size="11">8–10 m vor dem Ständer</text>
+      <line x1="262" y1="142" x2="262" y2="280" stroke="#7ef0ff" stroke-dasharray="5 4"/>
+      <rect x="249" y="280" width="26" height="20" rx="3" fill="#3ec1ff"/><text x="284" y="292" fill="#e8eef6">② Frontal</text><text x="284" y="306" fill="#8ea3bb" font-size="11">hinter dem Absprungpunkt,</text><text x="284" y="320" fill="#8ea3bb" font-size="11">rechtwinklig zur Latte, 8–10 m</text>
+    </svg>
+    <ul class="small">
+      <li><b>① Seite (Standard):</b> iPad in Verlängerung der Latte auf der Absprungseite, 8–10 m vom Ständer entfernt. Zeigt Stemmschritt, Absprung, Steigen, Brücke über der Latte und Landung im Profil.</li>
+      <li><b>② Frontal:</b> iPad auf der Anlaufseite, genau hinter dem Absprungpunkt, rechtwinklig zur Latte, 8–10 m entfernt – nicht in die Anlaufkurve stellen. Zeigt Stemmschritt, Absprung (Aufrichten, Schwungknie, Arme) und Steigen.</li>
+      <li><b>Höhe:</b> Kamera etwa auf Lattenhöhe (1–1,2 m), <b>waagerecht</b> – in der Aufnahme hilft die 📐 Wasserwaage (grün = gerade).</li>
+      <li><b>Im Bild:</b> letzte 2–3 Schritte, Absprung, Latte und Matte – die ganze Person von Kopf bis Fuß. Hilfslinien in der Aufnahme mit „Laufrichtung ⇄“ an die Anlaufseite anpassen.</li>
+      <li><b>Perspektive</b> vor der Analyse einstellen (rechts unter „Perspektive“ oder in der Aufnahme) – die Vorlage und die Phasen hängen davon ab.</li>
+      <li><b>Licht:</b> Sonne möglichst im Rücken der Kamera, ruhiger Hintergrund hilft der Erkennung.</li>
+    </ul>
+  </div>
+  <div class="karte">
+    <h2>Daten</h2>
+    <p class="small" style="margin-top:0">Alle Sprünge bleiben nur auf diesem iPad (im Browser gespeichert). Die Klassenlisten teilen sich Hochsprung, Weitsprung und Sprint-Zeitmessung. Regelmäßig unter „Auswertung“ eine Sicherung speichern, z. B. bevor der Safari-Verlauf gelöscht wird.</p>
+    <p class="small" id="datenInfo"></p>
+    <button class="rot klein" id="allesLoeschen">Alle Hochsprung-Daten auf diesem Gerät löschen</button>
+  </div>
+ </div>
+</div>
+
+</div>
+
+<div id="rec">
+  <video id="live" playsinline muted autoplay></video>
+  <svg id="setup" viewBox="0 0 100 100" preserveAspectRatio="none"></svg><div id="setupLab"></div>
+  <div id="level"><div class="vial"><div class="ring"></div><div class="bub" id="bub"></div></div><div id="levelTxt">–</div></div>
+  <div id="recTop"><button id="recPersp">Perspektive: Seite</button><button id="recDir">Laufrichtung ⇄</button><button id="recLevel">📐 Wasserwaage</button><button id="recGuide">Hilfslinien</button></div>
+  <div id="recInfo"></div>
+  <div class="bar">
+    <button id="recClose">Abbrechen</button>
+    <button id="recBtn" aria-label="Aufnahme"></button>
+    <button id="recFlip">⟲ Kamera</button>
+  </div>
+</div>
+
+<dialog id="help">
+  <h3>Kurzanleitung <span class="small" style="opacity:.6">· Version 1 · 26.11.</span></h3>
+  <ol>
+    <li><b>Perspektive</b> wählen: <b>Seite</b> = in Verlängerung der Latte (Standard, ganze Bewegung) oder <b>Frontal</b> = rechtwinklig zur Latte hinter dem Absprungpunkt (Absprung und Steigen). Aufbau siehe Reiter „Aufbau“.</li>
+    <li><b>Aufnehmen</b> oder Video laden (Stativ, ganze Person im Bild).</li>
+    <li>Optional mit <b>[ Start</b> / <b>Ende ]</b> den Bereich eingrenzen.</li>
+    <li><b>Analysieren</b>: Die Körperpunkte werden Bild für Bild erkannt – komplett auf dem iPad, ohne Internet.</li>
+    <li>Die Phasen (Stemmschritt, Absprung, Steigen, Lattenüberquerung, Landung) werden automatisch gesucht. Passt ein Zeitpunkt nicht: hinspulen, Phase antippen, <b>📍 hier setzen</b>.</li>
+    <li>Gelb gestrichelt = <b>Vorlage</b> mit den Körpermaßen des Kindes, am Sprungfuß (bzw. an der Hüfte) ausgerichtet. Das erkannte Skelett ist grün/orange/rot je nach Abweichung. <b>✏️ Korrektur</b> zeigt mit Reglern den Weg von Ist zu Soll.</li>
+    <li>Werden linkes und rechtes Bein vertauscht, bei <b>Sprungbein</b> umschalten.</li>
+    <li><b>Speichern:</b> oben rechts den Springer wählen (◀ ▶ blättert durch die Klasse), optional die Höhe eintragen, „💾 Sprung speichern“.</li>
+    <li><b>Leistung:</b> übersprungene Höhen ohne Video schnell je Versuch eintragen (m oder cm, ↵ = nächster Schüler). Verlauf, Vergleiche, PDF und CSV unter <b>Auswertung</b>.</li>
+    <li><b>Klassen</b> sind dieselben wie in Weitsprung und Sprint-Zeitmessung – einmal importieren reicht.</li>
+  </ol>
+  <p class="small">Offline: Die Seite einmal mit Internet öffnen, danach funktioniert sie auch ohne Netz (Status oben rechts zeigt „offline bereit“).</p>
+  <form method="dialog"><button class="pri">OK</button></form>
+</dialog>
+
+<script src="lib/mediapipe-pose/pose.js"></script>
+<script>
+'use strict';
+/* ================= Vorlage (Richtwerte) =================
+ Winkel in Grad, Seitenansicht, Laufrichtung = "vorn".
+ Beinsegmente & Arme: Winkel zur Senkrechten nach UNTEN, + = nach vorn (90 = waagerecht vorn).
+ Rumpf (Hüfte→Schulter): Winkel zur Senkrechten nach OBEN, + = Vorlage.
+ st = Sprungbein-Seite, sw = Schwungbein-Seite. Th=Oberschenkel, Sh=Unterschenkel, Ua=Oberarm, Fa=Unterarm, tr=Rumpf
+*/
+const TEMPLATES = {
+ seite: {
+  name: 'Hochsprung Flop – Seite (Kinder/Jugend)', kurz: 'Seite',
+  toa: { ok: [50, 75], warn: [40, 85], soll: 62, tol: 12, note: 'steil nach oben statt flach in die Latte' },
+  phases: [
+    { id:'aufsatz', name:'Stemmschritt', anchor:'ankle',
+      seg:{stTh:22, stSh:32, swTh:-15, swSh:-85, tr:-12, stUa:-45, stFa:-25, swUa:-45, swFa:-25},
+      metrics:['aufsatz','rumpf','knieSt'],
+      cue:'Letzter Schritt: Absprungfuß flach und deutlich vor der Hüfte aufsetzen, Bein fast gestreckt. Der Körper ist noch in Rück-/Innenlage (weg von der Latte), beide Arme hinten zum Schwungholen.' },
+    { id:'absprung', name:'Absprung', anchor:'ankle',
+      seg:{stTh:-6, stSh:-10, swTh:80, swSh:-5, tr:2, stUa:150, stFa:170, swUa:150, swFa:170},
+      metrics:['knieSt','schwungOS','rumpf','arme'],
+      cue:'Sprungbein ganz strecken (Fuß–Knie–Hüfte) und den Körper senkrecht aufrichten – nicht in die Latte fallen. Schwungknie kräftig nach oben, Arme schwungvoll hoch.' },
+    { id:'steigen', name:'Steigen', anchor:'hip',
+      seg:{stTh:-8, stSh:-35, swTh:65, swSh:5, tr:10, stUa:165, stFa:175, swUa:160, swFa:175},
+      metrics:['rumpf','schwungOS','arme'],
+      cue:'Erst hoch, dann drehen: Schwungknie bleibt oben, der Körper dreht sich mit dem Rücken zur Latte. Nicht zu früh nach hinten über die Latte kippen.' },
+    { id:'bruecke', name:'Lattenüberquerung', anchor:'hip',
+      seg:{stTh:-55, stSh:15, swTh:-55, swSh:15, tr:105, stUa:-40, stFa:-40, swUa:-40, swFa:-40},
+      metrics:['huefte','knie'],
+      cue:'Brücke: Die Hüfte ist der höchste Punkt. Hüfte hochdrücken, Schultern und Knie tiefer, Unterschenkel hängen locker (Knie ca. 90–110°), Kopf leicht im Nacken.' },
+    { id:'landung', name:'Landung', anchor:'hip',
+      seg:{stTh:160, stSh:165, swTh:160, swSh:165, tr:125, stUa:60, stFa:60, swUa:60, swFa:60},
+      metrics:['huefte','knie'],
+      cue:'Sobald die Hüfte über der Latte ist: Kinn zur Brust, Beine strecken und hochziehen (Abklappen). Landung auf Schultern und oberem Rücken, nicht auf dem Nacken.' }
+  ],
+  tol:{ leg:12, tr:10, arm:30 }
+ },
+ front: {
+  name: 'Hochsprung Flop – Frontal (Kinder/Jugend)', kurz: 'Frontal',
+  toa: { ok: [40, 62], warn: [30, 72], soll: 51, tol: 11, note: 'senkrecht hoch statt an der Latte entlang' },
+  phases: [
+    { id:'fAufsatz', name:'Stemmschritt', lang:'Frontal · Stemmschritt', anchor:'ankle',
+      seg:{stTh:20, stSh:28, swTh:-12, swSh:-85, tr:-10, stUa:-45, stFa:-25, swUa:-45, swFa:-25},
+      metrics:['aufsatz','rumpf','knieSt'],
+      cue:'Absprungfuß vor dem Körper aufsetzen (in Laufrichtung), Rücklage aus dem Kurvenlauf halten, Arme hinten. Nicht „über den Fuß“ laufen.' },
+    { id:'fAbsprung', name:'Absprung', lang:'Frontal · Absprung', anchor:'ankle',
+      seg:{stTh:-5, stSh:-8, swTh:85, swSh:0, tr:0, stUa:150, stFa:170, swUa:150, swFa:170},
+      metrics:['knieSt','schwungOS','knieSw','rumpf','arme'],
+      cue:'Aufrichten: Sprungbein ganz strecken, Oberkörper senkrecht. Schwungknie gebeugt bis zur Waagerechten hochreißen, beide Arme kräftig nach oben.' },
+    { id:'fSteigen', name:'Steigen', lang:'Frontal · Steigen', anchor:'hip',
+      seg:{stTh:-5, stSh:-30, swTh:70, swSh:0, tr:0, stUa:165, stFa:175, swUa:165, swFa:175},
+      metrics:['rumpf','schwungOS','arme'],
+      cue:'Senkrecht nach oben steigen und nicht an der Latte entlang wegdriften. Schwungknie oben halten, die Drehung um die Längsachse beginnt.' }
+  ],
+  tol:{ leg:12, tr:10, arm:30 }
+ }
+};
+const ALL_PHASES = [...TEMPLATES.seite.phases, ...TEMPLATES.front.phases];
+let TEMPLATE = TEMPLATES.seite;
+const base = id => /^f[A-Z]/.test(id || '') ? id[1].toLowerCase() + id.slice(2) : id;   // fAbsprung -> absprung
+const pid = b => (TEMPLATE.phases.find(p => base(p.id) === b) || {}).id;
+const armAng = (p, q) => { const a = segAng(p, q, false); return a < -90 ? a + 360 : a; };   // Arme oben ohne Sprung bei ±180
+const METRICS = {
+  knieSt:{ label:'Kniewinkel Sprungbein', unit:'°', tol:10, f:s=>joint(s.stH,s.stK,s.stA) },
+  knieSw:{ label:'Kniewinkel Schwungbein', unit:'°', tol:12, f:s=>joint(s.swH,s.swK,s.swA) },
+  rumpf:{ label:'Rumpfneigung', unit:'°', tol:10, f:s=>segAng(s.H,s.S,true), fmt:v=>(v>=0?'+':'')+Math.round(v)+'°', note:'+ = in Bewegungsrichtung, − = Rück-/Innenlage' },
+  schwungOS:{ label:'Schwungbein-Oberschenkel', unit:'°', tol:12, f:s=>segAng(s.swH,s.swK,false), note:'90° = waagerecht' },
+  aufsatz:{ label:'Fuß vor Hüfte', unit:'°', tol:8, f:s=>segAng(s.stH,s.stA,false), note:'Winkel Hüfte→Fuß zur Senkrechten' },
+  arme:{ label:'Armeinsatz (Oberarme)', unit:'°', tol:25, f:s=>(armAng(s.S,s.stE)+armAng(s.S,s.swE))/2, note:'180° = senkrecht nach oben' },
+  huefte:{ label:'Hüftwinkel (Schulter–Hüfte–Knie)', unit:'°', tol:15, f:s=>joint(s.S,s.H,mid(s.stK,s.swK)), note:'kleiner = stärkere Brücke bzw. stärker abgeklappt' },
+  knie:{ label:'Kniewinkel (beide Beine)', unit:'°', tol:15, f:s=>(joint(s.stH,s.stK,s.stA)+joint(s.swH,s.swK,s.swA))/2 }
+};
+const SEGS = [ // key, von, nach, aufwärts?, Toleranzgruppe
+  ['stTh','stH','stK',false,'leg'],['stSh','stK','stA',false,'leg'],
+  ['swTh','swH','swK',false,'leg'],['swSh','swK','swA',false,'leg'],
+  ['tr','H','S',true,'tr'],
+  ['stUa','S','stE',false,'arm'],['stFa','stE','stW',false,'arm'],
+  ['swUa','S','swE',false,'arm'],['swFa','swE','swW',false,'arm']
+];
+const I = {nose:0, ls:11, rs:12, le:13, re:14, lw:15, rw:16, lh:23, rh:24, lk:25, rk:26, la:27, ra:28, lhe:29, rhe:30, lf:31, rf:32};
+
+/* ================= Zustand ================= */
+const $ = s => document.querySelector(s);
+const vid = $('#vid'), ov = $('#ov'), ctx = ov.getContext('2d');
+const work = document.createElement('canvas'), wctx = work.getContext('2d');
+let pose = null, poseCx = -1, poseReady = false;
+const S = {
+  frames: [], fps: 60, t0: 0, dir: 1, stance: 'L', lens: null,
+  persp: 'seite', phase: {}, active: 'absprung', idx: 0, inT: null, outT: null,
+  show: {skel:true, tpl:true, ang:true, path:true, ref:true, korr:false}, mix: {tr:0, head:0, swTh:0, swSh:0, stTh:0, stSh:0, stUa:0, stFa:0, swUa:0, swFa:0}, pt: {}, man: {}, legAuto: true, cancel: false, toa: null, vidName: ''
+};
+
+/* ================= Geometrie ================= */
+const deg = r => r * 180 / Math.PI, rad = d => d * Math.PI / 180;
+const P = (x, y) => ({x, y});
+const mid = (a, b) => P((a.x + b.x) / 2, (a.y + b.y) / 2);
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+function segAng(p, q, up) { const dx = (q.x - p.x) * S.dir, dy = q.y - p.y; return deg(up ? Math.atan2(dx, -dy) : Math.atan2(dx, dy)); }
+function joint(a, b, c) { const v1 = Math.atan2(a.y - b.y, a.x - b.x), v2 = Math.atan2(c.y - b.y, c.x - b.x); let d = Math.abs(deg(v1 - v2)) % 360; return d > 180 ? 360 - d : d; }
+function wrap(d) { d = ((d + 180) % 360 + 360) % 360 - 180; return d; }
+function vec(a, up) { const r = rad(a); return up ? P(Math.sin(r) * S.dir, -Math.cos(r)) : P(Math.sin(r) * S.dir, Math.cos(r)); }
+const add = (a, v, l) => P(a.x + v.x * l, a.y + v.y * l);
+
+// Sprung-/Schwungbein je Phase über die Lage bestimmen (Links/Rechts der Erkennung ist von der Seite oft vertauscht)
+function sideFor(lm, phId) {
+  let st = S.stance === 'L' ? 'l' : 'r';
+  const b = base(phId);
+  if (!S.legAuto || !phId) return { st, arm: st };
+  const fy = (k) => Math.max(lm[I[k + 'a']][1], lm[I[k + 'f']][1], lm[I[k + 'he']][1]);
+  if (b === 'aufsatz' || b === 'absprung') st = fy('l') >= fy('r') ? 'l' : 'r';          // Fuß am Boden
+  else if (b === 'steigen') st = lm[I.lk][1] >= lm[I.rk][1] ? 'l' : 'r';                 // Schwungknie ist oben
+  return { st, arm: st };
+}
+function skelFromLm(lm, phId) {
+  if (!lm) return null;
+  const g = i => P(lm[i][0], lm[i][1]), vis = i => lm[i][2];
+  const sd = sideFor(lm, phId), st = sd.st, sw = st === 'l' ? 'r' : 'l', ast = sd.arm, asw = ast === 'l' ? 'r' : 'l';
+  const s = {
+    H: mid(g(I.lh), g(I.rh)), S: mid(g(I.ls), g(I.rs)), N: g(I.nose),
+    stH: g(I[st+'h']), stK: g(I[st+'k']), stA: g(I[st+'a']), stF: g(I[st+'f']), stHe: g(I[st+'he']),
+    swH: g(I[sw+'h']), swK: g(I[sw+'k']), swA: g(I[sw+'a']), swF: g(I[sw+'f']), swHe: g(I[sw+'he']),
+    stE: g(I[ast+'e']), stW: g(I[ast+'w']), swE: g(I[asw+'e']), swW: g(I[asw+'w']),
+    stSh: g(I[st+'s']), swSh: g(I[sw+'s'])
+  };
+  s.vis = {
+    stH: vis(I[st+'h']), stK: vis(I[st+'k']), stA: vis(I[st+'a']), swH: vis(I[sw+'h']), swK: vis(I[sw+'k']), swA: vis(I[sw+'a']),
+    stE: vis(I[ast+'e']), stW: vis(I[ast+'w']), swE: vis(I[asw+'e']), swW: vis(I[asw+'w']), H: 1, S: 1
+  };
+  return s;
+}
+// Schablone mit den Körpermaßen des Kindes bauen
+function buildTemplate(ph, det, L = S.lens, anchor = 'hip') {
+  if (!L || !det) return null;
+  const a = ph.seg, t = {};
+  if (anchor === 'ankle') {
+    t.stA = det.stA;
+    t.stK = add(t.stA, vec(a.stSh), -L.sh);
+    t.H = add(t.stK, vec(a.stTh), -L.th);
+  } else {
+    t.H = det.H || det.stA;
+    t.stK = add(t.H, vec(a.stTh), L.th);
+    t.stA = add(t.stK, vec(a.stSh), L.sh);
+  }
+  t.stH = t.swH = t.H;
+  t.swK = add(t.H, vec(a.swTh), L.th); t.swA = add(t.swK, vec(a.swSh), L.sh);
+  t.S = add(t.H, vec(a.tr, true), L.tr);
+  t.N = add(t.S, vec(a.tr + 12, true), L.tr * 0.42);
+  t.stE = add(t.S, vec(a.stUa), L.ua); t.stW = add(t.stE, vec(a.stFa), L.fa);
+  t.swE = add(t.S, vec(a.swUa), L.ua); t.swW = add(t.swE, vec(a.swFa), L.fa);
+  return t;
+}
+
+/* ================= Posen-Modell ================= */
+async function ensurePose() {
+  const cx = +$('#cx').value;
+  if (pose && poseCx === cx) return;
+  setStatus('Lade Modell …');
+  if (!pose) {
+    pose = new Pose({ locateFile: f => 'lib/mediapipe-pose/' + f });
+    pose.onResults(r => { lastRes = r.poseLandmarks || null; });
+  }
+  pose.setOptions({ modelComplexity: cx, smoothLandmarks: true, enableSegmentation: false, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+  work.width = 64; work.height = 64; wctx.fillRect(0, 0, 64, 64);
+  await pose.send({ image: work }); // Initialisierung + Aufwärmen
+  poseCx = cx; poseReady = true;
+  setStatus(offlineOk ? 'Modell bereit · offline bereit ✓' : 'Modell bereit');
+}
+let lastRes = null;
+async function detect(img) { lastRes = null; await pose.send({ image: img }); return lastRes; }
+
+/* ================= Video laden / Aufnahme ================= */
+function loadVideo(src, name) {
+  S.frames = []; S.phase = {}; S.pt = {}; S.man = {}; S.inT = S.outT = null; S.toa = null; S.lens = null;
+  S.vidName = name || 'aufnahme';
+  vid.src = src; vid.load();
+  vid.onloadedmetadata = () => {
+    if (vid.duration === Infinity || isNaN(vid.duration)) { // Chrome-WebM-Fix
+      vid.currentTime = 1e7;
+      vid.ontimeupdate = () => { vid.ontimeupdate = null; vid.currentTime = 0; ready(); };
+    } else ready();
+  };
+  function ready() {
+    $('#empty').style.display = 'none'; $('#bAna').disabled = false;
+    setStatus(`Video ${vid.videoWidth}×${vid.videoHeight}, ${vid.duration.toFixed(1)} s – jetzt analysieren`);
+    resize(); updateUI(); draw();
+  }
+}
+$('#bLoad').onclick = () => $('#file').click();
+$('#file').onchange = e => { const f = e.target.files[0]; if (f) loadVideo(URL.createObjectURL(f), f.name.replace(/\.[^.]+$/, '')); e.target.value = ''; };
+
+let stream = null, recorder = null, chunks = [], facing = 'environment';
+/* ---------- Hilfslinien für den Aufbau + Wasserwaage ---------- */
+let guideOn = true;
+function drawSetup() {
+  const sv = $('#setup'), lab = $('#setupLab');
+  if (!guideOn) { sv.innerHTML = ''; lab.innerHTML = ''; return; }
+  // entworfen für "läuft nach rechts", bei Laufrichtung links gespiegelt
+  const M = S.dir < 0, X = x => M ? 100 - x : x, g = 80;
+  const ns = 'vector-effect="non-scaling-stroke"';
+  if (S.persp === 'front') {
+    const lb = g - 22, sx1 = X(22), sx2 = X(78), ab = X(36);
+    sv.innerHTML = `
+      <rect x="${Math.min(sx1, sx2)}" y="${g - 13}" width="${Math.abs(sx2 - sx1)}" height="13" fill="rgba(62,120,200,.16)" stroke="#6aa0ff" stroke-width="1" stroke-dasharray="4 4" ${ns}/>
+      <line x1="2" y1="${g}" x2="98" y2="${g}" stroke="#7ef0ff" stroke-width="2" stroke-dasharray="6 5" ${ns}/>
+      <line x1="${sx1}" y1="${g}" x2="${sx1}" y2="${g - 34}" stroke="#fff" stroke-width="4" ${ns}/>
+      <line x1="${sx2}" y1="${g}" x2="${sx2}" y2="${g - 34}" stroke="#fff" stroke-width="4" ${ns}/>
+      <line x1="${sx1}" y1="${lb}" x2="${sx2}" y2="${lb}" stroke="#ffd166" stroke-width="3" stroke-dasharray="8 5" ${ns}/>
+      <rect x="${ab - .6}" y="${g - .6}" width="1.2" height="1.6" fill="#ff4d5e" ${ns}/>
+      <path d="M ${X(3)} 99 Q ${X(6)} ${g + 4} ${X(30)} ${g - 1}" fill="none" stroke="#ff8a00" stroke-width="2" ${ns}/>`;
+    lab.innerHTML = `<div class="slab" style="left:50%;top:${lb}%;color:#ffd166">Latte auf diese Linie</div>
+      <div class="slab" style="left:50%;top:${g - 13}%;transform:translate(-50%,-100%) translateY(-28px);color:#6aa0ff;font-size:11px">Matte dahinter</div>
+      <div class="slab" style="left:${ab}%;top:${g + 2}%;transform:translate(-50%,0);color:#ff4d5e">Absprung ca.</div>
+      <div class="slab" style="left:${X(10)}%;top:${g + 12}%;transform:translate(-50%,0);color:#ff8a00">Anlaufkurve</div>
+      <div class="slab" style="left:${X(88)}%;top:${g}%;transform:translate(-50%,4px);color:#7ef0ff;font-size:11px">Boden</div>`;
+  } else {
+    const sx = X(50), ab = X(41), m1 = X(50), m2 = X(86), lb = g - 22;
+    sv.innerHTML = `
+      <rect x="${Math.min(m1, m2)}" y="${g - 11}" width="${Math.abs(m2 - m1)}" height="11" fill="rgba(62,120,200,.18)" stroke="#6aa0ff" stroke-width="1" stroke-dasharray="4 4" ${ns}/>
+      <line x1="2" y1="${g}" x2="98" y2="${g}" stroke="#7ef0ff" stroke-width="2" stroke-dasharray="6 5" ${ns}/>
+      <line x1="${sx}" y1="${g}" x2="${sx}" y2="${g - 32}" stroke="#fff" stroke-width="4" ${ns}/>
+      <line x1="${sx - 1.6}" y1="${lb}" x2="${sx + 1.6}" y2="${lb}" stroke="#ffd166" stroke-width="7" ${ns}/>
+      <line x1="${sx}" y1="${lb}" x2="${sx}" y2="${lb - 0.01}" stroke="#ffd166" stroke-width="7" ${ns}/>
+      <rect x="${ab - .6}" y="${g - .6}" width="1.2" height="1.6" fill="#ff4d5e" ${ns}/>
+      <path d="M ${X(8)} ${g - 6} L ${X(30)} ${g - 6} l ${M ? 2 : -2} -1.5 M ${X(30)} ${g - 6} l ${M ? 2 : -2} 1.5" fill="none" stroke="#ff8a00" stroke-width="2" ${ns}/>`;
+    lab.innerHTML = `<div class="slab" style="left:${sx}%;top:${g - 32}%;color:#fff">Ständer</div>
+      <div class="slab" style="left:${sx}%;top:${lb}%;transform:translate(${M ? '-120%' : '20%'},-50%);color:#ffd166">Latte (Stirnseite)</div>
+      <div class="slab" style="left:${(m1 + m2) / 2}%;top:${g - 11}%;color:#6aa0ff">Matte</div>
+      <div class="slab" style="left:${ab}%;top:${g + 2}%;transform:translate(-50%,0);color:#ff4d5e">Absprung ca.</div>
+      <div class="slab" style="left:${X(19)}%;top:${g - 7}%;color:#ff8a00">Anlauf</div>
+      <div class="slab" style="left:${X(20)}%;top:${g}%;transform:translate(-50%,4px);color:#7ef0ff;font-size:11px">Boden auf diese Linie</div>`;
+  }
+}
+let levelOn = false;
+function onMotion(e) {
+  const a = e.accelerationIncludingGravity; if (!a || a.x == null) return;
+  const ang = ((screen.orientation && screen.orientation.angle) ?? window.orientation ?? 0) * Math.PI / 180;
+  // Schwerkraft in Bildschirm-Koordinaten drehen
+  const gx = a.x * Math.cos(ang) + a.y * Math.sin(ang), gy = -a.x * Math.sin(ang) + a.y * Math.cos(ang), gz = a.z;
+  const roll = Math.atan2(gx, -gy) * 180 / Math.PI;                       // Bild schief (Horizont)
+  const pitch = Math.atan2(gz, Math.hypot(gx, gy)) * 180 / Math.PI;       // nach oben/unten gekippt
+  const r = ((roll + 540) % 180 + 180) % 180 - 90;                          // auf ±90 bringen (Vorzeichen je nach Gerät)
+  const rr = Math.abs(r) > 45 ? 0 : r;
+  const bub = $('#bub'), k = 4;
+  bub.style.transform = `translate(${Math.max(-48, Math.min(48, rr * k))}px, ${Math.max(-48, Math.min(48, pitch * k))}px)`;
+  const ok = Math.abs(rr) < 1.5 && Math.abs(pitch) < 3;
+  $('#level').classList.toggle('ok', ok);
+  $('#levelTxt').innerHTML = `${ok ? '✓ gerade' : 'ausrichten'}<br><span class="small">schief ${Math.abs(rr).toFixed(1)}° · gekippt ${Math.abs(pitch).toFixed(1)}°</span>`;
+}
+async function toggleLevel() {
+  if (!levelOn) {
+    try { if (window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') { const r = await DeviceMotionEvent.requestPermission(); if (r !== 'granted') { alert('Ohne Zugriff auf den Lagesensor geht die Wasserwaage nicht.'); return; } } } catch (e) {}
+    window.addEventListener('devicemotion', onMotion); levelOn = true; $('#level').style.display = 'flex';
+  } else { window.removeEventListener('devicemotion', onMotion); levelOn = false; $('#level').style.display = 'none'; }
+  $('#recLevel').classList.toggle('on', levelOn);
+}
+$('#recLevel').onclick = toggleLevel;
+$('#recGuide').onclick = () => { guideOn = !guideOn; $('#recGuide').classList.toggle('on', guideOn); drawSetup(); };
+$('#recDir').onclick = () => { setDir(-S.dir); drawSetup(); };
+async function openCam() {
+  drawSetup(); $('#recGuide').classList.toggle('on', guideOn);
+  try {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 60 } } });
+    $('#live').srcObject = stream;
+    const st = stream.getVideoTracks()[0].getSettings();
+    $('#recInfo').textContent = `Kamera ${st.width || ''}×${st.height || ''} · ${Math.round(st.frameRate || 0)} B/s · ${TEMPLATE.kurz} – ganze Person im Bild`;
+  } catch (err) { alert('Kamera nicht verfügbar: ' + err.message); closeCam(); }
+}
+function closeCam() { if (recorder && recorder.state === 'recording') recorder.stop(); if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; $('#rec').style.display = 'none'; }
+$('#bRec').onclick = () => { $('#rec').style.display = 'block'; openCam(); };
+$('#recClose').onclick = () => { chunks = []; if (recorder) recorder.onstop = null; closeCam(); };
+$('#recFlip').onclick = () => { facing = facing === 'environment' ? 'user' : 'environment'; openCam(); };
+$('#recBtn').onclick = () => {
+  if (!stream) return;
+  if (recorder && recorder.state === 'recording') { recorder.stop(); return; }
+  const types = ['video/mp4', 'video/webm;codecs=vp9', 'video/webm'];
+  const mt = types.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
+  recorder = new MediaRecorder(stream, mt ? { mimeType: mt, videoBitsPerSecond: 12e6 } : undefined);
+  chunks = [];
+  recorder.ondataavailable = e => e.data.size && chunks.push(e.data);
+  recorder.onstop = () => {
+    $('#recBtn').classList.remove('live');
+    const blob = new Blob(chunks, { type: recorder.mimeType || 'video/mp4' });
+    closeCam();
+    if (blob.size) loadVideo(URL.createObjectURL(blob), 'hochsprung_' + new Date().toTimeString().slice(0, 8).replace(/:/g, ''));
+  };
+  recorder.start(250);
+  $('#recBtn').classList.add('live');
+  const t0 = Date.now();
+  const tick = () => { if (recorder.state !== 'recording') return; $('#recInfo').textContent = `● Aufnahme ${((Date.now() - t0) / 1000).toFixed(1)} s – zum Stoppen tippen`; requestAnimationFrame(tick); };
+  tick();
+};
+
+/* ================= Analyse ================= */
+function seek(t) {
+  return new Promise(res => {
+    if (Math.abs(vid.currentTime - t) < 1e-4 && vid.readyState >= 2) return res();
+    const done = () => {
+      vid.removeEventListener('seeked', done);
+      if (vid.requestVideoFrameCallback) { let r = false; const go = () => { if (!r) { r = true; res(); } }; vid.requestVideoFrameCallback(go); setTimeout(go, 80); }
+      else setTimeout(res, 40);
+    };
+    vid.addEventListener('seeked', done);
+    vid.currentTime = t;
+  });
+}
+async function runPass(t0, t1, fps, label, part) {
+  const W = vid.videoWidth, H = vid.videoHeight;
+  const n = Math.max(1, Math.floor((t1 - t0) * fps) + 1), out = [];
+  const tStart = performance.now();
+  if (pose.reset) pose.reset();
+  for (let i = 0; i < n && !S.cancel; i++) {
+    const t = t0 + i / fps;
+    await seek(t);
+    wctx.drawImage(vid, 0, 0, work.width, work.height);
+    const r = await detect(work);
+    out.push({ t, lm: r ? r.map(p => [p.x * W, p.y * H, p.visibility ?? 1]) : null });
+    if (i % 2 === 0) {
+      const el = (performance.now() - tStart) / 1000, rest = el / (i + 1) * (n - i - 1);
+      $('#progBar').style.width = (100 * (i + 1) / n) + '%';
+      $('#progTxt').textContent = `${label} · Bild ${i + 1}/${n} · noch ca. ${Math.ceil(rest)} s`;
+    }
+  }
+  return out;
+}
+async function analyze() {
+  if (!vid.videoWidth) return;
+  vid.pause();
+  S.cancel = false;
+  S.show.ref = false; document.querySelector('#tog button[data-k="ref"]').classList.remove('on'); drawRef();
+  $('#prog').style.display = 'flex'; $('#progBar').style.width = '0'; $('#progTxt').textContent = 'Lade Modell …';
+  try { await ensurePose(); } catch (e) { $('#prog').style.display = 'none'; alert('Modell konnte nicht geladen werden: ' + e.message); return; }
+  const W = vid.videoWidth, H = vid.videoHeight, k = Math.min(1, 720 / Math.max(W, H));
+  work.width = Math.round(W * k); work.height = Math.round(H * k);
+  const fps = +$('#rate').value, dur = vid.duration - 0.001;
+  let a = Math.max(0, S.inT ?? 0), b = Math.min(S.outT ?? dur, dur);
+  // vorhandene Pins (auch aus früherer Analyse) als Zeiten merken
+  const pins = Object.keys(S.man).map(id => S.pt[id]).filter(t => t != null && t >= a - 0.01 && t <= b + 0.01);
+  let how;
+  if (pins.length) {
+    const lo = Math.min(...pins), hi = Math.max(...pins), pad = pins.length === 1 ? 0.8 : 0.4;
+    a = Math.max(a, lo - pad); b = Math.min(b, hi + pad); how = 'um die gesetzten Pins';
+  } else if (b - a > 1.6) {
+    // Schritt 1: grob den Sprung suchen
+    S.fps = 15; S.t0 = a; S.frames = await runPass(a, b, 15, 'Schritt 1/2: Sprung suchen', 1);
+    if (!S.cancel) {
+      postProcess();
+      const ia = S.phase[pid('aufsatz')], ts = Object.values(S.phase).map(i => S.frames[i].t);
+      if (ia != null && ts.length >= 3) {
+        const ta = S.frames[ia].t, tl = Math.max(...ts);
+        a = Math.max(a, ta - 0.6); b = Math.min(b, tl + (S.persp === 'front' ? 0.5 : 0.4)); how = 'automatisch um den Sprung';
+      } else how = 'ganzer Bereich (Sprung nicht sicher gefunden)';
+    }
+    for (const id in S.pt) if (!S.man[id]) delete S.pt[id];
+  } else how = 'ganzer Bereich';
+  if (!S.cancel) {
+    S.fps = fps; S.t0 = a;
+    S.frames = await runPass(a, b, fps, (pins.length || how === 'ganzer Bereich' ? 'Analyse' : 'Schritt 2/2: Feinanalyse'), 2);
+  }
+  $('#prog').style.display = 'none';
+  if (S.cancel) { setStatus('Analyse abgebrochen'); }
+  postProcess();
+  const hit = S.frames.filter(f => f.lm).length;
+  setStatus(`${fmtT(a)}–${fmtT(b)} analysiert (${how}) · Person in ${hit}/${S.frames.length} Bildern`);
+  updateUI();
+  S.active = null; updateUI();
+  const ab = S.phase[pid('absprung')]; if (ab != null) gotoIdx(ab); else draw();
+}
+$('#bAna').onclick = analyze;
+$('#bCancel').onclick = () => { S.cancel = true; };
+
+function keepManual() { // gesetzte Pins haben Vorrang vor der Automatik
+  if (!S.frames.length) return;
+  for (const id in S.man) if (S.pt[id] != null) S.phase[id] = nearIdx(S.pt[id]);
+  for (const id in S.phase) S.pt[id] = S.frames[S.phase[id]].t;
+}
+function postProcess() { postProcessCore(); keepManual(); }
+function postProcessCore() {
+  const F = S.frames; S.phase = {};
+  // 1) Links/Rechts-Vertauschungen der Erkennung korrigieren
+  const legPairs = [[I.lh, I.rh], [I.lk, I.rk], [I.la, I.ra], [I.lhe, I.rhe], [I.lf, I.rf]];
+  const armPairs = [[I.ls, I.rs], [I.le, I.re], [I.lw, I.rw]];
+  const fix = (pairs, test) => {
+    let prev = null;
+    for (const f of F) {
+      if (!f.lm) continue;
+      if (prev) {
+        let same = 0, swp = 0;
+        for (const [l, r] of test) {
+          same += Math.hypot(f.lm[l][0] - prev[l][0], f.lm[l][1] - prev[l][1]) + Math.hypot(f.lm[r][0] - prev[r][0], f.lm[r][1] - prev[r][1]);
+          swp += Math.hypot(f.lm[l][0] - prev[r][0], f.lm[l][1] - prev[r][1]) + Math.hypot(f.lm[r][0] - prev[l][0], f.lm[r][1] - prev[l][1]);
+        }
+        if (swp < same * 0.6) for (const [l, r] of pairs) { const t = f.lm[l]; f.lm[l] = f.lm[r]; f.lm[r] = t; }
+      }
+      prev = f.lm;
+    }
+  };
+  fix(legPairs, [[I.lk, I.rk], [I.la, I.ra], [I.lf, I.rf]]);
+  fix(armPairs, [[I.le, I.re], [I.lw, I.rw]]);
+  const V = F.filter(f => f.lm);
+  if (V.length < 3) return;
+  // 2) Laufrichtung
+  const hx = f => (f.lm[I.lh][0] + f.lm[I.rh][0]) / 2;
+  S.dir = hx(V[V.length - 1]) >= hx(V[0]) ? 1 : -1;
+  try { localStorage.setItem('hs_dir', S.dir); } catch (e) {}
+  // 3) Körpermaße (Median)
+  const med = a => { a = a.filter(x => isFinite(x)).sort((x, y) => x - y); return a.length ? a[a.length >> 1] : 0; };
+  const seg = (a, b) => V.filter(f => f.lm[a][2] > .5 && f.lm[b][2] > .5).map(f => Math.hypot(f.lm[a][0] - f.lm[b][0], f.lm[a][1] - f.lm[b][1]));
+  S.lens = {
+    th: med([...seg(I.lh, I.lk), ...seg(I.rh, I.rk)]), sh: med([...seg(I.lk, I.la), ...seg(I.rk, I.ra)]),
+    ua: med([...seg(I.ls, I.le), ...seg(I.rs, I.re)]), fa: med([...seg(I.le, I.lw), ...seg(I.re, I.rw)]),
+    tr: med(V.map(f => Math.hypot((f.lm[I.ls][0] + f.lm[I.rs][0] - f.lm[I.lh][0] - f.lm[I.rh][0]) / 2, (f.lm[I.ls][1] + f.lm[I.rs][1] - f.lm[I.lh][1] - f.lm[I.rh][1]) / 2)))
+  };
+  // 4) Phasen automatisch suchen
+  autoPhases();
+}
+function autoPhases() {
+  const F = S.frames, leg = S.lens.th + S.lens.sh, thr = 0.12 * leg;
+  const low = F.map(f => f.lm ? Math.max(f.lm[I.la][1], f.lm[I.ra][1], f.lm[I.lf][1], f.lm[I.rf][1], f.lm[I.lhe][1], f.lm[I.rhe][1]) : NaN);
+  const sorted = low.filter(isFinite).sort((a, b) => a - b);
+  const ground = sorted[Math.floor(sorted.length * 0.9)];
+  const air = low.map(y => isFinite(y) ? y < ground - thr : null);
+  for (let i = 0; i < air.length; i++) if (air[i] === null) air[i] = i > 0 ? air[i - 1] : false;      // Lücken füllen (z. B. hinter der Matte)
+  for (let i = 1; i < air.length - 1; i++) if (!air[i] && air[i - 1] && air[i + 1]) air[i] = true;   // Einzel-Ausreißer
+  // längste Luftphase = Sprung (die Matte liegt höher als der Boden, daher oft bis zum Ende)
+  let best = null, s = -1;
+  for (let i = 0; i <= air.length; i++) {
+    if (i < air.length && air[i]) { if (s < 0) s = i; }
+    else if (s >= 0) { if (!best || i - 1 - s > best[1] - best[0]) best = [s, i - 1]; s = -1; }
+  }
+  S.phase = {};
+  const setPh = (b, i) => { const id = pid(b); if (id && i != null) S.phase[id] = i; };
+  if (!best || best[1] - best[0] < 3 || best[0] < 2) { S.toa = null; return; }
+  const [fs, fe] = best;
+  const to = fs - 1;
+  // Sprungbein = das am Boden befindliche Bein beim Lösen
+  const f = F[to];
+  if (f && f.lm) S.stance = f.lm[I.la][1] + f.lm[I.lf][1] > f.lm[I.ra][1] + f.lm[I.rf][1] ? 'L' : 'R';
+  // Stemmschritt = erster Bodenkontakt des Sprungfußes vor dem Lösen (max. 0,3 s zurück)
+  const st = S.stance === 'L' ? ['la', 'lf', 'lhe'] : ['ra', 'rf', 'rhe'];
+  const footY = i => F[i].lm ? Math.max(...st.map(k => F[i].lm[I[k]][1])) : NaN;
+  let cs = to; const minI = Math.max(0, to - Math.max(Math.round(0.3 * S.fps), Math.round(0.25 * (fe - fs))));
+  const gLoc = footY(to);
+  while (cs - 1 >= minI && !(gLoc - footY(cs - 1) > thr * 0.5)) cs--;
+  if (cs === to && to - minI >= 2) cs = Math.max(minI, to - Math.round(0.15 * S.fps));
+  setPh('aufsatz', cs); setPh('absprung', to);
+  // Hüftbahn: höchster Punkt = Lattenüberquerung
+  const hy = i => F[i] && F[i].lm ? (F[i].lm[I.lh][1] + F[i].lm[I.rh][1]) / 2 : NaN;
+  let ap = fs;
+  for (let i = fs; i <= fe; i++) if (hy(i) < hy(ap)) ap = i;
+  const y0 = hy(to), rise = y0 - hy(ap);
+  let stg = Math.min(fs + 1, ap);
+  for (let i = fs; i <= ap; i++) if (y0 - hy(i) >= 0.5 * rise) { stg = i; break; }
+  setPh('steigen', stg);
+  if (ap - fs >= 2) setPh('bruecke', ap);
+  // Landung: Hüfte hat 80 % des Wegs nach unten zurückgelegt
+  let mx = ap; for (let i = ap; i <= fe; i++) if (hy(i) > hy(mx)) mx = i;
+  if (mx - ap >= 2) { let ld = mx; for (let i = ap; i <= mx; i++) if (hy(i) - hy(ap) >= 0.8 * (hy(mx) - hy(ap))) { ld = i; break; } setPh('landung', ld); }
+  // Steigwinkel: Parabel durch die Hüftbahn bis zum höchsten Punkt, Steigung direkt beim Lösen
+  const pts = []; for (let i = fs; i <= ap; i++) if (F[i].lm) { const h = skelFromLm(F[i].lm).H; pts.push([i - fs, h.x, h.y]); }
+  S.toa = null;
+  if (pts.length >= 4) {
+    const n = pts.length, sum = f => pts.reduce((a, p) => a + f(p), 0);
+    const S0 = n, S1 = sum(p => p[0]), S2 = sum(p => p[0] ** 2), S3 = sum(p => p[0] ** 3), S4 = sum(p => p[0] ** 4);
+    const vx = (n * sum(p => p[0] * p[1]) - S1 * sum(p => p[1])) / (n * S2 - S1 * S1);
+    const Y0 = sum(p => p[2]), Y1 = sum(p => p[0] * p[2]), Y2 = sum(p => p[0] ** 2 * p[2]);
+    const det3 = (m) => m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+    const M = [[S4, S3, S2], [S3, S2, S1], [S2, S1, S0]], D = det3(M);
+    const bCoef = D ? det3([[S4, Y2, S2], [S3, Y1, S1], [S2, Y0, S0]]) / D : null;
+    if (bCoef != null) {
+      const ang = deg(Math.atan2(-bCoef, Math.abs(vx)));   // Steigwinkel gegen die Waagerechte (Richtung egal)
+      if (ang > 5 && ang < 89) S.toa = ang;
+    }
+  }
+}
+
+/* ================= Zeichnen ================= */
+let view = { k: 1, ox: 0, oy: 0 }, dpr = 1;
+function resize() {
+  const r = $('#stage').getBoundingClientRect(); dpr = window.devicePixelRatio || 1;
+  ov.width = Math.round(r.width * dpr); ov.height = Math.round(r.height * dpr);
+  const vw = vid.videoWidth || 16, vh = vid.videoHeight || 9, k = Math.min(r.width / vw, r.height / vh);
+  view = { k, ox: (r.width - vw * k) / 2, oy: (r.height - vh * k) / 2 };
+  draw();
+}
+window.addEventListener('resize', resize);
+if (window.ResizeObserver) new ResizeObserver(() => { resize(); updateUI(); }).observe(document.querySelector('#stage'));
+function curFrame() { return S.frames[S.idx] || null; }
+// aktive Phase (angetippt) – sonst automatisch die Phase, deren Pin gerade erreicht ist
+function phaseObj() {
+  if (S.active) return TEMPLATE.phases.find(p => p.id === S.active);
+  let best = null, bd = 1e9;
+  for (const ph of TEMPLATE.phases) {
+    const d = S.frames.length ? (S.phase[ph.id] != null ? Math.abs(S.idx - S.phase[ph.id]) : 1e9) : (S.pt[ph.id] != null ? Math.abs(vid.currentTime - S.pt[ph.id]) * 60 : 1e9);
+    if (d <= 3 && d < bd) { bd = d; best = ph; }
+  }
+  return best;
+}
+function devColor(d, tol) { const a = Math.abs(d); return a <= tol ? '#5dd39e' : a <= 2 * tol ? '#ff8a00' : '#ff4d5e'; }
+
+function drawRef() {
+  const c = $('#ref'), ph = phaseObj();
+  c.style.display = S.show.ref && ph && vid.src ? 'block' : 'none';
+  if (c.style.display === 'none') return;
+  const d = window.devicePixelRatio || 1, W = 170, H = 210;
+  if (c.width !== W * d) { c.width = W * d; c.height = H * d; }
+  const x = c.getContext('2d'); x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, W, H);
+  const L = { th: 1, sh: 1, tr: 1.2, ua: 0.62, fa: 0.58 };
+  const t = buildTemplate(ph, { stA: P(0, 0), H: P(0, 0) }, L, ph.anchor);
+  const pts = Object.values(t); pts.push(add(t.N, P(0, -1), 0.25));
+  const minX = Math.min(...pts.map(p => p.x)), maxX = Math.max(...pts.map(p => p.x)), minY = Math.min(...pts.map(p => p.y)), maxY = Math.max(...pts.map(p => p.y));
+  const ground = ph.anchor === 'ankle' ? t.stA.y : maxY + 0.9;
+  const k = Math.min((W - 24) / (maxX - minX), (H - 52) / (ground - minY));
+  const ox = W / 2 - (minX + maxX) / 2 * k, oy = H - 18 - ground * k;
+  const m = p => P(ox + p.x * k, oy + p.y * k);
+  x.font = '600 13px -apple-system,system-ui,sans-serif'; x.fillStyle = PH_COL[ph.id]; x.fillText('Soll: ' + ph.name + ' · ' + TEMPLATE.kurz, 10, 18);
+  x.strokeStyle = 'rgba(255,255,255,.35)'; x.lineWidth = 2; x.beginPath(); x.moveTo(8, oy + ground * k); x.lineTo(W - 8, oy + ground * k); x.stroke();
+  x.lineCap = 'round';
+  for (const [key, a, b] of SEGS) {
+    const A = m(t[a]), B = m(t[b]); x.beginPath(); x.moveTo(A.x, A.y); x.lineTo(B.x, B.y);
+    x.strokeStyle = key.startsWith('st') ? '#ff8a00' : key.startsWith('sw') ? '#3ec1ff' : '#ffd166';
+    x.lineWidth = key.endsWith('Ua') || key.endsWith('Fa') ? 3 : 5; x.stroke();
+  }
+  const hd = m(t.N); x.beginPath(); x.arc(hd.x, hd.y, 0.22 * k, 0, 7); x.strokeStyle = '#ffd166'; x.lineWidth = 3; x.stroke();
+  if (ph.id === 'bruecke') { const lb = m(add(t.H, P(0, 1), 0.28)); x.fillStyle = '#fff'; x.beginPath(); x.arc(lb.x, lb.y, 4, 0, 7); x.fill(); x.font = '10px -apple-system,system-ui,sans-serif'; x.fillText('Latte', lb.x + 7, lb.y + 4); }
+  x.font = '11px -apple-system,system-ui,sans-serif'; x.fillStyle = '#ff8a00'; x.fillText('Sprungbein', 10, 33); x.fillStyle = '#3ec1ff'; x.fillText('Schwungbein', 80, 33);
+  x.fillStyle = 'rgba(255,255,255,.55)'; x.fillText((S.dir > 0 ? 'läuft nach rechts →' : '← läuft nach links') + '  (tippen ⇄)', 10, H - 3);
+}
+function draw() {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, ov.width, ov.height);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  render(ctx, p => P(view.ox + p.x * view.k, view.oy + p.y * view.k), 1);
+  updatePanel(); updateBadge(); drawRef();
+}
+function render(c, map, lw) {
+  const fr = curFrame(); if (!fr) return;
+  const ph = phaseObj(), det = skelFromLm(fr.lm, ph && ph.id);
+  // Hüftbahn
+  if (S.show.path) {
+    c.beginPath(); let first = true;
+    for (let i = 0; i <= S.idx; i++) { const f = S.frames[i]; if (!f.lm) continue; const h = map(skelFromLm(f.lm).H); first ? c.moveTo(h.x, h.y) : c.lineTo(h.x, h.y); first = false; }
+    c.strokeStyle = 'rgba(62,193,255,.75)'; c.lineWidth = 2.5 * lw; c.setLineDash([]); c.stroke();
+  }
+  if (!det) { label(c, map(P(20 / view.k, 60 / view.k)), 'keine Person erkannt', '#fff', lw); return; }
+  const near = !ph || S.phase[ph.id] == null || Math.abs(S.idx - S.phase[ph.id]) <= 3;
+  const tplRef = ph ? buildTemplate(ph, det) : null;           // für Korrektur immer
+  const tpl = S.show.tpl && near ? tplRef : null;
+  if (S.show.tpl && !near && ph) label(c, map(add(det.S, P(0, -1), S.lens.tr * 0.9)), 'Vorlage „' + ph.name + '“ nur am Pin', PH_COL[ph.id], lw);
+  // Vorlage
+  if (tpl) {
+    c.lineCap = 'round'; c.setLineDash([10 * lw, 7 * lw]);
+    for (const [k, a, b] of SEGS) {
+      const A = map(tpl[a]), B = map(tpl[b]), w = (k.endsWith('Ua') || k.endsWith('Fa') ? 5 : 8) * lw;
+      c.beginPath(); c.moveTo(A.x, A.y); c.lineTo(B.x, B.y);
+      c.strokeStyle = 'rgba(0,0,0,.55)'; c.lineWidth = w + 3 * lw; c.stroke();
+      c.strokeStyle = 'rgba(255,209,102,.95)'; c.lineWidth = w; c.stroke();
+    }
+    c.setLineDash([]);
+    const hd = map(tpl.N), sh = map(tpl.S); c.beginPath(); c.arc(hd.x, hd.y, dist(hd, sh) * 0.45, 0, 7); c.strokeStyle = 'rgba(255,209,102,.8)'; c.lineWidth = 3 * lw; c.stroke();
+    for (const j of ['H', 'stK', 'stA', 'swK', 'swA']) { const q = map(tpl[j]); c.beginPath(); c.arc(q.x, q.y, 5 * lw, 0, 7); c.fillStyle = 'rgba(255,209,102,.95)'; c.fill(); }
+  }
+  // erkanntes Skelett
+  if (S.show.skel) {
+    c.lineCap = 'round';
+    const tolOf = g => TEMPLATE.tol[g];
+    for (const [k, a, b, up, g] of SEGS) {
+      let col = 'rgba(255,255,255,.9)';
+      if (tpl) col = devColor(wrap(segAng(det[a], det[b], up) - segAng(tpl[a], tpl[b], up)), tolOf(g));
+      const lowVis = (det.vis[a] ?? 1) < .3 || (det.vis[b] ?? 1) < .3;
+      const A = map(det[a]), B = map(det[b]);
+      c.beginPath(); c.moveTo(A.x, A.y); c.lineTo(B.x, B.y);
+      c.strokeStyle = '#000'; c.globalAlpha = .45; c.lineWidth = (k.endsWith('Ua') || k.endsWith('Fa') ? 6 : 8) * lw; c.stroke(); c.globalAlpha = lowVis ? .45 : 1;
+      c.strokeStyle = col; c.lineWidth = (k.endsWith('Ua') || k.endsWith('Fa') ? 3.5 : 5) * lw; c.stroke(); c.globalAlpha = 1;
+    }
+    // Fuß
+    for (const [a, b, h] of [['stA', 'stF', 'stHe'], ['swA', 'swF', 'swHe']]) { const A = map(det[h]), B = map(det[b]); c.beginPath(); c.moveTo(A.x, A.y); c.lineTo(B.x, B.y); c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 3 * lw; c.stroke(); }
+    // Kopf
+    const hd = map(det.N); c.beginPath(); c.arc(hd.x, hd.y, 6 * lw, 0, 7); c.fillStyle = '#fff'; c.fill();
+    for (const j of ['H', 'S', 'stK', 'stA', 'swK', 'swA', 'stE', 'swE']) { const q = map(det[j]); c.beginPath(); c.arc(q.x, q.y, 4.5 * lw, 0, 7); c.fillStyle = j.startsWith('st') ? '#ff8a00' : j.startsWith('sw') ? '#3ec1ff' : '#fff'; c.fill(); }
+  }
+  // Winkel-Beschriftung
+  if (S.show.ang) {
+    const kSt = joint(det.stH, det.stK, det.stA), kSw = joint(det.swH, det.swK, det.swA), tr = segAng(det.H, det.S, true);
+    label(c, map(det.stK), Math.round(kSt) + '°', '#ff8a00', lw, 14);
+    label(c, map(det.swK), Math.round(kSw) + '°', '#3ec1ff', lw, 14);
+    label(c, map(mid(det.H, det.S)), 'Rumpf ' + (tr >= 0 ? '+' : '') + Math.round(tr) + '°', '#fff', lw, 14);
+  }
+  if (S.show.korr && tplRef) drawKorr(c, map, lw, det, tplRef);
+}
+// Korrektur: Ist-Winkel jedes Segments in Richtung Soll verschieben (Körpermaße des Kindes, Hüfte fest)
+const KGROUP = { gTr:['tr','head'], gSw:['swTh','swSh'], gSt:['stTh','stSh'], gASt:['stUa','stFa'], gASw:['swUa','swFa'] };
+function korrSkel(det, tpl) {
+  const L = S.lens, A = {};
+  for (const [k, a, b, up] of SEGS) { const ist = segAng(det[a], det[b], up), soll = segAng(tpl[a], tpl[b], up); A[k] = ist + wrap(soll - ist) * S.mix[k] / 100; }
+  const nIst = segAng(det.S, det.N, true), k = {};
+  k.H = det.H;
+  k.stK = add(k.H, vec(A.stTh), L.th); k.stA = add(k.stK, vec(A.stSh), L.sh);
+  k.swK = add(k.H, vec(A.swTh), L.th); k.swA = add(k.swK, vec(A.swSh), L.sh);
+  k.stH = k.swH = k.H;
+  k.S = add(k.H, vec(A.tr, true), L.tr);
+  const rIst = wrap(nIst - segAng(det.H, det.S, true)); k.N = add(k.S, vec(A.tr + rIst + wrap(12 - rIst) * S.mix.head / 100, true), Math.max(dist(det.S, det.N), L.tr * 0.35));
+  k.stE = add(k.S, vec(A.stUa), L.ua); k.stW = add(k.stE, vec(A.stFa), L.fa);
+  k.swE = add(k.S, vec(A.swUa), L.ua); k.swW = add(k.swE, vec(A.swFa), L.fa);
+  return k;
+}
+function arrow(c, a, b, col, lw) {
+  const d = dist(a, b); if (d < 10 * lw) return;
+  const ang = Math.atan2(b.y - a.y, b.x - a.x), h = 11 * lw;
+  c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.strokeStyle = col; c.lineWidth = 3 * lw; c.setLineDash([]); c.stroke();
+  c.beginPath(); c.moveTo(b.x, b.y); c.lineTo(b.x - h * Math.cos(ang - .45), b.y - h * Math.sin(ang - .45)); c.lineTo(b.x - h * Math.cos(ang + .45), b.y - h * Math.sin(ang + .45)); c.closePath(); c.fillStyle = col; c.fill();
+}
+function drawKorr(c, map, lw, det, tpl) {
+  if (!Object.values(S.mix).some(v => v > 0)) return;
+  const k = korrSkel(det, tpl);
+  c.lineCap = 'round';
+  for (const [key, a, b] of SEGS) {
+    const A = map(k[a]), B = map(k[b]), w = (key.endsWith('Ua') || key.endsWith('Fa') ? 5 : 7.5) * lw;
+    c.beginPath(); c.moveTo(A.x, A.y); c.lineTo(B.x, B.y);
+    c.strokeStyle = 'rgba(0,0,0,.6)'; c.lineWidth = w + 4 * lw; c.stroke();
+    c.strokeStyle = '#f4fdff'; c.lineWidth = w; c.stroke();
+  }
+  const hd = map(k.N), sh = map(k.S); c.beginPath(); c.arc(hd.x, hd.y, Math.max(8 * lw, dist(hd, sh) * 0.4), 0, 7); c.strokeStyle = '#f4fdff'; c.lineWidth = 3.5 * lw; c.stroke();
+  for (const j of ['stK', 'stA', 'swK', 'swA', 'stW', 'swW', 'N', 'S']) arrow(c, map(det[j]), map(k[j]), '#7ef0ff', lw);
+}
+function label(c, p, txt, col, lw, dx = 0) {
+  c.font = `600 ${14 * lw}px -apple-system,system-ui,sans-serif`;
+  const w = c.measureText(txt).width + 10 * lw, x = p.x + dx * lw, y = p.y - 10 * lw;
+  c.fillStyle = 'rgba(0,0,0,.65)'; c.fillRect(x, y - 15 * lw, w, 21 * lw);
+  c.fillStyle = col; c.fillText(txt, x + 5 * lw, y);
+}
+
+/* ================= Panel / Bedienung ================= */
+function updatePanel() {
+  const ph = phaseObj(), fr = curFrame();
+  $('#phTitle').textContent = ph ? ph.name + (phT(ph.id) != null ? ' · ' + fmtT(phT(ph.id)) : ' (nicht gesetzt)') : '–';
+  $('#cue').textContent = ph ? ph.cue : 'Phase antippen oder zu einem Pin spulen – dort erscheinen Vorlage und Werte automatisch.';
+  const box = $('#mets'); box.innerHTML = '';
+  const det = fr && skelFromLm(fr.lm, ph && ph.id);
+  if (ph && det && S.lens) {
+    const tpl = buildTemplate(ph, det);
+    for (const id of ph.metrics) {
+      const m = METRICS[id], v = m.f(det), t = m.f(tpl), d = id === 'rumpf' ? wrap(v - t) : v - t;
+      const cls = Math.abs(d) <= m.tol ? 'ok' : Math.abs(d) <= 2 * m.tol ? 'warn' : 'bad';
+      const fmt = m.fmt || (x => Math.round(x) + '°');
+      const el = document.createElement('div'); el.className = 'met ' + cls;
+      el.innerHTML = `<span>${m.label}</span><span class="v">${fmt(v)}</span><span class="t">Ziel ${fmt(t)} ± ${m.tol}°${m.note ? ' · ' + m.note : ''}</span>`;
+      box.appendChild(el);
+    }
+  }
+  const toa = $('#toa');
+  if (S.toa != null) {
+    const R = TEMPLATE.toa, cls = S.toa >= R.ok[0] && S.toa <= R.ok[1] ? 'ok' : S.toa >= R.warn[0] && S.toa <= R.warn[1] ? 'warn' : 'bad';
+    toa.className = 'met ' + cls; toa.style.display = 'grid';
+    toa.innerHTML = `<span>Steigwinkel (Hüftbahn)</span><span class="v">${Math.round(S.toa)}°</span><span class="t">Orientierung ${R.ok[0]}–${R.ok[1]}° (${TEMPLATE.kurz}) · ${R.note}</span>`;
+  } else toa.style.display = 'none';
+  $('#dirTxt').textContent = S.dir > 0 ? 'nach rechts →' : '← nach links';
+  $('#dL').classList.toggle('on', S.dir < 0); $('#dR').classList.toggle('on', S.dir > 0);
+  $('#bLegA').classList.toggle('on', S.legAuto); $('#bLegL').classList.toggle('on', !S.legAuto && S.stance === 'L'); $('#bLegR').classList.toggle('on', !S.legAuto && S.stance === 'R');
+  $('#legend').style.display = S.show.tpl && S.frames.length ? 'block' : 'none';
+  $('#pS').classList.toggle('on', S.persp === 'seite'); $('#pF').classList.toggle('on', S.persp === 'front');
+}
+const PH_COL = { aufsatz:'#ff8a00', absprung:'#ff4d5e', steigen:'#c77dff', bruecke:'#3ec1ff', landung:'#5dd39e', fAufsatz:'#ff8a00', fAbsprung:'#ff4d5e', fSteigen:'#c77dff' };
+const PH_SHORT = { aufsatz:'St', absprung:'Ab', steigen:'S', bruecke:'Ü', landung:'L', fAufsatz:'St', fAbsprung:'Ab', fSteigen:'S' };
+function tPos(t) { // Zeit -> Anteil auf der Zeitleiste
+  const F = S.frames;
+  if (F.length > 1) return Math.max(0, Math.min(1, (t - F[0].t) / (F[F.length - 1].t - F[0].t)));
+  return vid.duration ? Math.max(0, Math.min(1, t / vid.duration)) : 0;
+}
+function updateUI() {
+  const sb = document.getElementById('saveBox'); if (sb) sb.hidden = !(S.frames.length && Object.keys(S.phase).length);
+  const box = $('#phBtns'); box.innerHTML = '';
+  for (const ph of TEMPLATE.phases) {
+    const b = document.createElement('button'), tt = phT(ph.id), set = tt != null;
+    b.style.setProperty('--pc', PH_COL[ph.id]);
+    b.innerHTML = `<span class="dot" style="background:${set ? PH_COL[ph.id] : 'transparent'};color:${PH_COL[ph.id]}"></span>${ph.name}<span class="tm">${set ? fmtT(tt) : '–'}</span>`;
+    b.classList.toggle('on', S.active === ph.id); b.classList.toggle('set', set);
+    b.addEventListener('click', () => gotoPhase(ph.id)); box.appendChild(b);
+  }
+  const sp = $('#bSetPh'), ap = S.active ? phaseObj() : null;
+  const allSet = TEMPLATE.phases.every(p => phT(p.id) != null);
+  const showAna = !S.active && allSet && !S.frames.length && !!vid.duration;
+  $('#bAna2').style.display = showAna ? 'block' : 'none';
+  sp.style.display = showAna ? 'none' : 'block';
+  sp.style.background = ap ? PH_COL[ap.id] : 'var(--card)'; sp.style.color = ap ? '#04121d' : 'var(--mut)';
+  sp.textContent = ap ? '📍 ' + ap.name + ' hier setzen' : 'Phase oben wählen, um einen Pin zu setzen';
+  const m = $('#marks'); m.innerHTML = '';
+  if (S.frames.length > 1 || vid.duration) for (const ph of TEMPLATE.phases) if (phT(ph.id) != null) {
+    const s = document.createElement('span'); s.className = 'pin' + (S.active === ph.id ? ' act' : '');
+    s.textContent = S.active === ph.id ? ph.name : PH_SHORT[ph.id]; s.title = ph.name; s.style.background = PH_COL[ph.id]; s.style.setProperty('--c', PH_COL[ph.id]);
+    s.style.left = (100 * tPos(phT(ph.id))) + '%';
+    s.addEventListener('click', () => gotoPhase(ph.id)); m.appendChild(s);
+  }
+  // Pins, die sich überlappen, versetzt anordnen
+  const pins = [...m.children].sort((a, b) => parseFloat(a.style.left) - parseFloat(b.style.left));
+  const rowEnd = [-1e9, -1e9];
+  for (const p of pins) { const r = p.getBoundingClientRect(); let row = rowEnd.findIndex(e => r.left > e + 3); if (row < 0) row = rowEnd.indexOf(Math.min(...rowEnd)); rowEnd[row] = r.right; p.style.top = (-22 * row) + 'px'; p.style.zIndex = 3 - row; }
+  // Analyse-Bereich
+  const rg = $('#range'), tl = $('#tl').clientWidth - 16;
+  $('#bIn').innerHTML = S.inT != null ? '[ Start <b>' + fmtT(S.inT) + '</b>' : '[ Start';
+  $('#bOut').innerHTML = S.outT != null ? 'Ende <b>' + fmtT(S.outT) + '</b> ]' : 'Ende ]';
+  $('#bIn').classList.toggle('on', S.inT != null); $('#bOut').classList.toggle('on', S.outT != null);
+  $('#bClr').style.display = S.inT != null || S.outT != null ? 'inline-block' : 'none';
+  if ((S.inT != null || S.outT != null) && vid.duration) {
+    const a = tPos(S.inT ?? 0), b = tPos(S.outT ?? vid.duration);
+    rg.style.display = 'block'; rg.style.left = (8 + a * tl) + 'px'; rg.style.width = Math.max(4, (b - a) * tl) + 'px';
+    rg.style.borderLeftWidth = S.inT != null ? '3px' : '0'; rg.style.borderRightWidth = S.outT != null ? '3px' : '0';
+  } else rg.style.display = 'none';
+  $('#seek').max = Math.max(1, S.frames.length ? S.frames.length - 1 : 1000);
+  updateBadge();
+}
+function updateBadge() {
+  const bd = $('#phBadge'); const hit = TEMPLATE.phases.find(ph => S.frames.length ? S.phase[ph.id] === S.idx : (S.pt[ph.id] != null && Math.abs(S.pt[ph.id] - vid.currentTime) < 0.009));
+  if (hit) { bd.style.display = 'block'; bd.style.background = PH_COL[hit.id]; bd.textContent = '📍 ' + hit.name; } else bd.style.display = 'none';
+}
+let toastT = 0;
+function toast(txt) { const t = $('#toast'); t.textContent = txt; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1600); }
+async function gotoIdx(i) {
+  if (!S.frames.length) return;
+  S.idx = Math.max(0, Math.min(S.frames.length - 1, i));
+  $('#seek').value = S.idx; $('#tlabel').textContent = fmtT(S.frames[S.idx].t);
+  await seek(S.frames[S.idx].t); draw();
+}
+function gotoPhase(id) {
+  if (S.active === id) { S.active = null; updateUI(); draw(); return; }  // nochmal tippen = abwählen
+  S.active = id; updateUI();
+  if (S.frames.length && S.phase[id] != null) gotoIdx(S.phase[id]);
+  else if (!S.frames.length && S.pt[id] != null && vid.duration) { seek(S.pt[id]).then(() => { $('#tlabel').textContent = fmtT(vid.currentTime); $('#seek').value = 1000 * vid.currentTime / vid.duration; draw(); }); }
+  else { draw(); if (vid.src) toast('Soll-Haltung „' + phaseObj().name + '“ im Video suchen, dann 📍 hier setzen'); }
+}
+function phT(id) { if (S.frames.length) return S.phase[id] != null && S.frames[S.phase[id]] ? S.frames[S.phase[id]].t : null; return S.pt[id] ?? null; }
+function nearIdx(t) { let b = 0; for (let i = 1; i < S.frames.length; i++) if (Math.abs(S.frames[i].t - t) < Math.abs(S.frames[b].t - t)) b = i; return b; }
+const fmtT = t => t.toFixed(2).replace('.', ',') + ' s';
+function setStatus(t) { $('#status').textContent = t; $('#status').title = t; }
+
+$('#seek').oninput = e => {
+  if (S.frames.length) gotoIdx(+e.target.value);
+  else if (vid.duration) { vid.currentTime = vid.duration * e.target.value / 1000; $('#tlabel').textContent = fmtT(vid.currentTime); updateBadge(); }
+};
+function stepRaw(d) { if (!vid.duration) return; seek(Math.max(0, Math.min(vid.duration, vid.currentTime + d / 60))).then(() => { $('#tlabel').textContent = fmtT(vid.currentTime); $('#seek').value = 1000 * vid.currentTime / vid.duration; updateBadge(); }); }
+$('#bPrev').onclick = () => S.frames.length ? gotoIdx(S.idx - 1) : stepRaw(-1);
+$('#bNext').onclick = () => S.frames.length ? gotoIdx(S.idx + 1) : stepRaw(1);
+$('#bPlay').onclick = () => {
+  if (!vid.src) return;
+  if (!vid.paused) { vid.pause(); return; }
+  vid.playbackRate = +$('#speed').value;
+  if (S.frames.length && S.idx >= S.frames.length - 1) gotoIdx(0);
+  vid.loop = !S.frames.length;
+  vid.play();
+  const loop = () => {
+    if (vid.paused) { $('#bPlay').textContent = '▶︎'; return; }
+    $('#bPlay').textContent = '❚❚';
+    if (S.frames.length) {
+      const i = Math.round((vid.currentTime - S.t0) * S.fps);
+      if (i >= S.frames.length) { S.idx = 0; vid.currentTime = S.frames[0].t; }
+      else S.idx = Math.max(0, i);
+      $('#seek').value = S.idx; draw();
+    } else $('#seek').value = 1000 * vid.currentTime / vid.duration;
+    $('#tlabel').textContent = fmtT(vid.currentTime);
+    requestAnimationFrame(loop);
+  };
+  loop();
+};
+$('#speed').onchange = e => { vid.playbackRate = +e.target.value; };
+$('#bAna2').onclick = () => analyze();
+$('#bSetPh').onclick = () => {
+  if (!vid.duration) return;
+  if (!S.active) { toast('Erst eine Phase antippen'); return; }
+  let t;
+  if (S.frames.length) { S.phase[S.active] = S.idx; t = S.frames[S.idx].t; } else t = vid.currentTime;
+  S.pt[S.active] = t; S.man[S.active] = true;
+  const done = phaseObj().name, i = TEMPLATE.phases.findIndex(p => p.id === S.active);
+  // weiter zur nächsten noch offenen Phase, sonst abwählen
+  const nx = TEMPLATE.phases.slice(i + 1).find(p => phT(p.id) == null) || TEMPLATE.phases.find(p => phT(p.id) == null);
+  S.active = nx ? nx.id : null;
+  updateUI(); draw();
+  toast('📍 ' + done + ' gesetzt · ' + fmtT(t) + (nx ? ' → weiter: ' + nx.name : ' ✓ alle Phasen gesetzt'));
+};
+$('#bIn').onclick = () => { if (!vid.duration) return; S.inT = S.frames.length ? S.frames[S.idx].t : vid.currentTime; if (S.outT != null && S.outT <= S.inT) S.outT = null; updateUI(); toast('[ Start gesetzt · ' + fmtT(S.inT) + (S.frames.length ? ' – gilt bei neuer Analyse' : '')); };
+$('#bOut').onclick = () => { if (!vid.duration) return; S.outT = S.frames.length ? S.frames[S.idx].t : vid.currentTime; if (S.inT != null && S.inT >= S.outT) S.inT = null; updateUI(); toast('Ende ] gesetzt · ' + fmtT(S.outT) + (S.frames.length ? ' – gilt bei neuer Analyse' : '')); };
+$('#bClr').onclick = () => { S.inT = S.outT = null; updateUI(); toast('Bereich gelöscht – ganzes Video'); };
+window.addEventListener('resize', () => updateUI());
+$('#bLegL').onclick = () => { S.stance = 'L'; S.legAuto = false; draw(); };
+$('#bLegR').onclick = () => { S.stance = 'R'; S.legAuto = false; draw(); };
+$('#bLegA').onclick = () => { S.legAuto = true; draw(); };
+function setDir(d) { if (d === S.dir) return; S.dir = d; try { localStorage.setItem('hs_dir', d); } catch (e) {} draw(); }
+$('#bDir').onclick = () => setDir(-S.dir);
+$('#dL').onclick = () => setDir(-1); $('#dR').onclick = () => setDir(1);
+$('#ref').addEventListener('click', () => setDir(-S.dir));
+try { const d = +localStorage.getItem('hs_dir'); if (d === 1 || d === -1) S.dir = d; } catch (e) {}
+/* ---------- Perspektive ---------- */
+function emptyText() {
+  $('#emptyTxt').innerHTML = S.persp === 'front'
+    ? `<p><b>Perspektive Frontal:</b> iPad quer aufs Stativ, auf der Anlaufseite <b>genau hinter dem Absprungpunkt</b>, rechtwinklig zur Latte, 8–10 m entfernt, auf Lattenhöhe. Nicht in die Anlaufkurve stellen. Im Bild: letzte Schritte, Absprung und Latte – die ganze Person.</p>
+       <p>Dann <b>● Aufnehmen</b> oder ein Video (auch Zeitlupe) über <b>📂 Video</b> öffnen und <b>🔍 Analysieren</b> tippen.</p>`
+    : `<p><b>Perspektive Seite:</b> iPad quer aufs Stativ, <b>in Verlängerung der Latte</b> auf der Absprungseite, 8–10 m vom Ständer entfernt, auf Lattenhöhe. Im Bild: letzte 2–3 Schritte, Absprung, Latte (von der Stirnseite) und Matte – die ganze Person von Kopf bis Fuß.</p>
+       <p>Dann <b>● Aufnehmen</b> oder ein Video (auch Zeitlupe) über <b>📂 Video</b> öffnen und <b>🔍 Analysieren</b> tippen. Die Perspektive rechts unter „Perspektive“ umschalten.</p>`;
+  $('#recPersp').textContent = 'Perspektive: ' + TEMPLATE.kurz;
+  $('#recInfo').textContent = S.persp === 'front' ? 'Frontal: hinter dem Absprungpunkt, rechtwinklig zur Latte, waagerecht – Latte auf die gelbe Linie' : 'Seite: in Verlängerung der Latte, waagerecht – Boden auf die Linie, Ständer auf die Markierung';
+}
+function setPersp(p) {
+  if (!TEMPLATES[p]) return;
+  if (TEMPLATES[p] !== TEMPLATE) {
+    TEMPLATE = TEMPLATES[p]; S.persp = p;
+    const conv = (o) => { const n = {}; for (const id in o) { const nid = pid(base(id)); if (nid) n[nid] = o[id]; } return n; };
+    S.phase = conv(S.phase); S.pt = conv(S.pt); S.man = conv(S.man);
+    S.active = S.active ? pid(base(S.active)) || null : null;
+    if (S.frames.length) postProcess();
+    toast('Perspektive: ' + TEMPLATE.kurz);
+  }
+  S.persp = p;
+  try { localStorage.setItem('hs_persp', p); } catch (e) {}
+  emptyText(); drawSetup(); updateUI(); draw();
+}
+$('#pS').onclick = () => setPersp('seite'); $('#pF').onclick = () => setPersp('front');
+$('#recPersp').onclick = () => setPersp(S.persp === 'seite' ? 'front' : 'seite');
+try { const p = localStorage.getItem('hs_persp'); if (TEMPLATES[p]) { TEMPLATE = TEMPLATES[p]; S.persp = p; } } catch (e) {}
+S.active = pid('absprung');
+emptyText();
+$('#bHelp').onclick = () => $('#help').showModal();
+for (const b of document.querySelectorAll('#tog button[data-k]')) b.addEventListener('click', () => {
+  const k = b.dataset.k; S.show[k] = !S.show[k]; b.classList.toggle('on', S.show[k]);
+  if (k === 'korr') { $('#korr').style.display = S.show.korr ? 'block' : 'none'; if (S.show.korr) $('#korr').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); if (S.show.korr && !S.frames.length) toast('Korrektur geht nach der Analyse'); }
+  draw();
+});
+function setMix(g, v) {
+  const keys = g === 'all' ? Object.keys(S.mix) : KGROUP[g] || [g];
+  for (const x of keys) S.mix[x] = v;
+  const avg = ks => Math.round(ks.reduce((a, k) => a + S.mix[k], 0) / ks.length);
+  for (const inp of document.querySelectorAll('#korr input')) {
+    const gg = inp.dataset.g, val = gg === 'all' ? avg(Object.keys(S.mix)) : KGROUP[gg] ? avg(KGROUP[gg]) : S.mix[gg];
+    inp.value = val; inp.nextElementSibling.textContent = val + ' %';
+  }
+  draw();
+}
+for (const m of document.querySelectorAll('#korr .more')) m.addEventListener('click', e => { e.preventDefault(); const sub = $('#sub_' + m.dataset.sub); sub.classList.toggle('open'); m.textContent = sub.classList.contains('open') ? '▾' : '⋯'; });
+for (const inp of document.querySelectorAll('#korr input')) inp.addEventListener('input', () => setMix(inp.dataset.g, +inp.value));
+$('#kAnim').onclick = () => {
+  const t0 = performance.now(), dur = 1800;
+  const step = now => { const f = Math.min(1, (now - t0) / dur), e = f < .5 ? 2 * f * f : 1 - (-2 * f + 2) ** 2 / 2; setMix('all', Math.round(e * 100)); if (f < 1) requestAnimationFrame(step); };
+  setMix('all', 0); requestAnimationFrame(step);
+};
+$('#bSnap').onclick = async () => {
+  if (!vid.videoWidth) return;
+  const c = document.createElement('canvas'); c.width = vid.videoWidth; c.height = vid.videoHeight;
+  const x = c.getContext('2d'); x.drawImage(vid, 0, 0);
+  render(x, p => p, Math.max(1, c.width / 900));
+  const ph = phaseObj(); const name = `${S.vidName}_${ph ? ph.id : 'bild'}.jpg`;
+  c.toBlob(async blob => {
+    const file = new File([blob], name, { type: 'image/jpeg' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: name }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  }, 'image/jpeg', 0.9);
+};
+$('#cx').onchange = () => { poseCx = -1; };
+
+/* ================= Offline (Service Worker) ================= */
+let offlineOk = false;
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('weitsprung-sw.js').then(() => navigator.serviceWorker.ready).then(() => {
+    const ch = new MessageChannel();
+    ch.port1.onmessage = e => { offlineOk = !!e.data.ok; if (poseReady) setStatus(offlineOk ? 'Modell bereit · offline bereit ✓' : 'Modell bereit'); };
+    navigator.serviceWorker.controller ? navigator.serviceWorker.controller.postMessage('status', [ch.port2]) : navigator.serviceWorker.ready.then(r => r.active && r.active.postMessage('status', [ch.port2]));
+  }).catch(() => {});
+}
+updateUI(); resize();
+ensurePose().catch(e => setStatus('Modell-Fehler: ' + e.message));
+window.__S = S; window.__T = { skelFromLm, buildTemplate, postProcess, METRICS, TEMPLATES, segAng, joint, setPersp, get TEMPLATE() { return TEMPLATE; } };
+</script>
+<script>
+'use strict';
+/* =========================================================
+   SPORTLER-BACKEND · Hochsprung
+   Klassenlisten: gemeinsam mit der Sprint-Zeitmessung (localStorage "kgs-sprint-v1" → klassen)
+   Sprünge: localStorage "kgs-hochsprung-v1"
+   ========================================================= */
+const WS_KEY = 'kgs-hochsprung-v1', KL_KEY = 'kgs-sprint-v1';
+const byId = (id) => document.getElementById(id);
+let wsd = wsLaden(), klassen = klLaden();
+function wsLaden() {
+  let d = null; try { d = JSON.parse(localStorage.getItem(WS_KEY) || 'null'); } catch (e) {}
+  d = d || {}; d.spruenge = d.spruenge || []; d.e = Object.assign({ klasse: '', sid: '' }, d.e || {}); return d;
+}
+function wsSpeichern() { try { localStorage.setItem(WS_KEY, JSON.stringify(wsd)); } catch (e) { toast('Speichern fehlgeschlagen – Speicher voll?'); } }
+function sprintDaten() { try { return JSON.parse(localStorage.getItem(KL_KEY) || 'null') || {}; } catch (e) { return {}; } }
+function klLaden() { return sprintDaten().klassen || {}; }
+function klSpeichern() {   // nur die Klassen ersetzen – Sprint-Zeiten und -Einstellungen bleiben unberührt
+  const d = sprintDaten(); d.klassen = klassen; d.ergebnisse = d.ergebnisse || [];
+  try { localStorage.setItem(KL_KEY, JSON.stringify(d)); } catch (e) { toast('Speichern fehlgeschlagen – Speicher voll?'); }
+}
+function sprintZeitenEntfernen(ids) {
+  const d = sprintDaten(); if (!d.ergebnisse) return 0;
+  const vor = d.ergebnisse.length; d.ergebnisse = d.ergebnisse.filter((r) => !ids.has(r.sid));
+  try { localStorage.setItem(KL_KEY, JSON.stringify(d)); } catch (e) {}
+  return vor - d.ergebnisse.length;
+}
+const sprintZeitenVon = (ids) => (sprintDaten().ergebnisse || []).filter((r) => ids.has(r.sid)).length;
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const sortDe = (a, b) => a.localeCompare(b, 'de', { numeric: true });
+const sortSchueler = (a, b) => (a.nn + ' ' + a.vn).localeCompare(b.nn + ' ' + b.vn, 'de');
+const heute = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+const datumDe = (iso) => iso ? iso.slice(8, 10) + '.' + iso.slice(5, 7) + '.' + iso.slice(2, 4) : '';
+function schueler(sid) {
+  for (const k in klassen) { const s = klassen[k].find((x) => x.id === sid); if (s) return Object.assign({ klasse: k }, s); }
+  return null;
+}
+function nameKurz(s) {
+  if (!s) return '?';
+  const vn = (s.vn || '').trim(), nn = (s.nn || '').trim(), voll = (vn + ' ' + nn).trim() || '?';
+  if (!vn || !nn) return voll;
+  const kurz = vn + ' ' + nn[0] + '.';
+  const kl = s.klasse ? klassen[s.klasse] : null;
+  const gleich = (x) => { const v = (x.vn || '').trim(), n = (x.nn || '').trim(); return (v && n ? v + ' ' + n[0] + '.' : (v + ' ' + n).trim()) === kurz; };
+  return (kl || []).some((x) => x.id !== s.id && gleich(x)) ? voll : kurz;
+}
+
+/* ---------- Ansichten umschalten ---------- */
+let ansicht = 'analyse';
+byId('nav').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button'); if (!b) return;
+  ansicht = b.dataset.v;
+  document.querySelectorAll('#nav button').forEach((x) => x.classList.toggle('on', x === b));
+  byId('mid').hidden = ansicht !== 'analyse';
+  for (const v of ['leistung', 'klassen', 'auswertung', 'aufbau']) byId('v-' + v).hidden = ansicht !== v;
+  document.body.classList.toggle('ana', ansicht === 'analyse');
+  klassen = klLaden(); wsd = wsLaden();
+  if (ansicht === 'analyse') { athlZeichnen(); setTimeout(() => { resize(); updateUI(); }, 30); }
+  if (ansicht === 'leistung') leistungZeichnen();
+  if (ansicht === 'klassen') klassenZeichnen();
+  if (ansicht === 'auswertung') auswertungZeichnen();
+  if (ansicht === 'aufbau') datenInfo();
+});
+
+/* =========================================================
+   SPRINGER WÄHLEN + SPRUNG SPEICHERN (Analyse-Ansicht)
+   ========================================================= */
+function klassenNamen() { return Object.keys(klassen).sort(sortDe); }
+function athlListe() { return [...(klassen[wsd.e.klasse] || [])].sort(sortSchueler); }
+function athlZeichnen() {
+  const namen = klassenNamen();
+  if (!klassen[wsd.e.klasse]) wsd.e.klasse = namen[0] || '';
+  byId('aKl').innerHTML = namen.length ? namen.map((k) => `<option ${k === wsd.e.klasse ? 'selected' : ''}>${esc(k)}</option>`).join('') : '<option value="">keine Klasse</option>';
+  const liste = athlListe();
+  if (!liste.some((s) => s.id === wsd.e.sid)) wsd.e.sid = '';
+  const nHeute = (sid) => wsd.spruenge.filter((j) => j.sid === sid && j.datum === heute()).length;
+  byId('aSid').innerHTML = `<option value="">– Springer wählen –</option>` + liste.map((s) => { const n = nHeute(s.id);
+    return `<option value="${s.id}" ${s.id === wsd.e.sid ? 'selected' : ''}>${esc(s.nn)}${s.vn ? ', ' + esc(s.vn) : ''}${n ? '  (' + n + ')' : ''}</option>`; }).join('');
+  const s = wsd.e.sid && schueler(wsd.e.sid);
+  byId('aInfo').textContent = !namen.length ? 'Erst unter „Klassen“ eine Liste importieren' : s ? `${nHeute(s.id)} Sprünge heute` : '';
+  const analysiert = S.frames.length && Object.keys(S.phase).length;
+  byId('saveBox').hidden = !analysiert;
+  byId('aSave').textContent = S._gespeichert === S.frames ? '✓ gespeichert – nochmal speichern' : '💾 Sprung speichern';
+  const heuteListe = wsd.spruenge.filter((j) => j.datum === heute() && j.klasse === wsd.e.klasse).slice(-5).reverse();
+  byId('aHeute').innerHTML = heuteListe.length ? 'Heute zuletzt: ' + heuteListe.map((j) => `${esc(nameKurz(schueler(j.sid)))} <b>${j.score != null ? j.score + ' %' : ''}</b>${j.hoehe ? ' · ' + j.hoehe.toFixed(2).replace('.', ',') + ' m' : ''}`).join(' · ') : '';
+}
+byId('aKl').onchange = (e) => { wsd.e.klasse = e.target.value; wsd.e.sid = ''; wsSpeichern(); athlZeichnen(); };
+byId('aSid').onchange = (e) => { wsd.e.sid = e.target.value; wsSpeichern(); athlZeichnen(); };
+function athlSchritt(d) {
+  const l = athlListe(); if (!l.length) return;
+  let i = l.findIndex((s) => s.id === wsd.e.sid); i = i < 0 ? (d > 0 ? 0 : l.length - 1) : (i + d + l.length) % l.length;
+  wsd.e.sid = l[i].id; wsSpeichern(); athlZeichnen(); toast('Springer: ' + nameKurz(schueler(l[i].id)));
+}
+byId('aPrev').onclick = () => athlSchritt(-1);
+byId('aNext').onclick = () => athlSchritt(1);
+
+// Technikwerte aller gesetzten Phasen + Score (Anteil im Soll; knapp zählt halb)
+function sprungWerte() {
+  const werte = {}; let pkt = 0, n = 0;
+  for (const ph of TEMPLATE.phases) {
+    const i = S.phase[ph.id]; if (i == null || !S.frames[i] || !S.frames[i].lm) continue;
+    const det = skelFromLm(S.frames[i].lm, ph.id), tpl = buildTemplate(ph, det); if (!tpl) continue;
+    for (const mid of ph.metrics) {
+      const m = METRICS[mid], v = m.f(det), t = m.f(tpl), d = mid === 'rumpf' ? wrap(v - t) : v - t;
+      const st = Math.abs(d) <= m.tol ? 2 : Math.abs(d) <= 2 * m.tol ? 1 : 0;
+      werte[ph.id + '.' + mid] = { v: Math.round(v * 10) / 10, t: Math.round(t * 10) / 10, tol: m.tol, st };
+      pkt += st; n += 2;
+    }
+  }
+  let toa = S.toa;
+  if (toa != null) {
+    const R = TEMPLATE.toa, st = toa >= R.ok[0] && toa <= R.ok[1] ? 2 : toa >= R.warn[0] && toa <= R.warn[1] ? 1 : 0;
+    werte[pid('absprung') + '.steig'] = { v: Math.round(toa * 10) / 10, t: R.soll, tol: R.tol, st }; pkt += st; n += 2;
+  }
+  return { werte, toa: toa == null ? null : Math.round(toa * 10) / 10, score: n ? Math.round(100 * pkt / n) : null };
+}
+byId('aSave').onclick = () => {
+  if (!S.frames.length) return;
+  const s = wsd.e.sid && schueler(wsd.e.sid);
+  if (!s) { toast('Erst oben einen Springer wählen'); byId('aSid').focus(); return; }
+  if (S._gespeichert === S.frames && !confirm('Dieser Sprung wurde schon gespeichert. Nochmal speichern?')) return;
+  const w = sprungWerte(), hoehe = parseFloat(String(byId('aHoehe').value).replace(',', '.'));
+  const j = { id: uid(), sid: s.id, klasse: s.klasse, datum: heute(), ts: Date.now(), persp: S.persp, hoehe: hoehe > 0 ? Math.round(hoehe * 100) / 100 : null,
+              toa: w.toa, score: w.score, werte: w.werte, video: S.vidName || '' };
+  wsd.spruenge.push(j); wsSpeichern(); S._gespeichert = S.frames;
+  byId('aHoehe').value = '';
+  toast(`💾 ${nameKurz(s)} gespeichert · Technik ${w.score ?? '–'} %${j.hoehe ? ' · ' + j.hoehe.toFixed(2).replace('.', ',') + ' m' : ''}`);
+  athlZeichnen();
+};
+// nach jeder Analyse die Speichern-Box zeigen
+const _analyzeOrig = analyze;
+analyze = async function () { await _analyzeOrig(); athlZeichnen(); };
+byId('bAna').onclick = () => analyze(); byId('bAna2').onclick = () => analyze();
+athlZeichnen();
+
+/* =========================================================
+   LEISTUNG EINTRAGEN (ohne Video) – je Versuch ein Eintrag
+   ========================================================= */
+const LST = { feld: 'hoehe', name: 'Höhe', min: 0.4, max: 2.6, bsp: 'z. B. 1,15 oder 115' };
+let lst = { klasse: '', g: '', zuletzt: null };
+const mFmt = (v) => v == null ? '–' : v.toFixed(2).replace('.', ',') + ' m';
+function leistungLesen(t) {   // "3,45" / "3.45" → 3,45 m · "345" (cm) → 3,45 m
+  let n = parseFloat(String(t).replace(',', '.').replace(/[^0-9.]/g, ''));
+  if (!isFinite(n) || n <= 0) return null;
+  if (n > 20) n = n / 100;
+  if (n < LST.min || n > LST.max) return null;
+  return Math.round(n * 100) / 100;
+}
+function leistungZeichnen() {
+  const namen = klassenNamen();
+  if (!lst.klasse || !klassen[lst.klasse]) lst.klasse = klassen[wsd.e.klasse] ? wsd.e.klasse : namen[0] || '';
+  byId('lDatum').textContent = 'heute, ' + datumDe(heute());
+  byId('lHinweis').innerHTML = `Übersprungene Höhe je Versuch eintragen – ohne Video, z. B. beim Wettkampf oder Sportabzeichen. Eingabe in m oder cm (${LST.bsp}), mit ↵ geht es zum nächsten Schüler. In der Auswertung zählt der beste Versuch des Tages. Versuch antippen = löschen.`;
+  byId('lKl').innerHTML = namen.length ? namen.map((k) => `<option ${k === lst.klasse ? 'selected' : ''}>${esc(k)}</option>`).join('') : '<option value="">keine Klasse</option>';
+  byId('lG').innerHTML = [['', 'alle'], ['m', 'Jungen'], ['w', 'Mädchen']].map(([v, t]) => `<button data-g="${v}" aria-pressed="${lst.g === v}">${t}</button>`).join('');
+  byId('lG').querySelectorAll('button').forEach((b) => b.onclick = () => { lst.g = b.dataset.g; leistungZeichnen(); });
+  if (!namen.length) { byId('lListe').innerHTML = '<p class="hinweisleiste">Erst unter „Klassen“ eine Liste importieren.</p>'; return; }
+  const liste = [...(klassen[lst.klasse] || [])].filter((s) => !lst.g || s.g === lst.g).sort(sortSchueler);
+  const zeile = (s) => {
+    const alle = wsd.spruenge.filter((j) => j.sid === s.id && j[LST.feld] != null);
+    const heuteV = alle.filter((j) => j.datum === heute()).sort((a, b) => a.ts - b.ts);
+    const bestH = heuteV.length ? Math.max(...heuteV.map((j) => j[LST.feld])) : null;
+    const pb = alle.length ? Math.max(...alle.map((j) => j[LST.feld])) : null;
+    const neuPb = bestH != null && bestH === pb && alle.some((j) => j.datum !== heute());
+    return `<tr data-sid="${s.id}" class="${lst.zuletzt === s.id ? 'neu' : ''}"><td>${esc(s.nn)}${s.vn ? ', ' + esc(s.vn) : ''}</td>
+      <td><div class="lin"><input type="text" inputmode="decimal" enterkeyhint="next" placeholder="${LST.name}" data-in="${s.id}"><button data-add="${s.id}">+</button></div></td>
+      <td><div class="vs">${heuteV.map((j) => `<button data-rmv="${j.id}" class="${j.score != null ? 'ana' : ''}" title="${j.score != null ? 'mit Videoanalyse' : 'eingetragen'}">${mFmt(j[LST.feld]).replace(' m', '')}</button>`).join('')}</div></td>
+      <td class="z">${bestH != null ? mFmt(bestH) : ''}</td><td class="z ${neuPb ? 'besser' : ''}">${pb != null ? mFmt(pb) + (neuPb ? ' ★' : '') : ''}</td></tr>`;
+  };
+  byId('lListe').innerHTML = liste.length ? `<table><tr><th>Name</th><th>neuer Versuch</th><th>Versuche heute</th><th>Best heute</th><th>Bestleistung</th></tr>${liste.map(zeile).join('')}</table>
+    <p class="small">★ = neue Bestleistung · türkis umrandet = Versuch mit Videoanalyse</p>` : '<p class="small">Keine Schüler in dieser Auswahl.</p>';
+  const eintragen = (sid, inp) => {
+    const v = leistungLesen(inp.value);
+    if (v == null) { if (inp.value.trim()) toast(`Ungültig – ${LST.bsp}`); return false; }
+    const s = schueler(sid);
+    wsd.spruenge.push({ id: uid(), sid, klasse: s.klasse, datum: heute(), ts: Date.now(), [LST.feld]: v, toa: null, score: null, werte: {}, video: '', quelle: 'eingabe' });
+    wsSpeichern(); lst.zuletzt = sid; toast(`${nameKurz(s)}: ${mFmt(v)}`); return true;
+  };
+  const ids = liste.map((s) => s.id);
+  byId('lListe').querySelectorAll('[data-add]').forEach((b) => b.onclick = () => {
+    const inp = byId('lListe').querySelector(`[data-in="${b.dataset.add}"]`);
+    if (eintragen(b.dataset.add, inp)) { leistungZeichnen(); const n = byId('lListe').querySelector(`[data-in="${b.dataset.add}"]`); if (n) n.focus(); }
+  });
+  byId('lListe').querySelectorAll('[data-in]').forEach((inp) => inp.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return; e.preventDefault();
+    const sid = inp.dataset.in, ok = !inp.value.trim() || eintragen(sid, inp); if (!ok) return;
+    const next = ids[ids.indexOf(sid) + 1];
+    if (inp.value.trim()) leistungZeichnen();
+    const n = next && byId('lListe').querySelector(`[data-in="${next}"]`); if (n) n.focus(); else document.activeElement.blur();
+  }));
+  byId('lListe').querySelectorAll('[data-rmv]').forEach((b) => b.onclick = () => {
+    const j = wsd.spruenge.find((x) => x.id === b.dataset.rmv); if (!j) return;
+    if (j.score != null) {   // Sprung mit Videoanalyse: nur die Leistung entfernen
+      if (!confirm(`${LST.name} ${mFmt(j[LST.feld])} aus diesem analysierten Sprung entfernen? Die Technikwerte bleiben.`)) return;
+      j[LST.feld] = null;
+    } else {
+      if (!confirm(`Versuch ${mFmt(j[LST.feld])} löschen?`)) return;
+      wsd.spruenge = wsd.spruenge.filter((x) => x.id !== j.id);
+    }
+    wsSpeichern(); leistungZeichnen();
+  });
+}
+byId('lKl').onchange = (e) => { lst.klasse = e.target.value; lst.zuletzt = null; leistungZeichnen(); };
+
+/* =========================================================
+   KLASSEN & IMPORT (wie Sprint-Zeitmessung)
+   ========================================================= */
+let klasseAktiv = null;
+const sprungZahl = (pred) => wsd.spruenge.filter(pred).length;
+function klassenZeichnen() {
+  const namen = klassenNamen();
+  byId('klassenListe').innerHTML = namen.length ? `<table>${namen.map((k) =>
+    `<tr class="klick ${k === klasseAktiv ? 'sel' : ''}" data-k="${esc(k)}"><td><b>${esc(k)}</b></td><td>${klassen[k].length} Schüler</td><td>${sprungZahl((j) => j.klasse === k)} Sprünge</td></tr>`).join('')}</table>`
+    : `<p class="small">Noch keine Klasse. Liste importieren oder neue Klasse anlegen.</p>`;
+  byId('klassenListe').querySelectorAll('tr').forEach((tr) => tr.onclick = () => { klasseAktiv = tr.dataset.k; klassenZeichnen(); });
+  klasseDetail();
+}
+function klasseDetail() {
+  const box = byId('klassenDetail');
+  if (!klasseAktiv || !klassen[klasseAktiv]) { box.innerHTML = `<p class="small">Klasse auswählen.</p>`; return; }
+  const liste = [...klassen[klasseAktiv]].sort(sortSchueler);
+  box.innerHTML = `
+    <div class="row" style="justify-content:space-between;margin:0"><h2 style="margin:0">${esc(klasseAktiv)}</h2>
+      <div class="row" style="margin:0"><button class="klein" id="kUmbenennen">Umbenennen</button><button class="klein rot" id="kLoeschen">Klasse löschen</button></div></div>
+    <div class="row" style="margin:12px 0">
+      <input type="text" id="nNn" placeholder="Nachname" style="flex:1"><input type="text" id="nVn" placeholder="Vorname" style="flex:1">
+      <select id="nG"><option value="">–</option><option value="m">m</option><option value="w">w</option><option value="d">d</option></select>
+      <button class="klein" id="nPlus">+ hinzufügen</button></div>
+    <table><tr><th>Name</th><th>Vorname</th><th>G</th><th>Sprünge</th><th></th></tr>
+    ${liste.map((s) => `<tr><td>${esc(s.nn)}</td><td>${esc(s.vn)}</td><td>${esc(s.g)}</td><td>${sprungZahl((j) => j.sid === s.id)}</td>
+      <td><button class="klein" data-del="${s.id}">entfernen</button></td></tr>`).join('')}</table>`;
+  byId('nPlus').onclick = () => {
+    const nn = byId('nNn').value.trim(), vn = byId('nVn').value.trim(); if (!nn && !vn) return;
+    klassen[klasseAktiv].push({ id: uid(), nn, vn, g: byId('nG').value }); klSpeichern(); klassenZeichnen();
+  };
+  box.querySelectorAll('[data-del]').forEach((b) => b.onclick = () => {
+    const s = schueler(b.dataset.del), ids = new Set([s.id]), sz = sprintZeitenVon(ids);
+    if (!confirm(`${s.vn} ${s.nn} entfernen? Gespeicherte Sprünge${sz ? ' und ' + sz + ' Sprint-Zeiten' : ''} werden ebenfalls gelöscht.`)) return;
+    klassen[klasseAktiv] = klassen[klasseAktiv].filter((x) => x.id !== s.id);
+    wsd.spruenge = wsd.spruenge.filter((j) => j.sid !== s.id); sprintZeitenEntfernen(ids);
+    klSpeichern(); wsSpeichern(); klassenZeichnen();
+  });
+  byId('kLoeschen').onclick = () => {
+    const ids = new Set(klassen[klasseAktiv].map((s) => s.id)), sz = sprintZeitenVon(ids);
+    if (!confirm(`Klasse ${klasseAktiv} mit allen Sprüngen${sz ? ' und ' + sz + ' Sprint-Zeiten' : ''} löschen? (Die Klasse verschwindet auch in der Sprint-Zeitmessung.)`)) return;
+    wsd.spruenge = wsd.spruenge.filter((j) => !ids.has(j.sid)); sprintZeitenEntfernen(ids);
+    delete klassen[klasseAktiv]; klasseAktiv = null; klSpeichern(); wsSpeichern(); klassenZeichnen();
+  };
+  byId('kUmbenennen').onclick = () => {
+    const n = (prompt('Neuer Name der Klasse:', klasseAktiv) || '').trim(); if (!n || n === klasseAktiv) return;
+    if (klassen[n]) { toast('Diese Klasse gibt es schon.'); return; }
+    klassen[n] = klassen[klasseAktiv]; delete klassen[klasseAktiv];
+    wsd.spruenge.forEach((j) => { if (j.klasse === klasseAktiv) j.klasse = n; });
+    const d = sprintDaten(); (d.ergebnisse || []).forEach((r) => { if (r.klasse === klasseAktiv) r.klasse = n; });
+    if (d.e && d.e.klasse === klasseAktiv) d.e.klasse = n;
+    d.klassen = klassen; try { localStorage.setItem(KL_KEY, JSON.stringify(d)); } catch (e) {}
+    if (wsd.e.klasse === klasseAktiv) wsd.e.klasse = n;
+    klasseAktiv = n; wsSpeichern(); klassenZeichnen();
+  };
+}
+byId('neueKlasse').onclick = () => {
+  const n = (prompt('Name der Klasse (z. B. 7a):') || '').trim(); if (!n) return;
+  if (!klassen[n]) klassen[n] = [];
+  klasseAktiv = n; klSpeichern(); klassenZeichnen();
+};
+byId('importDatei').onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const buf = await f.arrayBuffer();
+    const zeilen = /\.xlsx$/i.test(f.name) ? await xlsxZeilen(buf) : csvZeilen(textDekodieren(buf));
+    const r = eintraegeUebernehmen(zeilenAuswerten(zeilen, null, true));
+    toast(`${r.neu} neu, ${r.da} schon vorhanden – ${r.klassen.join(', ')}`);
+    klasseAktiv = r.klassen[0] || klasseAktiv; klassenZeichnen();
+  } catch (err) { console.error(err); toast('Import fehlgeschlagen: ' + err.message); }
+};
+function textDekodieren(buf) {
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(buf).replace(/^﻿/, ''); }
+  catch (e) { return new TextDecoder('windows-1252').decode(buf); }
+}
+function csvZeilen(text) {
+  const erste = text.split(/\r?\n/)[0] || '';
+  const zaehl = (c) => erste.split(c).length - 1;
+  const trenn = ['\t', ';', ','].sort((a, b) => zaehl(b) - zaehl(a))[0];
+  const zeilen = []; let zeile = [], feld = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) { if (c === '"') { if (text[i + 1] === '"') { feld += '"'; i++; } else inQ = false; } else feld += c; }
+    else if (c === '"' && feld === '') inQ = true;
+    else if (c === trenn) { zeile.push(feld); feld = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; zeile.push(feld); zeilen.push(zeile); zeile = []; feld = ''; }
+    else feld += c;
+  }
+  if (feld !== '' || zeile.length) { zeile.push(feld); zeilen.push(zeile); }
+  return zeilen.filter((z) => z.some((x) => x.trim() !== ''));
+}
+function zeilenAuswerten(zeilen, ersatzKlasse, fragen) {
+  if (!zeilen.length) throw new Error('keine Daten gefunden');
+  const kopf = zeilen[0].map((h) => String(h).trim().toLowerCase().replace(/[^a-zäöüß]/g, ''));
+  const finde = (...n) => kopf.findIndex((h) => n.includes(h));
+  let iNn = finde('langname', 'nachname', 'name', 'familienname'), iVn = finde('vorname', 'vornamen', 'rufname'),
+      iK = finde('klasse', 'klassen', 'class'), iG = finde('geschlecht', 'g', 'sex');
+  let start = 1;
+  if (iNn < 0 && iVn < 0) {
+    iNn = 0; iVn = 1; start = 0;
+    if (zeilen[0].length > 2) iK = 2;
+    if (zeilen[0].length > 3 && /^[mwdf]$/i.test(String(zeilen[0][3]).trim())) iG = 3;
+  }
+  if (iK < 0 && !ersatzKlasse) {
+    if (!fragen) throw new Error('keine Klassenspalte – bitte Klassenname eintragen');
+    ersatzKlasse = (prompt('Die Liste enthält keine Klassenspalte. Name der Klasse:', klasseAktiv || '') || '').trim();
+    if (!ersatzKlasse) throw new Error('keine Klasse angegeben');
+  }
+  const sauber = (t) => String(t || '').replace(/#/g, '').replace(/\s+/g, ' ').trim();
+  const ergebnis = [];
+  for (const z of zeilen.slice(start)) {
+    const nn = sauber(z[iNn]), vn = iVn >= 0 ? sauber(z[iVn]) : '';
+    if (!nn && !vn) continue;
+    let g = iG >= 0 ? sauber(z[iG]).toLowerCase() : ''; g = g.startsWith('m') ? 'm' : g.startsWith('w') || g.startsWith('f') ? 'w' : g.startsWith('d') ? 'd' : '';
+    ergebnis.push({ nn, vn, k: (iK >= 0 && sauber(z[iK])) || ersatzKlasse || 'ohne Klasse', g });
+  }
+  return ergebnis;
+}
+function eintraegeUebernehmen(eintraege) {
+  klassen = klLaden();
+  let neu = 0, da = 0; const kl = new Set();
+  for (const { nn, vn, k, g } of eintraege) {
+    if (!klassen[k]) klassen[k] = [];
+    kl.add(k);
+    const vorh = klassen[k].find((s) => s.nn.toLowerCase() === nn.toLowerCase() && s.vn.toLowerCase() === vn.toLowerCase());
+    if (vorh) { if (g && !vorh.g) vorh.g = g; da++; }
+    else { klassen[k].push({ id: uid(), nn, vn, g }); neu++; }
+  }
+  klSpeichern();
+  return { neu, da, klassen: [...kl].sort(sortDe) };
+}
+function textAuswerten(text, klasseVorgabe) {
+  text = text.replace(/\r/g, '');
+  if (/[;\t]/.test(text)) {
+    const zeilen = csvZeilen(text.split('\n').filter((l) => /[;\t]/.test(l)).join('\n')).map((z) => z.map((x) => x.trim()));
+    return zeilenAuswerten(zeilen, klasseVorgabe, false);
+  }
+  const istKlasse = (t) => (klasseVorgabe && t.toLowerCase() === klasseVorgabe.toLowerCase()) || /^\d{1,2}[A-Za-z]{0,3}\d{0,2}$/.test(t);
+  const erg = [];
+  text.split('\n').map((l) => l.trim()).filter(Boolean).forEach((l) => {
+    if (/langname|vorname/i.test(l)) return;
+    const w = l.split(/\s+/);
+    const ki = w.findIndex((t, i) => i >= 1 && istKlasse(t));
+    let rest = ki >= 0 ? w.slice(1, ki) : w.slice(1), g = '';
+    const nach = ki >= 0 ? w[ki + 1] : rest[rest.length - 1];
+    if (nach && /^[mwdf]$/i.test(nach)) { g = nach.toLowerCase() === 'f' ? 'w' : nach.toLowerCase(); if (ki < 0) rest = rest.slice(0, -1); }
+    erg.push({ nn: w[0].replace(/#/g, ''), vn: rest.join(' ').replace(/#/g, '').trim(), k: ki >= 0 ? w[ki] : klasseVorgabe || 'ohne Klasse', g });
+  });
+  if (!erg.length) throw new Error('keine Namen gefunden');
+  return erg;
+}
+byId('textImport').onclick = () => { byId('textBox').hidden = false; byId('textEingabe').focus(); };
+byId('textAbbrechen').onclick = () => { byId('textBox').hidden = true; };
+function textVorschau() {
+  const box = byId('textVorschau'); byId('textUebernehmen').disabled = true;
+  const t = byId('textEingabe').value.trim(); if (!t) { box.innerHTML = ''; return; }
+  try {
+    const e = textAuswerten(t, byId('textKlasse').value.trim());
+    box.innerHTML = `<p class="small">${e.length} Schüler erkannt – bitte prüfen. Ist ein Doppelname falsch getrennt, im Text ein ; zwischen Nachname und Vorname setzen.</p>
+      <div style="max-height:260px;overflow:auto"><table><tr><th>Nachname</th><th>Vorname(n)</th><th>Klasse</th><th>G</th></tr>
+      ${e.map((x) => `<tr><td>${esc(x.nn)}</td><td>${esc(x.vn)}</td><td>${esc(x.k)}</td><td>${esc(x.g)}</td></tr>`).join('')}</table></div>`;
+    byId('textUebernehmen').disabled = false;
+  } catch (err) { box.innerHTML = `<p class="hinweisleiste">${esc(err.message)}</p>`; }
+}
+byId('textEingabe').addEventListener('input', textVorschau);
+byId('textKlasse').addEventListener('input', textVorschau);
+byId('textUebernehmen').onclick = () => {
+  try {
+    const r = eintraegeUebernehmen(textAuswerten(byId('textEingabe').value.trim(), byId('textKlasse').value.trim()));
+    toast(`${r.neu} neu, ${r.da} schon vorhanden – ${r.klassen.join(', ')}`);
+    byId('textEingabe').value = ''; byId('textVorschau').innerHTML = ''; byId('textBox').hidden = true;
+    klasseAktiv = r.klassen[0] || klasseAktiv; klassenZeichnen();
+  } catch (err) { toast('Übernehmen fehlgeschlagen: ' + err.message); }
+};
+async function xlsxZeilen(buf) {
+  if (typeof DecompressionStream === 'undefined') throw new Error('Excel-Import braucht ein aktuelles iPadOS – bitte als CSV speichern');
+  const dv = new DataView(buf);
+  let e = buf.byteLength - 22; while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+  if (e < 0) throw new Error('keine gültige Excel-Datei');
+  const anz = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true);
+  const dateien = {}; const td = new TextDecoder();
+  for (let k = 0; k < anz; k++) {
+    const meth = dv.getUint16(p + 10, true), csz = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true),
+          xl = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), off = dv.getUint32(p + 42, true);
+    dateien[td.decode(new Uint8Array(buf, p + 46, nl))] = { meth, csz, off }; p += 46 + nl + xl + cl;
+  }
+  const lies = async (name) => {
+    const f = dateien[name]; if (!f) return null;
+    const lnl = dv.getUint16(f.off + 26, true), lxl = dv.getUint16(f.off + 28, true);
+    const roh = new Uint8Array(buf, f.off + 30 + lnl + lxl, f.csz);
+    if (f.meth === 0) return td.decode(roh);
+    return await new Response(new Blob([roh]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+  };
+  const xml = (t) => new DOMParser().parseFromString(t, 'application/xml');
+  const ssT = await lies('xl/sharedStrings.xml');
+  const ss = ssT ? [...xml(ssT).getElementsByTagName('si')].map((si) => [...si.getElementsByTagName('t')].map((t) => t.textContent).join('')) : [];
+  const blatt = Object.keys(dateien).filter((n) => /^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort((a, b) => a.localeCompare(b, 'en', { numeric: true }))[0];
+  if (!blatt) throw new Error('kein Tabellenblatt gefunden');
+  const doc = xml(await lies(blatt));
+  const spIdx = (r) => { const m = /^[A-Z]+/.exec(r || 'A'); let n = 0; for (const ch of m[0]) n = n * 26 + ch.charCodeAt(0) - 64; return n - 1; };
+  return [...doc.getElementsByTagName('row')].map((row) => {
+    const z = [];
+    [...row.getElementsByTagName('c')].forEach((c) => {
+      const t = c.getAttribute('t'), v = c.getElementsByTagName('v')[0];
+      let w = '';
+      if (t === 's' && v) w = ss[Number(v.textContent)] || '';
+      else if (t === 'inlineStr') w = [...c.getElementsByTagName('t')].map((x) => x.textContent).join('');
+      else if (v) w = v.textContent;
+      z[spIdx(c.getAttribute('r'))] = w;
+    });
+    for (let i = 0; i < z.length; i++) if (z[i] == null) z[i] = '';
+    return z;
+  }).filter((z) => z.some((x) => String(x).trim() !== ''));
+}
+
+/* =========================================================
+   AUSWERTUNG
+   Messgrößen: Weite / Technik-Score (größer = besser),
+   Winkel (je näher am Soll, desto besser)
+   ========================================================= */
+const MG_BASIS = [
+  { id: 'score', name: 'Technik-Score', einh: '%', art: 'max' },
+  { id: 'hoehe', name: 'Höhe', einh: 'm', art: 'max' }
+];
+const metrikName = (mid) => mid === 'steig' ? 'Steigwinkel (Hüftbahn)' : METRICS[mid].label;
+const metrikenVon = (ph) => base(ph.id) === 'absprung' ? [...ph.metrics, 'steig'] : ph.metrics;
+function mgListe() {
+  const keys = new Set(); wsd.spruenge.forEach((j) => Object.keys(j.werte || {}).forEach((k) => keys.add(k)));
+  const m = [...MG_BASIS];
+  for (const ph of ALL_PHASES) for (const mid of metrikenVon(ph)) { const k = ph.id + '.' + mid; if (keys.has(k)) m.push({ id: k, name: (ph.lang || ph.name) + ': ' + metrikName(mid), einh: '°', art: 'soll' }); }
+  return m;
+}
+let aw = { klasse: '', mg: 'score', g: '', sid: null, modus: 'einzel', auswahl: new Set(), tag: '' };
+const SERIENFARBEN = ['#3ec1ff', '#ff4d5e', '#5dd39e', '#ff8a00', '#c77dff', '#ffd166', '#f472b6', '#a3e635', '#2dd4bf', '#fb7185'];
+const mgAkt = () => mgListe().find((m) => m.id === aw.mg) || MG_BASIS[0];
+function mgWert(j, mg = mgAkt()) {
+  if (mg.id === 'hoehe') return j.hoehe ?? null; if (mg.id === 'score') return j.score ?? null;
+  const w = j.werte && j.werte[mg.id]; return w ? w.v : null;
+}
+function mgSoll(mg = mgAkt()) {
+  if (mg.art !== 'soll') return null;
+  const j = wsd.spruenge.find((x) => x.werte && x.werte[mg.id]); return j ? j.werte[mg.id].t : null;
+}
+function mgTol(mg = mgAkt()) { const j = wsd.spruenge.find((x) => x.werte && x.werte[mg.id]); return j ? j.werte[mg.id].tol : 10; }
+const guete = (v, mg = mgAkt()) => v == null ? null : mg.art === 'max' ? v : -Math.abs(v - mgSoll(mg));
+const bestVon = (werte) => werte.reduce((b, v) => b == null || guete(v) > guete(b) ? v : b, null);
+function fmtW(v, mg = mgAkt()) {
+  if (v == null || !isFinite(v)) return '–';
+  if (mg.einh === 'm') return v.toFixed(2).replace('.', ',') + ' m';
+  if (mg.einh === '%') return Math.round(v) + ' %';
+  return Math.round(v) + '°';
+}
+function fmtEntw(d, mg = mgAkt()) {    // d = Gütedifferenz (positiv = besser)
+  if (d == null) return '';
+  const a = Math.abs(d), t = mg.einh === 'm' ? a.toFixed(2).replace('.', ',') + ' m' : mg.einh === '%' ? Math.round(a) + ' %' : Math.round(a) + '°';
+  if (mg.art === 'soll') return Math.round(a) === 0 ? '±0°' : (d > 0 ? t + ' näher' : t + ' weiter weg');
+  return (d > 0 ? '+' : d < 0 ? '−' : '±') + t;
+}
+const mitWert = (j) => mgWert(j) != null;
+function spruengeVon(sid, tag) {
+  return wsd.spruenge.filter((j) => j.sid === sid && mitWert(j) && (!tag || j.datum === tag)).sort((a, b) => a.ts - b.ts);
+}
+function tageswerte(sid) {
+  const pro = {};
+  spruengeVon(sid).forEach((j) => { const v = mgWert(j); if (pro[j.datum] == null || guete(v) > guete(pro[j.datum])) pro[j.datum] = v; });
+  return Object.keys(pro).sort().map((d) => ({ datum: d, v: pro[d] }));
+}
+const versuchswerte = (sid, tag) => spruengeVon(sid, tag).map((j, i) => ({ nr: i + 1, v: mgWert(j), datum: j.datum }));
+const verlauf = (sid) => aw.tag ? versuchswerte(sid, aw.tag) : tageswerte(sid);
+const awListe = () => (klassen[aw.klasse] || []).filter((s) => !aw.g || s.g === aw.g);
+function klassenSpruenge() { const ids = new Set((klassen[aw.klasse] || []).map((s) => s.id)); return wsd.spruenge.filter((j) => ids.has(j.sid)); }
+const awTage = () => [...new Set(klassenSpruenge().filter(mitWert).map((j) => j.datum))].sort().reverse();
+function zeilenDaten(liste) {
+  return liste.map((s) => {
+    const r = spruengeVon(s.id, aw.tag), w = r.map((j) => mgWert(j));
+    return { s, r, n: r.length, best: r.length ? bestVon(w) : null, erste: r.length ? w[0] : null, letzte: r.length ? w[w.length - 1] : null,
+             d: r.length > 1 ? guete(w[w.length - 1]) - guete(w[0]) : null };
+  });
+}
+function auswertungZeichnen() {
+  const namen = klassenNamen();
+  if (!aw.klasse || !klassen[aw.klasse]) aw.klasse = klassen[wsd.e.klasse] ? wsd.e.klasse : namen[0] || '';
+  byId('awKlasse').innerHTML = namen.map((k) => `<option ${k === aw.klasse ? 'selected' : ''}>${esc(k)}</option>`).join('') || '<option>keine Klasse</option>';
+  const mgs = mgListe(); if (!mgs.some((m) => m.id === aw.mg)) aw.mg = 'score';
+  byId('awMg').innerHTML = mgs.map((m) => `<option value="${m.id}" ${m.id === aw.mg ? 'selected' : ''}>${esc(m.name)}</option>`).join('');
+  byId('awGeschlecht').innerHTML = [['', 'alle'], ['m', 'Jungen'], ['w', 'Mädchen']].map(([v, t]) => `<button data-g="${v}" aria-pressed="${aw.g === v}">${t}</button>`).join('');
+  byId('awGeschlecht').querySelectorAll('button').forEach((b) => b.onclick = () => { aw.g = b.dataset.g; auswertungZeichnen(); });
+  const tage = awTage(); if (aw.tag && !tage.includes(aw.tag)) aw.tag = tage[0] || '';
+  const liste = awListe(), ids = new Set(liste.map((s) => s.id));
+  [...aw.auswahl].forEach((id) => { if (!ids.has(id)) aw.auswahl.delete(id); });
+  const zeilen = zeilenDaten(liste).sort((a, b) => (a.best == null) - (b.best == null) || (a.best != null && guete(b.best) - guete(a.best)) || sortSchueler(a.s, b.s));
+  const mg = mgAkt(), soll = mgSoll(mg);
+  let platz = 0;
+  const auswahlSpalte = aw.modus === 'auswahl';
+  const hinweis = !zeilen.some((z) => z.n) ? `<p class="hinweisleiste">Noch keine Werte für „${esc(mg.name)}“${aw.tag ? ' an diesem Tag' : ''}. ${mg.id === 'hoehe' ? 'Die Höhe unter „Leistung“ eintragen (oder beim Speichern eines analysierten Sprungs).' : 'In der Analyse einen Sprung analysieren und speichern.'}</p>` : '';
+  byId('awTabelle').innerHTML = hinweis + `<p class="small" style="margin:0 0 6px">${mg.art === 'soll' ? `Soll ${fmtW(soll)} – je näher, desto besser.` : 'Größer = besser.'}${aw.tag ? ' Nur ' + datumDe(aw.tag) + ' · Entwicklung = letzter minus erster Sprung des Tages' : ''}</p>` +
+    (liste.length ? `<table><tr>${auswahlSpalte ? '<th>✓</th>' : ''}<th>#</th><th>Name</th><th>Sprünge</th><th>Bestwert</th><th>Letzter</th><th>Entwicklung</th></tr>
+    ${zeilen.map((z) => {
+      const markiert = auswahlSpalte ? aw.auswahl.has(z.s.id) : z.s.id === aw.sid;
+      return `<tr class="klick ${markiert ? 'sel' : ''}" data-sid="${z.s.id}">
+        ${auswahlSpalte ? `<td><input type="checkbox" ${aw.auswahl.has(z.s.id) ? 'checked' : ''} tabindex="-1"></td>` : ''}
+        <td>${z.best != null ? ++platz : ''}</td><td>${esc(z.s.nn)}${z.s.vn ? ', ' + esc(z.s.vn) : ''}</td><td>${z.n || ''}</td>
+        <td class="z">${fmtW(z.best)}</td><td class="z">${z.letzte != null ? fmtW(z.letzte) : ''}</td>
+        <td class="z ${z.d == null ? '' : z.d > 0 ? 'besser' : z.d < 0 ? 'schlechter' : ''}">${fmtEntw(z.d)}</td></tr>`;
+    }).join('')}</table>` : `<p class="small">Keine Schüler in dieser Auswahl.</p>`);
+  byId('awTabelle').querySelectorAll('tr[data-sid]').forEach((tr) => tr.onclick = () => {
+    const id = tr.dataset.sid;
+    if (aw.modus === 'auswahl') aw.auswahl.has(id) ? aw.auswahl.delete(id) : aw.auswahl.add(id);
+    else { aw.sid = id; if (aw.modus === 'klasse') aw.modus = 'einzel'; }
+    auswertungZeichnen();
+  });
+  detailZeichnen(tage);
+}
+byId('awKlasse').onchange = (e) => { aw.klasse = e.target.value; aw.sid = null; aw.auswahl.clear(); auswertungZeichnen(); };
+byId('awMg').onchange = (e) => { aw.mg = e.target.value; auswertungZeichnen(); };
+
+function detailZeichnen(tage) {
+  const box = byId('awDetail');
+  const kopf = `<div class="chips" style="margin-bottom:8px">${[['einzel', 'Einzel'], ['auswahl', 'Auswahl'], ['klasse', 'Klasse']]
+      .map(([v, t]) => `<button data-m="${v}" aria-pressed="${aw.modus === v}">${t}</button>`).join('')}</div>
+    <div class="row" style="margin:0 0 12px">
+      <div class="chips"><button data-z="" aria-pressed="${!aw.tag}">Über alle Tage</button><button data-z="tag" aria-pressed="${!!aw.tag}">Ein Tag</button></div>
+      ${aw.tag ? `<select id="awTag">${tage.map((d) => `<option value="${d}" ${d === aw.tag ? 'selected' : ''}>${datumDe(d)}</option>`).join('')}</select>` : ''}
+    </div>`;
+  box.innerHTML = kopf + (aw.modus === 'einzel' ? einzelInhalt() : aw.modus === 'auswahl' ? auswahlInhalt() : klassenInhalt());
+  box.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { aw.modus = b.dataset.m; auswertungZeichnen(); });
+  box.querySelectorAll('[data-z]').forEach((b) => b.onclick = () => {
+    if (b.dataset.z && !tage.length) { toast('Noch keine Sprünge für diese Auswahl.'); return; }
+    aw.tag = b.dataset.z ? (aw.tag || tage[0]) : ''; auswertungZeichnen();
+  });
+  const ts = byId('awTag'); if (ts) ts.onchange = () => { aw.tag = ts.value; auswertungZeichnen(); };
+  box.querySelectorAll('[data-rm]').forEach((b) => b.onclick = () => {
+    if (!confirm('Diesen Sprung löschen?')) return;
+    wsd.spruenge = wsd.spruenge.filter((x) => x.id !== b.dataset.rm); wsSpeichern(); auswertungZeichnen();
+  });
+  box.querySelectorAll('[data-ed]').forEach((b) => b.onclick = () => {
+    const x = wsd.spruenge.find((y) => y.id === b.dataset.ed);
+    const t = prompt('Höhe in Metern (leer = keine):', x.hoehe != null ? String(x.hoehe).replace('.', ',') : '');
+    if (t === null) return;
+    const n = parseFloat(t.replace(',', '.')); x.hoehe = n > 0 ? Math.round(n * 100) / 100 : null; wsSpeichern(); auswertungZeichnen();
+  });
+  const alle = byId('awAlle'), keine = byId('awKeine');
+  if (alle) alle.onclick = () => { awListe().forEach((s) => { if (verlauf(s.id).length) aw.auswahl.add(s.id); }); auswertungZeichnen(); };
+  if (keine) keine.onclick = () => { aw.auswahl.clear(); auswertungZeichnen(); };
+}
+const zeitraumText = () => aw.tag ? `am ${datumDe(aw.tag)}` : 'über alle Tage';
+const STF = ['bad', 'warn', 'ok'], STC = { ok: '#5dd39e', warn: '#ff8a00', bad: '#ff4d5e' };
+function einzelInhalt() {
+  const s = aw.sid && schueler(aw.sid);
+  if (!s) return `<p class="small">Schüler in der Tabelle antippen, um den Verlauf zu sehen.</p>`;
+  const mg = mgAkt(), r = spruengeVon(s.id, aw.tag);
+  const alle = wsd.spruenge.filter((j) => j.sid === s.id && j.score != null).sort((a, b) => a.ts - b.ts), letzt = alle[alle.length - 1];   // letzter analysierter Sprung
+  // Technikprofil des letzten Sprungs
+  let profil = '';
+  if (letzt && letzt.werte) {
+    const zeilen = [];
+    for (const ph of ALL_PHASES) for (const mid of metrikenVon(ph)) {
+      const w = letzt.werte[ph.id + '.' + mid]; if (!w) continue;
+      zeilen.push(`<tr><td>${ph.lang || ph.name}</td><td>${metrikName(mid)}</td><td class="z" style="color:${STC[STF[w.st]]}">${Math.round(w.v)}°</td><td class="small">${Math.round(w.t)}° ± ${w.tol}°</td></tr>`);
+    }
+    profil = `<h3>Technikprofil letzter Sprung (${datumDe(letzt.datum)})</h3>
+      <p class="small" style="margin:0 0 6px">Technik-Score <b>${letzt.score ?? '–'} %</b>${letzt.persp ? ` · Perspektive ${TEMPLATES[letzt.persp] ? TEMPLATES[letzt.persp].kurz : ''}` : ''}${letzt.hoehe ? ` · Höhe <b>${fmtW(letzt.hoehe, MG_BASIS[1])}</b>` : ''}</p>
+      <table><tr><th>Phase</th><th>Wert</th><th>Ist</th><th>Soll</th></tr>${zeilen.join('')}</table>`;
+  }
+  return `<h2>${esc((s.vn + ' ' + s.nn).trim())} <span class="small">· ${esc(s.klasse)}</span></h2>
+    <h3>${esc(mg.name)} ${zeitraumText()}${aw.tag ? '' : ' (Bestwert je Tag)'}</h3>
+    ${liniendiagramm([{ name: nameKurz(s), farbe: '#3ec1ff', punkte: verlauf(s.id) }], { xLauf: !!aw.tag, bestlinie: mg.art === 'max', soll: mgSoll(mg) })}
+    ${r.length ? `<table><tr><th>${aw.tag ? 'Sprung' : 'Datum'}</th><th>${esc(mg.name)}</th><th>Score</th><th>Höhe</th><th></th></tr>${r.map((x, i) => ({ x, i })).reverse().map(({ x, i }) =>
+      `<tr><td>${aw.tag ? (i + 1) + '.' : datumDe(x.datum)}</td><td class="z">${fmtW(mgWert(x))}</td><td>${x.score != null ? x.score + ' %' : '–'}</td><td>${x.hoehe ? fmtW(x.hoehe, MG_BASIS[1]) : '–'}</td>
+       <td style="white-space:nowrap"><button class="klein" data-ed="${x.id}">Höhe</button> <button class="klein" data-rm="${x.id}">löschen</button></td></tr>`).join('')}</table>` : ''}
+    ${profil}`;
+}
+function auswahlInhalt() {
+  const ids = [...aw.auswahl], mg = mgAkt();
+  const kopf = `<div class="row" style="justify-content:space-between;margin:0"><h2 style="margin:0">Vergleich · ${esc(mg.name)} ${zeitraumText()}</h2>
+    <div class="row" style="margin:0"><button class="klein" id="awAlle">alle mit Werten</button><button class="klein" id="awKeine">keine</button></div></div>
+    <p class="small">Schüler links an- und abhaken. ${aw.tag ? 'Jeder Sprung des Tages ist ein Punkt.' : 'Pro Tag zählt der beste Wert.'}</p>`;
+  if (!ids.length) return kopf + `<p class="small">Noch niemand ausgewählt.</p>`;
+  const serien = ids.map((id, i) => { const s = schueler(id); return { name: s ? nameKurz(s) : '?', farbe: SERIENFARBEN[i % SERIENFARBEN.length], punkte: verlauf(id) }; });
+  const ohne = serien.filter((x) => !x.punkte.length).map((x) => x.name);
+  return kopf + liniendiagramm(serien.filter((x) => x.punkte.length), { xLauf: !!aw.tag, legende: true, soll: mgSoll(mg) }) +
+    (ohne.length ? `<p class="small">Ohne Werte ${zeitraumText()}: ${esc(ohne.join(', '))}</p>` : '');
+}
+function klassenDaten() {
+  const liste = awListe(), mg = mgAkt(), gruppen = {};
+  liste.forEach((s) => verlauf(s.id).forEach((p) => { const k = aw.tag ? p.nr : p.datum; (gruppen[k] = gruppen[k] || []).push(p.v); }));
+  const schl = Object.keys(gruppen).sort(aw.tag ? (a, b) => a - b : undefined);
+  const punkt = (k, x) => Object.assign(aw.tag ? { nr: Number(k) } : { datum: k }, x);
+  const schnitt = schl.map((k) => punkt(k, { v: gruppen[k].reduce((a, b) => a + b, 0) / gruppen[k].length }));
+  const band = schl.map((k) => punkt(k, { min: Math.min(...gruppen[k]), max: Math.max(...gruppen[k]) }));
+  const besten = liste.map((s) => { const p = verlauf(s.id); return p.length ? { s, best: bestVon(p.map((x) => x.v)) } : null; })
+    .filter(Boolean).sort((a, b) => guete(b.best) - guete(a.best));
+  const gesamt = besten.length ? besten.reduce((a, b) => a + b.best, 0) / besten.length : null;
+  const linie = schl.length ? liniendiagramm([{ name: aw.tag ? 'Schnitt je Sprung' : 'Klassenschnitt', farbe: '#3ec1ff', punkte: schnitt }],
+    { xLauf: !!aw.tag, band, legende: true, anzahl: schl.map((k) => gruppen[k].length), soll: mgSoll(mg) }) : '';
+  return { liste, besten, gesamt, linie, balken: besten.length ? balkendiagramm(besten, gesamt) : '' };
+}
+function klassenInhalt() {
+  const mg = mgAkt(), k = klassenDaten();
+  const titel = `${esc(aw.klasse)}${aw.g === 'm' ? ' · Jungen' : aw.g === 'w' ? ' · Mädchen' : ''} · ${esc(mg.name)} ${zeitraumText()}`;
+  if (!k.besten.length) return `<h2>${titel}</h2><p class="small">Noch keine Werte.</p>`;
+  return `<h2>${titel}</h2>
+    <p class="small" style="margin-top:0">${k.besten.length} von ${k.liste.length} Schülern · Schnitt der Bestwerte <b>${fmtW(k.gesamt)}</b>${mg.art === 'soll' ? ' · Soll ' + fmtW(mgSoll(mg)) : ''}</p>
+    <h3>${aw.tag ? 'Entwicklung über die Sprünge des Tages' : 'Entwicklung der Klasse'}</h3>${k.linie}
+    <h3>Bestwerte ${zeitraumText()}</h3>${k.balken}`;
+}
+// Liniendiagramm: x = Datum oder Sprung-Nummer; oben = größerer Wert; Soll-Linie gestrichelt
+function liniendiagramm(serien, opt = {}) {
+  const pk = serien.flatMap((s) => s.punkte); const mg = mgAkt();
+  if (!pk.length) return `<p class="small">Noch keine Sprünge für diese Auswahl.</p>`;
+  const W = 560, H = 230, L = 50, R = 14, T = 14, B = 34;
+  const zs = pk.map((p) => p.v).concat(opt.band ? opt.band.flatMap((b) => [b.min, b.max]) : []).concat(opt.soll != null ? [opt.soll] : []);
+  let lo = Math.min(...zs), hi = Math.max(...zs); const pad = Math.max(mg.einh === 'm' ? 0.1 : 2, (hi - lo) * 0.12); lo -= pad; hi += pad;
+  const alleP = pk.concat(opt.band || []);
+  let X, achse;
+  if (opt.xLauf) {
+    const max = Math.max(...alleP.map((p) => p.nr));
+    X = (p) => max === 1 ? (L + W - R) / 2 : L + (W - L - R) * (p.nr - 1) / (max - 1);
+    achse = Array.from({ length: max }, (_, i) => ({ p: { nr: i + 1 }, t: (i + 1) + '.' }));
+  } else {
+    const tg = [...new Set(alleP.map((p) => p.datum))].sort(), ms = (d) => new Date(d + 'T12:00:00').getTime();
+    const t0 = ms(tg[0]), t1 = ms(tg[tg.length - 1]);
+    X = (p) => tg.length === 1 ? (L + W - R) / 2 : L + (W - L - R) * (ms(p.datum) - t0) / (t1 - t0);
+    achse = tg.map((d) => ({ p: { datum: d }, t: datumDe(d).slice(0, 5) }));
+  }
+  const Y = (z) => T + (H - T - B) * (hi - z) / (hi - lo);
+  const fz = (z) => mg.einh === 'm' ? z.toFixed(2).replace('.', ',') : String(Math.round(z));
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="width:100%;height:auto" font-family="Helvetica,Arial,sans-serif" font-size="11">`;
+  for (let k = 0; k <= 4; k++) { const z = lo + (hi - lo) * k / 4, y = Y(z);
+    s += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="#2c3d52"/><text x="${L - 6}" y="${y + 4}" text-anchor="end" fill="#8ea3bb">${fz(z)}</text>`; }
+  s += `<text x="4" y="${T + 2}" fill="#8ea3bb" font-size="10">${mg.einh}</text>`;
+  const schritt = Math.ceil(achse.length / 10);
+  achse.forEach((a, i) => { if (i % schritt === 0 || i === achse.length - 1) s += `<text x="${X(a.p)}" y="${H - 14}" text-anchor="middle" fill="#8ea3bb">${a.t}</text>`; });
+  if (opt.soll != null) {
+    const tol = mgTol(mg);
+    s += `<rect x="${L}" y="${Y(opt.soll + tol)}" width="${W - R - L}" height="${Y(opt.soll - tol) - Y(opt.soll + tol)}" fill="#5dd39e" fill-opacity=".12"/>
+      <line x1="${L}" x2="${W - R}" y1="${Y(opt.soll)}" y2="${Y(opt.soll)}" stroke="#5dd39e" stroke-dasharray="5 4"/><text x="${W - R - 4}" y="${Y(opt.soll) - 4}" text-anchor="end" fill="#5dd39e" font-size="10">Soll ${fz(opt.soll)}</text>`;
+  }
+  if (opt.band) {
+    if (opt.band.length > 1) s += `<polygon fill="#3ec1ff" fill-opacity=".18" points="${opt.band.map((b) => X(b) + ',' + Y(b.max)).concat([...opt.band].reverse().map((b) => X(b) + ',' + Y(b.min))).join(' ')}"/>`;
+    opt.band.forEach((b, i) => { s += `<line x1="${X(b)}" x2="${X(b)}" y1="${Y(b.min)}" y2="${Y(b.max)}" stroke="#3ec1ff" stroke-opacity=".6" stroke-width="2"/>`;
+      if (opt.anzahl) s += `<text x="${X(b)}" y="${Y(b.min) + 13}" text-anchor="middle" fill="#3ec1ff" font-size="10">n=${opt.anzahl[i]}</text>`; });
+  }
+  if (opt.bestlinie) { const b = bestVon(pk.map((p) => p.v)); s += `<line x1="${L}" x2="${W - R}" y1="${Y(b)}" y2="${Y(b)}" stroke="#ffd166" stroke-dasharray="4 3"/>`; }
+  serien.forEach((se) => {
+    if (se.punkte.length > 1) s += `<polyline fill="none" stroke="${se.farbe}" stroke-width="2.5" points="${se.punkte.map((p) => X(p) + ',' + Y(p.v)).join(' ')}"/>`;
+    se.punkte.forEach((p) => { s += `<circle cx="${X(p)}" cy="${Y(p.v)}" r="4.5" fill="${se.farbe}"><title>${esc(se.name)} · ${opt.xLauf ? p.nr + '. Sprung' : datumDe(p.datum)} · ${fmtW(p.v)}</title></circle>`; });
+  });
+  s += `<text x="${L}" y="${H - 1}" fill="#8ea3bb" font-size="10">${opt.xLauf ? 'waagerecht: 1., 2., 3. … Sprung des Tages · ' : ''}${opt.soll != null ? 'grüner Bereich = Soll ± Toleranz' : 'oben = besser'}${opt.bestlinie ? ' · gelb = Bestwert' : ''}${opt.band ? ' · Fläche = Spanne der Klasse' : ''}</text></svg>`;
+  if (opt.legende) s += `<div class="row" style="gap:4px 14px;font-size:13.5px">${serien.map((se) => `<span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${se.farbe};vertical-align:-1px"></span> ${esc(se.name)}</span>`).join('')}</div>`;
+  return s;
+}
+// Waagerechte Balken: Bestwert je Schüler; Linie = Schnitt (bzw. Soll bei Winkeln)
+function balkendiagramm(besten, schnitt) {
+  const mg = mgAkt(), soll = mgSoll(mg), tol = mgTol(mg);
+  const zeile = 22, L = 140, R = 70, W = 560, H = besten.length * zeile + 20;
+  const werte = besten.map((b) => b.best).concat(soll != null ? [soll] : []);
+  const lo = Math.min(...werte), hi = Math.max(...werte), basis = Math.max(0, lo * 0.85);
+  const Bw = (z) => (W - L - R) * (0.1 + 0.9 * (z - basis) / ((hi - basis) || 1));
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="width:100%;height:auto" font-family="Helvetica,Arial,sans-serif" font-size="12">`;
+  besten.forEach((b, i) => {
+    const y = 4 + i * zeile, w = Bw(b.best);
+    const gut = mg.art === 'soll' ? Math.abs(b.best - soll) <= tol : b.best >= schnitt;
+    s += `<text x="${L - 6}" y="${y + 14}" text-anchor="end" fill="#c9d6e5">${i + 1}. ${esc(nameKurz(b.s))}</text>
+      <rect x="${L}" y="${y + 2}" width="${w}" height="${zeile - 6}" rx="3" fill="${gut ? '#5dd39e' : '#3ec1ff'}"/>
+      <text x="${L + w + 5}" y="${y + 14}" fill="#e8eef6" font-weight="700">${fmtW(b.best)}</text>`;
+  });
+  const ref = mg.art === 'soll' ? soll : schnitt, xs = L + Bw(ref);
+  s += `<line x1="${xs}" x2="${xs}" y1="0" y2="${H - 14}" stroke="#ff8a00" stroke-dasharray="4 3" stroke-width="2"/>
+    <text x="${xs}" y="${H - 2}" text-anchor="middle" fill="#ff8a00" font-size="11">${mg.art === 'soll' ? 'Soll' : 'Schnitt'} ${fmtW(ref)}</text></svg>
+    <p class="small" style="margin:4px 0 0">${mg.art === 'soll' ? 'grün = innerhalb der Toleranz um das Soll' : 'grün = besser als der Schnitt'}</p>`;
+  return s;
+}
+
+/* =========================================================
+   PDF-BERICHT, CSV, SICHERUNG
+   ========================================================= */
+async function jsPdfLaden() {
+  if (window.jspdf) return window.jspdf.jsPDF;
+  await new Promise((ok, fehl) => { const sc = document.createElement('script'); sc.src = 'lib/jspdf.umd.min.js'; sc.onload = ok; sc.onerror = () => fehl(new Error('PDF-Baustein (lib/jspdf.umd.min.js) nicht gefunden')); document.head.appendChild(sc); });
+  return window.jspdf.jsPDF;
+}
+async function svgZuBild(html) {
+  const m = /<svg[\s\S]*?<\/svg>/.exec(html); if (!m) return null;
+  // für Papier: helle Farben dunkler machen
+  const svg = m[0].replace(/<title>[\s\S]*?<\/title>/g, '').replace(/#8ea3bb|#c9d6e5|#e8eef6/g, '#374151').replace(/#2c3d52/g, '#e5e7eb').replace(/#ffd166/g, '#d97706');
+  const vb = /viewBox="0 0 (\d+) (\d+)"/.exec(svg); const w = Number(vb[1]), h = Number(vb[2]);
+  const img = new Image(); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  await new Promise((ok, fehl) => { img.onload = ok; img.onerror = () => fehl(new Error('Diagramm konnte nicht gezeichnet werden')); });
+  const c = document.createElement('canvas'); c.width = w * 2.5; c.height = h * 2.5;
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+  return { data: c.toDataURL('image/png'), w, h };
+}
+const dateiTeil = (t) => String(t).replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/Ä/g, 'Ae').replace(/Ö/g, 'Oe').replace(/Ü/g, 'Ue').normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss').replace(/[^A-Za-z0-9.-]+/g, '-').replace(/^-+|-+$/g, '');
+const pdfText = (t) => String(t).replace(/−/g, '-').replace(/±/g, '+/-');   // Standardschrift kennt diese Zeichen nicht
+const SORTIERUNGEN = { liste: 'Klassenliste', best: 'Bestwert', entw: 'Entwicklung' };
+async function pdfBericht() {
+  if (!aw.klasse || !klassen[aw.klasse]) { toast('Erst eine Klasse wählen.'); return; }
+  const sort = byId('pdfSort').value; let jsPDF;
+  try { jsPDF = await jsPdfLaden(); } catch (e) { toast(e.message); return; }
+  toast('PDF wird erstellt …');
+  const mg = mgAkt(), gText = aw.g === 'm' ? 'Jungen' : aw.g === 'w' ? 'Mädchen' : '';
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const RAND = 15, BREITE = 210 - 2 * RAND, UNTEN = 282; let y = 0, seite = 0;
+  const neueSeite = () => {
+    if (seite++) doc.addPage();
+    doc.setFillColor(14, 22, 33); doc.rect(0, 0, 210, 14, 'F');
+    doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text('KGS Schwarmstedt · Hochsprung-Technikanalyse', RAND, 9);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.text(`${aw.klasse} · ${aw.tag ? 'Tagesbericht ' + datumDe(aw.tag) : 'Gesamtbericht'}`, 210 - RAND, 9, { align: 'right' });
+    doc.setTextColor(30); y = 22;
+  };
+  const platz = (h) => { if (y + h > UNTEN) neueSeite(); };
+  neueSeite();
+  const zeilen = zeilenDaten(awListe());
+  if (sort === 'liste') zeilen.sort((a, b) => sortSchueler(a.s, b.s));
+  if (sort === 'best') zeilen.sort((a, b) => (a.best == null) - (b.best == null) || (a.best != null ? guete(b.best) - guete(a.best) : 0) || sortSchueler(a.s, b.s));
+  if (sort === 'entw') zeilen.sort((a, b) => (a.d == null) - (b.d == null) || (b.d ?? 0) - (a.d ?? 0) || sortSchueler(a.s, b.s));
+  const gemessen = zeilen.filter((z) => z.n), rangf = [...gemessen].sort((a, b) => guete(b.best) - guete(a.best)), rang = new Map(rangf.map((z, i) => [z.s.id, i + 1]));
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(30, 60, 120);
+  doc.text(pdfText(`${aw.klasse}${gText ? ' · ' + gText : ''} · ${mg.name}`), RAND, y); y += 7;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(90);
+  const schnitt = gemessen.length ? gemessen.reduce((a, z) => a + z.best, 0) / gemessen.length : null;
+  doc.text(pdfText(`${aw.tag ? 'Datum: ' + datumDe(aw.tag) : 'Zeitraum: alle Tage'} · ${gemessen.length} von ${zeilen.length} mit Werten · ${gemessen.reduce((a, z) => a + z.n, 0)} Sprünge` +
+    (gemessen.length ? ` · bester ${fmtW(rangf[0].best)} (${nameKurz(rangf[0].s)}) · Schnitt ${fmtW(schnitt)}` : '') + (mg.art === 'soll' ? ` · Soll ${fmtW(mgSoll(mg))}` : '')), RAND, y, { maxWidth: BREITE });
+  y += 5; doc.text(pdfText(`Sortierung: ${SORTIERUNGEN[sort]} · Technik-Score = Anteil der Werte im Soll (knapp zählt halb) · Richtwerte Flop Kinder/Jugend`), RAND, y, { maxWidth: BREITE }); y += 8;
+  const spalten = aw.tag ? [['Rang', 12], ['Name', 50], ['Sprünge des Tages', 56], ['Best', 18], ['Score', 16], ['Entw.', 28]]
+                         : [['Rang', 12], ['Name', 50], ['Sprünge', 16], ['Erster', 20], ['Letzter', 20], ['Best', 20], ['Entw.', 42]];
+  const kopfzeile = () => {
+    doc.setFillColor(225, 236, 247); doc.rect(RAND, y - 4.2, BREITE, 6, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(30, 60, 120);
+    let x = RAND + 1; spalten.forEach(([t, w]) => { doc.text(pdfText(t), x, y); x += w; }); y += 6;
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(30);
+  };
+  platz(14); kopfzeile();
+  zeilen.forEach((z, i) => {
+    if (y + 6 > UNTEN) { neueSeite(); kopfzeile(); }
+    if (i % 2) { doc.setFillColor(246, 247, 251); doc.rect(RAND, y - 4.2, BREITE, 6, 'F'); }
+    doc.setFontSize(9);
+    const name = (z.s.nn + (z.s.vn ? ', ' + z.s.vn : '')).slice(0, 30);
+    const bestScore = z.r.length ? Math.max(...z.r.map((j) => j.score ?? 0)) + ' %' : '';
+    const zellen = aw.tag ? [rang.get(z.s.id) || '', name, z.r.map((j) => fmtW(mgWert(j))).join('  ') || '–', fmtW(z.best), bestScore, fmtEntw(z.d)]
+                          : [rang.get(z.s.id) || '', name, z.n || '', z.erste != null ? fmtW(z.erste) : '', z.letzte != null ? fmtW(z.letzte) : '', fmtW(z.best), fmtEntw(z.d)];
+    let x = RAND + 1;
+    zellen.forEach((t, k) => {
+      if (spalten[k][0] === 'Entw.' && z.d) doc.setTextColor(z.d > 0 ? 22 : 220, z.d > 0 ? 163 : 38, z.d > 0 ? 74 : 38);
+      if (spalten[k][0] === 'Best') doc.setFont('helvetica', 'bold');
+      doc.text(pdfText(t), x, y, { maxWidth: spalten[k][1] - 1.5 });
+      doc.setTextColor(30); doc.setFont('helvetica', 'normal'); x += spalten[k][1];
+    });
+    y += 6;
+  });
+  y += 4;
+  if (gemessen.length) {
+    const k = klassenDaten();
+    for (const [titel, html] of [[aw.tag ? 'Klassenschnitt je Sprung des Tages' : 'Entwicklung der Klasse (Bestwert je Tag)', k.linie], ['Bestwerte', k.balken]]) {
+      const bild = await svgZuBild(html); if (!bild) continue;
+      const bw = BREITE, bh = bw * bild.h / bild.w; platz(bh + 8);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(30, 60, 120); doc.text(pdfText(titel), RAND, y); y += 2;
+      doc.addImage(bild.data, 'PNG', RAND, y, bw, bh); y += bh + 6;
+    }
+  }
+  const n = doc.getNumberOfPages();
+  for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(8); doc.setTextColor(140); doc.text(`erstellt ${new Date().toLocaleString('de-DE')} · Seite ${i}/${n}`, 210 - RAND, 292, { align: 'right' }); }
+  const name = ['Hochsprung', aw.tag || 'gesamt', dateiTeil(aw.klasse), dateiTeil(mg.name), gText ? dateiTeil(gText) : '', 'nach-' + dateiTeil(SORTIERUNGEN[sort])].filter(Boolean).join('_') + '.pdf';
+  doc.save(name); toast('Gespeichert: ' + name);
+}
+function herunterladen(name, inhalt, typ) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([inhalt], { type: typ }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+byId('pdfBericht').onclick = () => pdfBericht().catch((e) => { console.error(e); toast('PDF fehlgeschlagen: ' + e.message); });
+byId('exportCsv').onclick = () => {
+  const mgs = mgListe().filter((m) => !MG_BASIS.includes(m) && !m.id.endsWith('.steig'));
+  const z = [['Klasse', 'Nachname', 'Vorname', 'Geschlecht', 'Datum', 'Uhrzeit', 'Höhe (m)', 'Technik-Score (%)', 'Perspektive', 'Steigwinkel (°)', ...mgs.map((m) => m.name + ' (°)'), 'Video']];
+  const zahl = (v, d = 0) => v == null ? '' : Number(v).toFixed(d).replace('.', ',');
+  [...wsd.spruenge].sort((a, b) => a.klasse.localeCompare(b.klasse) || a.ts - b.ts).forEach((j) => {
+    const s = schueler(j.sid) || {};
+    z.push([j.klasse, s.nn || '', s.vn || '', s.g || '', datumDe(j.datum), new Date(j.ts).toTimeString().slice(0, 5), zahl(j.hoehe, 2), zahl(j.score), j.persp ? TEMPLATES[j.persp].kurz : '', zahl(j.toa),
+      ...mgs.map((m) => { const w = j.werte && j.werte[m.id]; return w ? zahl(w.v) : ''; }), j.video || '']);
+  });
+  herunterladen(`hochsprung_${heute()}.csv`, '﻿' + z.map((r) => r.map((x) => `"${String(x).replace(/"/g, '""')}"`).join(';')).join('\r\n'), 'text/csv');
+};
+byId('sicherungExport').onclick = () => herunterladen(`hochsprung-sicherung_${heute()}.json`, JSON.stringify({ format: 'kgs-hochsprung', version: 1, spruenge: wsd.spruenge, klassen: klLaden() }, null, 1), 'application/json');
+byId('sicherungImport').onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const j = JSON.parse(await f.text());
+    if (j.format !== 'kgs-hochsprung' || !Array.isArray(j.spruenge)) throw new Error('keine Hochsprung-Sicherung');
+    if (!confirm(`Sicherung mit ${j.spruenge.length} Sprüngen laden? Die Hochsprung-Daten auf diesem Gerät werden ersetzt. Klassen und Schüler aus der Sicherung werden ergänzt (nichts wird gelöscht).`)) return;
+    klassen = klLaden();
+    for (const k in j.klassen || {}) {
+      if (!klassen[k]) klassen[k] = [];
+      for (const s of j.klassen[k]) if (!klassen[k].some((x) => x.id === s.id)) klassen[k].push(s);
+    }
+    klSpeichern(); wsd.spruenge = j.spruenge; wsSpeichern(); toast('Sicherung geladen'); auswertungZeichnen();
+  } catch (err) { toast('Laden fehlgeschlagen: ' + err.message); }
+};
+function datenInfo() {
+  byId('datenInfo').textContent = `${wsd.spruenge.length} Sprünge gespeichert · ${klassenNamen().length} Klassen · ${Object.values(klassen).reduce((a, k) => a + k.length, 0)} Schüler`;
+}
+byId('allesLoeschen').onclick = () => {
+  if (!confirm('Alle gespeicherten Sprünge auf diesem Gerät löschen? Klassenlisten und Sprint-Zeiten bleiben erhalten.')) return;
+  wsd.spruenge = []; wsSpeichern(); datenInfo(); toast('Alle Sprünge gelöscht');
+};
+</script>
+
+</body>
+</html>

@@ -1,7 +1,8 @@
-// Offline-Cache für die Technik-Analyse (alles lokal, kein Netz nötig)
-const CACHE = 'weitsprung-analyse-v3';
+// Offline-Cache für die Technik-Analysen Weitsprung + Hochsprung (alles lokal, kein Netz nötig)
+// Beide Seiten registrieren diesen Worker (gleicher Ordner = gleicher Scope).
+const CACHE = 'technik-analyse-v4';
 const FILES = [
-  'weitsprung-analyse.html',
+  'weitsprung-analyse.html', 'hochsprung-analyse.html',
   'lib/mediapipe-pose/pose.js', 'lib/jspdf.umd.min.js', 'lib/mediapipe-pose/pose_web.binarypb',
   'lib/mediapipe-pose/pose_solution_packed_assets.data', 'lib/mediapipe-pose/pose_solution_packed_assets_loader.js',
   'lib/mediapipe-pose/pose_solution_simd_wasm_bin.js', 'lib/mediapipe-pose/pose_solution_simd_wasm_bin.wasm',
@@ -20,7 +21,7 @@ self.addEventListener('fetch', e => {
   if (url.origin !== location.origin) return;
   const f = FILES.find(x => url.pathname.endsWith('/' + x));
   if (!f) return; // andere Seiten (z. B. Sprint-Zeitmessung) nicht anfassen
-  if (f === 'weitsprung-analyse.html') {
+  if (f.endsWith('.html')) {
     // Seite: erst Netz (für Updates), ohne Netz aus dem Cache
     e.respondWith(fetch(e.request, { cache: 'no-store' }).then(r => { const cp = r.clone(); caches.open(CACHE).then(c => c.put(f, cp)); return r; }).catch(() => caches.match(f)));
   } else {

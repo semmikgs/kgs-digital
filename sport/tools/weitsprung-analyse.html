@@ -132,6 +132,14 @@ body:not(.ana) .hctl{display:none}
 #athl{padding:10px 12px;border-bottom:1px solid var(--line)}
 #athl select{padding:7px 8px}
 #saveBox{margin-top:8px;padding:8px;border-radius:10px;background:#12301f;border:1px solid var(--ok)}
+#lListe td{vertical-align:middle}
+#lListe .lin{display:flex;gap:5px;align-items:center}
+#lListe .lin input{width:88px;font-size:16px;padding:7px 8px}
+#lListe .lin button{padding:6px 12px;font-weight:700}
+#lListe .vs{display:flex;gap:4px;flex-wrap:wrap}
+#lListe .vs button{padding:3px 8px;font-size:13px;border-radius:7px;font-variant-numeric:tabular-nums}
+#lListe .vs button.ana{border-color:#7ef0ff}
+#lListe tr.neu{background:rgba(93,211,158,.12)}
 dialog{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:14px;max-width:560px}
 dialog::backdrop{background:rgba(0,0,0,.6)}
 </style>
@@ -141,7 +149,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
 <header>
   <a class="back" href="../" title="Zurück zu Sport">←</a>
   <h1>🏃‍♂️ Weitsprung</h1>
-  <nav id="nav"><button data-v="analyse" class="on">Analyse</button><button data-v="klassen">Klassen</button><button data-v="auswertung">Auswertung</button><button data-v="aufbau">Aufbau</button></nav>
+  <nav id="nav"><button data-v="analyse" class="on">Analyse</button><button data-v="leistung">Leistung</button><button data-v="klassen">Klassen</button><button data-v="auswertung">Auswertung</button><button data-v="aufbau">Aufbau</button></nav>
   <span class="hctl">
   <button id="bRec" class="pri">● Aufnehmen</button>
   <button id="bLoad">📂 Video</button>
@@ -155,7 +163,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
   </select>
   </span>
   <span id="status">Lade Modell …</span>
-  <button id="bHelp" title="Hilfe · Version 8">?</button>
+  <button id="bHelp" title="Hilfe · Version 9">?</button>
 </header>
 
 <div id="mid">
@@ -239,6 +247,16 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
     <div id="toa" class="met" style="display:none"></div>
     <p class="small">Richtwerte für den Schrittsprung (Kinder/Jugend), angelehnt an gängige Leichtathletik-Fachliteratur und DLV-Lehrmaterial. Es sind Orientierungswerte, keine Normen – kleine Abweichungen sind normal.</p>
   </aside>
+  </div>
+</div>
+
+<!-- ===================== LEISTUNG ===================== -->
+<div id="v-leistung" class="view" hidden>
+  <div class="karte">
+    <div class="row" style="justify-content:space-between;margin:0"><h2 style="margin:0" id="lTitel">Leistung eintragen</h2><span class="small" id="lDatum"></span></div>
+    <p class="small" id="lHinweis" style="margin:6px 0 8px"></p>
+    <div class="row"><select id="lKl"></select><div class="chips" id="lG"></div></div>
+    <div id="lListe"></div>
   </div>
 </div>
 
@@ -348,7 +366,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
 </div>
 
 <dialog id="help">
-  <h3>Kurzanleitung <span class="small" style="opacity:.6">· Version 8 · 25.11.</span></h3>
+  <h3>Kurzanleitung <span class="small" style="opacity:.6">· Version 9 · 26.11.</span></h3>
   <ol>
     <li><b>Aufnehmen</b> oder Video laden (seitlich, Stativ, ganze Person im Bild).</li>
     <li>Optional mit <b>[ Start</b> / <b>Ende ]</b> den Bereich eingrenzen.</li>
@@ -357,6 +375,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
     <li>Gelb gestrichelt = <b>Vorlage</b> mit den Körpermaßen des Kindes, am Sprungfuß (bzw. an der Hüfte) ausgerichtet. Das erkannte Skelett ist grün/orange/rot je nach Abweichung.</li>
     <li>Werden linkes und rechtes Bein vertauscht, bei <b>Sprungbein</b> umschalten.</li>
     <li><b>Speichern:</b> oben rechts den Springer wählen (◀ ▶ blättert durch die Klasse), optional die Weite eintragen, „💾 Sprung speichern“. Verlauf, Vergleiche, PDF und CSV unter <b>Auswertung</b>.</li>
+    <li><b>Leistung:</b> Weiten ohne Video schnell je Versuch eintragen (m oder cm, ↵ = nächster Schüler). Zählt in der Auswertung mit.</li>
     <li><b>Klassen</b> sind dieselben wie in der Sprint-Zeitmessung – einmal importieren reicht.</li>
   </ol>
   <p class="small">Offline: Die Seite einmal mit Internet öffnen, danach funktioniert sie auch ohne Netz (Status oben rechts zeigt „offline bereit“).</p>
@@ -1201,10 +1220,11 @@ byId('nav').addEventListener('click', (ev) => {
   ansicht = b.dataset.v;
   document.querySelectorAll('#nav button').forEach((x) => x.classList.toggle('on', x === b));
   byId('mid').hidden = ansicht !== 'analyse';
-  for (const v of ['klassen', 'auswertung', 'aufbau']) byId('v-' + v).hidden = ansicht !== v;
+  for (const v of ['leistung', 'klassen', 'auswertung', 'aufbau']) byId('v-' + v).hidden = ansicht !== v;
   document.body.classList.toggle('ana', ansicht === 'analyse');
   klassen = klLaden(); wsd = wsLaden();
   if (ansicht === 'analyse') { athlZeichnen(); setTimeout(() => { resize(); updateUI(); }, 30); }
+  if (ansicht === 'leistung') leistungZeichnen();
   if (ansicht === 'klassen') klassenZeichnen();
   if (ansicht === 'auswertung') auswertungZeichnen();
   if (ansicht === 'aufbau') datenInfo();
@@ -1277,6 +1297,75 @@ const _analyzeOrig = analyze;
 analyze = async function () { await _analyzeOrig(); athlZeichnen(); };
 byId('bAna').onclick = () => analyze(); byId('bAna2').onclick = () => analyze();
 athlZeichnen();
+
+/* =========================================================
+   LEISTUNG EINTRAGEN (ohne Video) – je Versuch ein Eintrag
+   ========================================================= */
+const LST = { feld: 'weite', name: 'Weite', min: 0.3, max: 9.5, bsp: 'z. B. 3,45 oder 345' };
+let lst = { klasse: '', g: '', zuletzt: null };
+const mFmt = (v) => v == null ? '–' : v.toFixed(2).replace('.', ',') + ' m';
+function leistungLesen(t) {   // "3,45" / "3.45" → 3,45 m · "345" (cm) → 3,45 m
+  let n = parseFloat(String(t).replace(',', '.').replace(/[^0-9.]/g, ''));
+  if (!isFinite(n) || n <= 0) return null;
+  if (n > 20) n = n / 100;
+  if (n < LST.min || n > LST.max) return null;
+  return Math.round(n * 100) / 100;
+}
+function leistungZeichnen() {
+  const namen = klassenNamen();
+  if (!lst.klasse || !klassen[lst.klasse]) lst.klasse = klassen[wsd.e.klasse] ? wsd.e.klasse : namen[0] || '';
+  byId('lDatum').textContent = 'heute, ' + datumDe(heute());
+  byId('lHinweis').innerHTML = `${LST.name} je Versuch eintragen – ohne Video, z. B. beim Wettkampf oder Sportabzeichen. Eingabe in m oder cm (${LST.bsp}), mit ↵ geht es zum nächsten Schüler. In der Auswertung zählt der beste Versuch des Tages. Versuch antippen = löschen.`;
+  byId('lKl').innerHTML = namen.length ? namen.map((k) => `<option ${k === lst.klasse ? 'selected' : ''}>${esc(k)}</option>`).join('') : '<option value="">keine Klasse</option>';
+  byId('lG').innerHTML = [['', 'alle'], ['m', 'Jungen'], ['w', 'Mädchen']].map(([v, t]) => `<button data-g="${v}" aria-pressed="${lst.g === v}">${t}</button>`).join('');
+  byId('lG').querySelectorAll('button').forEach((b) => b.onclick = () => { lst.g = b.dataset.g; leistungZeichnen(); });
+  if (!namen.length) { byId('lListe').innerHTML = '<p class="hinweisleiste">Erst unter „Klassen“ eine Liste importieren.</p>'; return; }
+  const liste = [...(klassen[lst.klasse] || [])].filter((s) => !lst.g || s.g === lst.g).sort(sortSchueler);
+  const zeile = (s) => {
+    const alle = wsd.spruenge.filter((j) => j.sid === s.id && j[LST.feld] != null);
+    const heuteV = alle.filter((j) => j.datum === heute()).sort((a, b) => a.ts - b.ts);
+    const bestH = heuteV.length ? Math.max(...heuteV.map((j) => j[LST.feld])) : null;
+    const pb = alle.length ? Math.max(...alle.map((j) => j[LST.feld])) : null;
+    const neuPb = bestH != null && bestH === pb && alle.some((j) => j.datum !== heute());
+    return `<tr data-sid="${s.id}" class="${lst.zuletzt === s.id ? 'neu' : ''}"><td>${esc(s.nn)}${s.vn ? ', ' + esc(s.vn) : ''}</td>
+      <td><div class="lin"><input type="text" inputmode="decimal" enterkeyhint="next" placeholder="${LST.name}" data-in="${s.id}"><button data-add="${s.id}">+</button></div></td>
+      <td><div class="vs">${heuteV.map((j) => `<button data-rmv="${j.id}" class="${j.score != null ? 'ana' : ''}" title="${j.score != null ? 'mit Videoanalyse' : 'eingetragen'}">${mFmt(j[LST.feld]).replace(' m', '')}</button>`).join('')}</div></td>
+      <td class="z">${bestH != null ? mFmt(bestH) : ''}</td><td class="z ${neuPb ? 'besser' : ''}">${pb != null ? mFmt(pb) + (neuPb ? ' ★' : '') : ''}</td></tr>`;
+  };
+  byId('lListe').innerHTML = liste.length ? `<table><tr><th>Name</th><th>neuer Versuch</th><th>Versuche heute</th><th>Best heute</th><th>Bestleistung</th></tr>${liste.map(zeile).join('')}</table>
+    <p class="small">★ = neue Bestleistung · türkis umrandet = Versuch mit Videoanalyse</p>` : '<p class="small">Keine Schüler in dieser Auswahl.</p>';
+  const eintragen = (sid, inp) => {
+    const v = leistungLesen(inp.value);
+    if (v == null) { if (inp.value.trim()) toast(`Ungültig – ${LST.bsp}`); return false; }
+    const s = schueler(sid);
+    wsd.spruenge.push({ id: uid(), sid, klasse: s.klasse, datum: heute(), ts: Date.now(), [LST.feld]: v, toa: null, score: null, werte: {}, video: '', quelle: 'eingabe' });
+    wsSpeichern(); lst.zuletzt = sid; toast(`${nameKurz(s)}: ${mFmt(v)}`); return true;
+  };
+  const ids = liste.map((s) => s.id);
+  byId('lListe').querySelectorAll('[data-add]').forEach((b) => b.onclick = () => {
+    const inp = byId('lListe').querySelector(`[data-in="${b.dataset.add}"]`);
+    if (eintragen(b.dataset.add, inp)) { leistungZeichnen(); const n = byId('lListe').querySelector(`[data-in="${b.dataset.add}"]`); if (n) n.focus(); }
+  });
+  byId('lListe').querySelectorAll('[data-in]').forEach((inp) => inp.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return; e.preventDefault();
+    const sid = inp.dataset.in, ok = !inp.value.trim() || eintragen(sid, inp); if (!ok) return;
+    const next = ids[ids.indexOf(sid) + 1];
+    if (inp.value.trim()) leistungZeichnen();
+    const n = next && byId('lListe').querySelector(`[data-in="${next}"]`); if (n) n.focus(); else document.activeElement.blur();
+  }));
+  byId('lListe').querySelectorAll('[data-rmv]').forEach((b) => b.onclick = () => {
+    const j = wsd.spruenge.find((x) => x.id === b.dataset.rmv); if (!j) return;
+    if (j.score != null) {   // Sprung mit Videoanalyse: nur die Leistung entfernen
+      if (!confirm(`${LST.name} ${mFmt(j[LST.feld])} aus diesem analysierten Sprung entfernen? Die Technikwerte bleiben.`)) return;
+      j[LST.feld] = null;
+    } else {
+      if (!confirm(`Versuch ${mFmt(j[LST.feld])} löschen?`)) return;
+      wsd.spruenge = wsd.spruenge.filter((x) => x.id !== j.id);
+    }
+    wsSpeichern(); leistungZeichnen();
+  });
+}
+byId('lKl').onchange = (e) => { lst.klasse = e.target.value; lst.zuletzt = null; leistungZeichnen(); };
 
 /* =========================================================
    KLASSEN & IMPORT (wie Sprint-Zeitmessung)
@@ -1571,7 +1660,7 @@ function auswertungZeichnen() {
   const mg = mgAkt(), soll = mgSoll(mg);
   let platz = 0;
   const auswahlSpalte = aw.modus === 'auswahl';
-  const hinweis = !zeilen.some((z) => z.n) ? `<p class="hinweisleiste">Noch keine Werte für „${esc(mg.name)}“${aw.tag ? ' an diesem Tag' : ''}. ${mg.id === 'weite' ? 'Die Weite wird beim Speichern eines Sprungs optional eingetragen.' : 'In der Analyse einen Sprung analysieren und speichern.'}</p>` : '';
+  const hinweis = !zeilen.some((z) => z.n) ? `<p class="hinweisleiste">Noch keine Werte für „${esc(mg.name)}“${aw.tag ? ' an diesem Tag' : ''}. ${mg.id === 'weite' ? 'Die Weite unter „Leistung“ eintragen (oder beim Speichern eines analysierten Sprungs).' : 'In der Analyse einen Sprung analysieren und speichern.'}</p>` : '';
   byId('awTabelle').innerHTML = hinweis + `<p class="small" style="margin:0 0 6px">${mg.art === 'soll' ? `Soll ${fmtW(soll)} – je näher, desto besser.` : 'Größer = besser.'}${aw.tag ? ' Nur ' + datumDe(aw.tag) + ' · Entwicklung = letzter minus erster Sprung des Tages' : ''}</p>` +
     (liste.length ? `<table><tr>${auswahlSpalte ? '<th>✓</th>' : ''}<th>#</th><th>Name</th><th>Sprünge</th><th>Bestwert</th><th>Letzter</th><th>Entwicklung</th></tr>
     ${zeilen.map((z) => {
@@ -1628,7 +1717,7 @@ function einzelInhalt() {
   const s = aw.sid && schueler(aw.sid);
   if (!s) return `<p class="small">Schüler in der Tabelle antippen, um den Verlauf zu sehen.</p>`;
   const mg = mgAkt(), r = spruengeVon(s.id, aw.tag);
-  const alle = wsd.spruenge.filter((j) => j.sid === s.id).sort((a, b) => a.ts - b.ts), letzt = alle[alle.length - 1];
+  const alle = wsd.spruenge.filter((j) => j.sid === s.id && j.score != null).sort((a, b) => a.ts - b.ts), letzt = alle[alle.length - 1];   // letzter analysierter Sprung
   // Technikprofil des letzten Sprungs
   let profil = '';
   if (letzt && letzt.werte) {
@@ -1770,7 +1859,7 @@ async function svgZuBild(html) {
   const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
   return { data: c.toDataURL('image/png'), w, h };
 }
-const dateiTeil = (t) => String(t).normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss').replace(/[^A-Za-z0-9.-]+/g, '-').replace(/^-+|-+$/g, '');
+const dateiTeil = (t) => String(t).replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/Ä/g, 'Ae').replace(/Ö/g, 'Oe').replace(/Ü/g, 'Ue').normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss').replace(/[^A-Za-z0-9.-]+/g, '-').replace(/^-+|-+$/g, '');
 const pdfText = (t) => String(t).replace(/−/g, '-').replace(/±/g, '+/-');   // Standardschrift kennt diese Zeichen nicht
 const SORTIERUNGEN = { liste: 'Klassenliste', best: 'Bestwert', entw: 'Entwicklung' };
 async function pdfBericht() {

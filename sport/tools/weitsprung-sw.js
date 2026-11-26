@@ -1,8 +1,8 @@
-// Offline-Cache für die Technik-Analysen Weitsprung + Hochsprung (alles lokal, kein Netz nötig)
+// Offline-Cache für die Technik-Analysen Weitsprung, Hochsprung, Wurf (alles lokal, kein Netz nötig)
 // Beide Seiten registrieren diesen Worker (gleicher Ordner = gleicher Scope).
-const CACHE = 'technik-analyse-v4';
+const CACHE = 'technik-analyse-v5';
 const FILES = [
-  'weitsprung-analyse.html', 'hochsprung-analyse.html',
+  'weitsprung-analyse.html', 'hochsprung-analyse.html', 'wurf-analyse.html',
   'lib/mediapipe-pose/pose.js', 'lib/jspdf.umd.min.js', 'lib/mediapipe-pose/pose_web.binarypb',
   'lib/mediapipe-pose/pose_solution_packed_assets.data', 'lib/mediapipe-pose/pose_solution_packed_assets_loader.js',
   'lib/mediapipe-pose/pose_solution_simd_wasm_bin.js', 'lib/mediapipe-pose/pose_solution_simd_wasm_bin.wasm',

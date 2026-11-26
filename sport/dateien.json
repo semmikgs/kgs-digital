@@ -1,6 +1,6 @@
 {
   "fachbereich": "sport",
-  "aktualisiert": "2026-11-25",
+  "aktualisiert": "2026-11-26",
   "eintraege": [
     {
       "pfad": "tools/sprint-zeitmessung.html",
@@ -10,7 +10,7 @@
       "beschreibung": "iPad im Ziel: Start per Knall der Startklappe mit Schallkorrektur, Fotofinish-Zeitstrahl für bis zu 4 Bahnen, Klassenlisten und Leistungsverlauf. In Entwicklung.",
       "kategorie": "in Entwicklung",
       "groesse": "112 KB",
-      "geaendert": "2026-11-25"
+      "geaendert": "2026-11-26"
     },
     {
       "pfad": "tools/weitsprung-analyse.html",
@@ -20,7 +20,7 @@
       "beschreibung": "Videoanalyse am iPad: Körperhaltung beim Weitsprung Bild für Bild erkennen und mit einer idealisierten Vorlage (Schrittsprung) vergleichen – Aufsatz, Absprung, Flug, Landung. Läuft offline. In Entwicklung.",
       "kategorie": "in Entwicklung",
       "groesse": "128 KB",
-      "geaendert": "2026-11-25"
+      "geaendert": "2026-11-26"
     }
   ]
 }

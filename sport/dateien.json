@@ -3,6 +3,16 @@
   "aktualisiert": "2026-11-26",
   "eintraege": [
     {
+      "pfad": "tools/hochsprung-analyse.html",
+      "datei": "hochsprung-analyse.html",
+      "typ": "html",
+      "titel": "Technik-Analyse Hochsprung",
+      "beschreibung": "Videoanalyse am iPad: Flop-Technik beim Hochsprung Bild für Bild erkennen und mit einer idealisierten Vorlage vergleichen – Stemmschritt, Absprung, Steigen, Lattenüberquerung, Landung. Zwei Perspektiven (Seite/Frontal), Leistungserfassung, läuft offline. In Entwicklung.",
+      "kategorie": "in Entwicklung",
+      "groesse": "143 KB",
+      "geaendert": "2026-11-26"
+    },
+    {
       "pfad": "tools/sprint-zeitmessung.html",
       "datei": "sprint-zeitmessung.html",
       "typ": "html",
@@ -19,7 +29,7 @@
       "titel": "Technik-Analyse Weitsprung",
       "beschreibung": "Videoanalyse am iPad: Körperhaltung beim Weitsprung Bild für Bild erkennen und mit einer idealisierten Vorlage (Schrittsprung) vergleichen – Aufsatz, Absprung, Flug, Landung. Läuft offline. In Entwicklung.",
       "kategorie": "in Entwicklung",
-      "groesse": "128 KB",
+      "groesse": "135 KB",
       "geaendert": "2026-11-26"
     }
   ]

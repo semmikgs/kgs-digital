@@ -23,7 +23,15 @@ header h1{font-size:16px;margin:0 4px 0 0;white-space:nowrap}
 header button,header select{padding:7px 10px;font-size:14px}
 header{gap:6px!important}
 header .sp{flex:1}
-#status{flex:1 1 0;min-width:60px;text-align:right;color:var(--mut);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#status{position:absolute;right:8px;bottom:8px;z-index:3;max-width:60%;font-size:12px;background:rgba(14,22,33,.78);border-radius:8px;padding:4px 9px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none}
+header{position:relative;flex-wrap:nowrap}
+#cfg{position:absolute;top:100%;right:12px;z-index:20;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#cfg[hidden]{display:none}#cfg label{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;color:var(--mut)}
+#subnav{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+#subnav button{padding:8px 13px}#subnav button.on{background:var(--acc);color:#04121d;border-color:var(--acc);font-weight:700}
+.unter[hidden],#neuBox[hidden]{display:none!important}
+header button,header select{white-space:nowrap}
+@media (max-width:900px){header h1{font-size:0}header h1::first-letter{font-size:18px}header .lbl{display:none}}
 #mid{display:grid;grid-template-columns:1fr 330px;grid-template-rows:auto 1fr;grid-template-areas:"ctrl side" "stage side";min-height:0}
 #ctrl{grid-area:ctrl;border-bottom:1px solid var(--line);padding:6px 10px}
 #stage{grid-area:stage}
@@ -149,22 +157,26 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
 <header>
   <a class="back" href="../" title="Zurück zu Sport">←</a>
   <h1>🎯 Wurf</h1>
-  <select id="disz" title="Disziplin" style="font-weight:700"><option value="speer">Speerwurf</option><option value="ball">Schlagball</option></select>
-  <nav id="nav"><button data-v="analyse" class="on">Analyse</button><button data-v="leistung">Leistung</button><button data-v="klassen">Klassen</button><button data-v="auswertung">Auswertung</button><button data-v="aufbau">Aufbau</button></nav>
+  <select id="disz" title="Disziplin" style="font-weight:700"><option value="speer">Speer</option><option value="ball">Schlagball</option></select>
+  <nav id="nav"><button data-v="analyse" class="on">🎥 Analyse</button><button data-v="sportler">👥 Sportler</button></nav>
   <span class="hctl">
-  <button id="bRec" class="pri">● Aufnehmen</button>
-  <button id="bLoad">📂 Video</button>
+  <button id="bRec" class="pri" title="Aufnehmen">● <span class="lbl">Aufnehmen</span></button>
+  <button id="bLoad" title="Video laden">📂 <span class="lbl">Video</span></button>
   <input id="file" type="file" accept="video/*" hidden>
-  <button id="bAna" disabled>🔍 Analysieren</button>
-  <select id="rate" title="Analysierte Bilder pro Sekunde">
-    <option value="30">30 B/s</option><option value="60" selected>60 B/s</option><option value="120">120 B/s</option>
-  </select>
-  <select id="cx" title="Modell">
-    <option value="0">schnell</option><option value="1" selected>genau</option>
-  </select>
+  <button id="bAna" disabled title="Analysieren">🔍 <span class="lbl">Analysieren</span></button>
+  <button id="bCfg" title="Einstellungen der Erkennung">⚙️</button>
   </span>
-  <span id="status">Lade Modell …</span>
+  <span class="sp"></span>
   <button id="bHelp" title="Hilfe · Version 3">?</button>
+  <div id="cfg" hidden>
+    <label>Analysierte Bilder pro Sekunde <select id="rate" title="Analysierte Bilder pro Sekunde">
+    <option value="30">30 B/s</option><option value="60" selected>60 B/s</option><option value="120">120 B/s</option>
+  </select></label>
+    <label>Erkennung <select id="cx" title="Modell">
+    <option value="0">schnell</option><option value="1" selected>genau</option>
+  </select></label>
+    <span class="small">„genau“ erkennt besser, „schnell“ rechnet schneller.</span>
+  </div>
 </header>
 
 <div id="mid">
@@ -189,7 +201,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
       <button id="bZoom" title="Lupe: 2× – 3× – aus, folgt dem Sportler">🔍 Lupe</button>
       <button id="bSnap">📷 Bild</button>
     </div>
-    <canvas id="ref" width="170" height="210"></canvas><div id="phBadge"></div><div id="toast"></div>
+    <canvas id="ref" width="170" height="210"></canvas><div id="phBadge"></div><div id="toast"></div><span id="status">Lade Modell …</span>
     <div id="legend"><i style="background:var(--tpl)"></i>Vorlage<i style="background:var(--ok)"></i>passt<i style="background:var(--warn)"></i>knapp<i style="background:var(--bad)"></i>abweichend</div>
     <div id="empty"><div id="emptyTxt"></div></div>
     <div id="prog"><div id="progTxt">Analysiere …</div><div class="bar"><i id="progBar"></i></div><button id="bCancel">Abbrechen</button></div>
@@ -198,7 +210,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
   <div id="athl">
     <div class="small" style="margin-bottom:4px">Werfer</div>
     <div class="rng" style="margin-top:0"><select id="aKl" style="max-width:40%"></select><select id="aSid" style="flex:1"></select></div>
-    <div class="rng"><button id="aPrev" class="klein">◀</button><button id="aNext" class="klein">▶</button><span id="aInfo" class="small" style="align-self:center"></span></div>
+    <div class="rng"><button id="aPrev" class="klein">◀</button><button id="aNext" class="klein">▶</button><button id="aNeu" class="klein" title="Sportler anlegen">＋</button><span id="aInfo" class="small" style="align-self:center"></span></div>
     <div id="saveBox" hidden>
       <div class="rng" style="margin-top:0;align-items:center"><span class="small">Weite (optional)</span><input id="aWeite" type="text" inputmode="decimal" placeholder="z. B. 24,5" style="width:100px"><span class="small">m</span></div>
       <button id="aSave" class="pri" style="width:100%;margin-top:8px">💾 Wurf speichern</button>
@@ -249,8 +261,21 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
   </div>
 </div>
 
-<!-- ===================== LEISTUNG ===================== -->
-<div id="v-leistung" class="view" hidden>
+<!-- ===================== SPORTLER (Leistung · Klassen & Gruppen · Auswertung) ===================== -->
+<div id="v-sportler" class="view" hidden>
+<nav id="subnav"><button data-u="leistung">Leistung</button><button data-u="klassen">Klassen &amp; Gruppen</button><button data-u="auswertung">Auswertung</button><span style="flex:1"></span><button id="bNeu" class="pri">＋ Sportler</button></nav>
+<div class="karte" id="neuBox" hidden>
+  <h2>Sportler anlegen</h2>
+  <div class="row" style="margin-top:0">
+    <input type="text" id="neuName" placeholder="Vorname Nachname" style="flex:2 1 200px" autocomplete="off" enterkeyhint="done">
+    <select id="neuG" title="Geschlecht"><option value="">–</option><option value="m">m</option><option value="w">w</option><option value="d">d</option></select>
+    <select id="neuGruppe" style="flex:1 1 160px"></select>
+    <input type="text" id="neuGruppeName" placeholder="Name der neuen Gruppe" style="flex:1 1 160px" hidden>
+  </div>
+  <div class="row"><button class="pri" id="neuOk">＋ anlegen</button><button id="neuZu">Schließen</button><span class="small" id="neuInfo"></span></div>
+  <p class="small" style="margin-bottom:0">Ohne Klasse? Die Sportler kommen in eine <b>Trainingsgruppe</b> (z. B. „Trainingsgruppe“ oder „Leichtathletik-AG“). Gruppen und Klassen gelten gemeinsam für alle Sport-Tools (Sprint, Weit-, Hochsprung, Wurf).</p>
+</div>
+<div id="v-leistung" class="unter" hidden>
   <div class="karte">
     <div class="row" style="justify-content:space-between;margin:0"><h2 style="margin:0" id="lTitel">Leistung eintragen</h2><span class="small" id="lDatum"></span></div>
     <p class="small" id="lHinweis" style="margin:6px 0 8px"></p>
@@ -260,15 +285,15 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
 </div>
 
 <!-- ===================== KLASSEN ===================== -->
-<div id="v-klassen" class="view" hidden>
+<div id="v-klassen" class="unter" hidden>
  <div class="zwei">
   <div class="karte">
-    <h2>Klassen</h2>
+    <h2>Klassen &amp; Gruppen</h2>
     <p class="small" style="margin-top:0">Gleiche Listen wie in der Sprint-Zeitmessung (auf diesem iPad). Import aus WebUntis (CSV), Excel (.xlsx) oder kopiertem Text. Erkannt werden Langname/Nachname, Vorname, Klasse, Geschlecht. Gleiche Schüler werden nicht doppelt angelegt.</p>
     <div class="row">
       <label class="pri" style="display:inline-block;padding:9px 13px;border-radius:10px;background:var(--acc);color:#04121d;font-weight:600;cursor:pointer">📄 Liste importieren<input type="file" id="importDatei" accept=".csv,.txt,.xlsx,text/csv" hidden></label>
       <button id="textImport">📋 Text einfügen</button>
-      <button id="neueKlasse">+ Neue Klasse</button>
+      <button id="neueKlasse">+ Neue Klasse / Gruppe</button>
     </div>
     <div id="textBox" hidden style="margin-top:12px">
       <p class="small" style="margin:0 0 6px">WebUntis-Liste anzeigen, alles markieren, kopieren und hier einfügen. Zusätzliche Spalten und # hinter Namen werden ignoriert.</p>
@@ -280,15 +305,15 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
       </div>
       <div id="textVorschau"></div>
     </div>
-    <h3>Vorhandene Klassen</h3>
+    <h3>Vorhandene Klassen und Gruppen</h3>
     <div id="klassenListe"></div>
   </div>
-  <div class="karte" id="klassenDetail"><p class="small">Klasse auswählen.</p></div>
+  <div class="karte" id="klassenDetail"><p class="small">Klasse oder Gruppe auswählen.</p></div>
  </div>
 </div>
 
 <!-- ===================== AUSWERTUNG ===================== -->
-<div id="v-auswertung" class="view" hidden>
+<div id="v-auswertung" class="unter" hidden>
   <div class="karte">
     <div class="row" style="justify-content:space-between;margin:0">
       <h2 style="margin:0">Auswertung</h2>
@@ -311,6 +336,8 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
     <div class="karte" id="awDetail"></div>
   </div>
 </div>
+
+</div><!-- /v-sportler -->
 
 <!-- ===================== AUFBAU ===================== -->
 <div id="v-aufbau" class="view" hidden>
@@ -376,7 +403,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
     <li><b>Klassen</b> sind dieselben wie in Hoch-, Weitsprung und Sprint-Zeitmessung – einmal importieren reicht.</li>
   </ol>
   <p class="small">Offline: Die Seite einmal mit Internet öffnen, danach funktioniert sie auch ohne Netz (Status oben rechts zeigt „offline bereit“).</p>
-  <form method="dialog"><button class="pri">OK</button></form>
+  <form method="dialog" class="row"><button class="pri">OK</button><button value="aufbau" id="hAufbau">📐 Aufbau &amp; Daten</button></form>
 </dialog>
 
 <script src="lib/mediapipe-pose/pose.js"></script>
@@ -1316,43 +1343,87 @@ function nameKurz(s) {
   return (kl || []).some((x) => x.id !== s.id && gleich(x)) ? voll : kurz;
 }
 
-/* ---------- Ansichten umschalten ---------- */
-let ansicht = 'analyse';
-byId('nav').addEventListener('click', (ev) => {
-  const b = ev.target.closest('button'); if (!b) return;
-  ansicht = b.dataset.v;
-  document.querySelectorAll('#nav button').forEach((x) => x.classList.toggle('on', x === b));
-  byId('mid').hidden = ansicht !== 'analyse';
-  for (const v of ['leistung', 'klassen', 'auswertung', 'aufbau']) byId('v-' + v).hidden = ansicht !== v;
-  document.body.classList.toggle('ana', ansicht === 'analyse');
+/* ---------- Ansichten umschalten: 🎥 Analyse · 👥 Sportler (Leistung, Klassen & Gruppen, Auswertung) · Aufbau ---------- */
+let ansicht = 'analyse', unterAnsicht = 'leistung';
+const UNTER = ['leistung', 'klassen', 'auswertung'];
+function ansichtZeigen(v) {
+  ansicht = v; if (UNTER.includes(v)) unterAnsicht = v;
+  document.querySelectorAll('#nav button').forEach((x) => x.classList.toggle('on', x.dataset.v === (UNTER.includes(v) ? 'sportler' : v)));
+  document.querySelectorAll('#subnav button[data-u]').forEach((x) => x.classList.toggle('on', x.dataset.u === v));
+  byId('mid').hidden = v !== 'analyse';
+  byId('v-sportler').hidden = !UNTER.includes(v);
+  for (const u of UNTER) byId('v-' + u).hidden = v !== u;
+  byId('v-aufbau').hidden = v !== 'aufbau';
+  document.body.classList.toggle('ana', v === 'analyse');
   klassen = klLaden(); wsd = wsLaden();
-  if (ansicht === 'analyse') { athlZeichnen(); setTimeout(() => { resize(); updateUI(); }, 30); }
-  if (ansicht === 'leistung') leistungZeichnen();
-  if (ansicht === 'klassen') klassenZeichnen();
+  if (v === 'analyse') { athlZeichnen(); setTimeout(() => { resize(); updateUI(); }, 30); }
+  if (v === 'leistung') leistungZeichnen();
+  if (v === 'klassen') klassenZeichnen();
+  if (v === 'auswertung') auswertungZeichnen();
+  if (v === 'aufbau') datenInfo();
+}
+byId('nav').addEventListener('click', (ev) => { const b = ev.target.closest('button'); if (b) ansichtZeigen(b.dataset.v === 'sportler' ? unterAnsicht : b.dataset.v); });
+byId('subnav').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-u]'); if (b) ansichtZeigen(b.dataset.u); });
+byId('help').addEventListener('close', () => { if (byId('help').returnValue === 'aufbau') ansichtZeigen('aufbau'); });
+byId('bCfg').onclick = (e) => { e.stopPropagation(); byId('cfg').hidden = !byId('cfg').hidden; };
+document.addEventListener('click', (e) => { if (!byId('cfg').hidden && !e.target.closest('#cfg')) byId('cfg').hidden = true; });
+
+/* ---------- Sportler schnell anlegen (auch ohne Klasse, in einer Trainingsgruppe) ---------- */
+let neuGruppeZuletzt = '';
+function neuGruppenZeichnen() {
+  const namen = klassenNamen(), def = neuGruppeZuletzt || (namen.includes('Trainingsgruppe') ? 'Trainingsgruppe' : namen.length ? '' : 'Trainingsgruppe');
+  const opts = [...new Set([...namen, 'Trainingsgruppe'])].sort(sortDe);
+  byId('neuGruppe').innerHTML = opts.map((k) => `<option ${k === (def || 'Trainingsgruppe') ? 'selected' : ''}>${esc(k)}</option>`).join('') + '<option value="__neu">＋ neue Gruppe …</option>';
+  byId('neuGruppeName').hidden = true;
+}
+function neuOeffnen() { klassen = klLaden(); byId('neuBox').hidden = false; neuGruppenZeichnen(); byId('neuInfo').textContent = ''; setTimeout(() => byId('neuName').focus(), 50); }
+byId('bNeu').onclick = () => { if (byId('neuBox').hidden) neuOeffnen(); else byId('neuBox').hidden = true; };
+byId('neuZu').onclick = () => { byId('neuBox').hidden = true; };
+byId('neuGruppe').onchange = (e) => { byId('neuGruppeName').hidden = e.target.value !== '__neu'; if (e.target.value === '__neu') byId('neuGruppeName').focus(); };
+function neuAnlegen() {
+  const name = byId('neuName').value.trim().replace(/\s+/g, ' ');
+  if (!name) { byId('neuName').focus(); return; }
+  let gruppe = byId('neuGruppe').value;
+  if (gruppe === '__neu') { gruppe = byId('neuGruppeName').value.trim(); if (!gruppe) { toast('Bitte einen Namen für die neue Gruppe eingeben.'); byId('neuGruppeName').focus(); return; } }
+  const teile = name.split(' '), nn = teile.pop(), vn = teile.join(' ');   // letztes Wort = Nachname
+  klassen = klLaden(); if (!klassen[gruppe]) klassen[gruppe] = [];
+  if (klassen[gruppe].some((x) => x.nn.toLowerCase() === nn.toLowerCase() && (x.vn || '').toLowerCase() === vn.toLowerCase())) { toast(`${name} gibt es in ${gruppe} schon.`); return; }
+  klassen[gruppe].push({ id: uid(), nn, vn, g: byId('neuG').value }); klSpeichern();
+  neuGruppeZuletzt = gruppe; byId('neuName').value = ''; neuGruppenZeichnen();
+  byId('neuInfo').textContent = `✓ ${name} in „${gruppe}“ angelegt`;
+  if (ansicht === 'leistung') { lst.klasse = gruppe; leistungZeichnen(); }
+  if (ansicht === 'klassen') { klasseAktiv = gruppe; klassenZeichnen(); }
   if (ansicht === 'auswertung') auswertungZeichnen();
-  if (ansicht === 'aufbau') datenInfo();
-});
+  byId('neuName').focus();
+}
+byId('neuOk').onclick = neuAnlegen;
+byId('neuName').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); neuAnlegen(); } });
+byId('neuGruppeName').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); neuAnlegen(); } });
+byId('aNeu').onclick = () => { ansichtZeigen(unterAnsicht); neuOeffnen(); };
 
 /* =========================================================
    SPRINGER WÄHLEN + SPRUNG SPEICHERN (Analyse-Ansicht)
    ========================================================= */
 function klassenNamen() { return Object.keys(klassen).sort(sortDe); }
-function athlListe() { return [...(klassen[wsd.e.klasse] || [])].sort(sortSchueler); }
+function athlListe() {   // ohne Auswahl: alle Sportler aus allen Klassen und Gruppen
+  const l = wsd.e.klasse ? (klassen[wsd.e.klasse] || []) : Object.entries(klassen).flatMap(([k, a]) => a.map((x) => Object.assign({ klasse: k }, x)));
+  return [...l].sort(sortSchueler);
+}
 function athlZeichnen() {
   const namen = klassenNamen();
-  if (!klassen[wsd.e.klasse]) wsd.e.klasse = namen[0] || '';
-  byId('aKl').innerHTML = namen.length ? namen.map((k) => `<option ${k === wsd.e.klasse ? 'selected' : ''}>${esc(k)}</option>`).join('') : '<option value="">keine Klasse</option>';
+  if (wsd.e.klasse && !klassen[wsd.e.klasse]) wsd.e.klasse = '';
+  byId('aKl').innerHTML = '<option value="">– alle –</option>' + namen.map((k) => `<option ${k === wsd.e.klasse ? 'selected' : ''}>${esc(k)}</option>`).join('');
   const liste = athlListe();
   if (!liste.some((s) => s.id === wsd.e.sid)) wsd.e.sid = '';
   const nHeute = (sid) => wsd.spruenge.filter((j) => j.sid === sid && j.datum === heute()).length;
   byId('aSid').innerHTML = `<option value="">– Werfer wählen –</option>` + liste.map((s) => { const n = nHeute(s.id);
-    return `<option value="${s.id}" ${s.id === wsd.e.sid ? 'selected' : ''}>${esc(s.nn)}${s.vn ? ', ' + esc(s.vn) : ''}${n ? '  (' + n + ')' : ''}</option>`; }).join('');
+    return `<option value="${s.id}" ${s.id === wsd.e.sid ? 'selected' : ''}>${esc(s.nn)}${s.vn ? ', ' + esc(s.vn) : ''}${!wsd.e.klasse && s.klasse ? ' · ' + esc(s.klasse) : ''}${n ? '  (' + n + ')' : ''}</option>`; }).join('');
   const s = wsd.e.sid && schueler(wsd.e.sid);
-  byId('aInfo').textContent = !namen.length ? 'Erst unter „Klassen“ eine Liste importieren' : s ? `${nHeute(s.id)} Würfe heute` : '';
+  byId('aInfo').textContent = !namen.length ? 'Noch keine Sportler – über ＋ anlegen' : s ? `${nHeute(s.id)} Würfe heute` : '';
   const analysiert = S.frames.length && Object.keys(S.phase).length;
   byId('saveBox').hidden = !analysiert;
   byId('aSave').textContent = S._gespeichert === S.frames ? '✓ gespeichert – nochmal speichern' : '💾 Wurf speichern';
-  const heuteListe = wsd.spruenge.filter((j) => j.datum === heute() && j.klasse === wsd.e.klasse).slice(-5).reverse();
+  const heuteListe = wsd.spruenge.filter((j) => j.datum === heute() && (!wsd.e.klasse || j.klasse === wsd.e.klasse)).slice(-5).reverse();
   byId('aHeute').innerHTML = heuteListe.length ? 'Heute zuletzt: ' + heuteListe.map((j) => `${esc(nameKurz(schueler(j.sid)))} <b>${j.score != null ? j.score + ' %' : ''}</b>${j.weite ? ' · ' + j.weite.toFixed(2).replace('.', ',') + ' m' : ''}`).join(' · ') : '';
 }
 byId('aKl').onchange = (e) => { wsd.e.klasse = e.target.value; wsd.e.sid = ''; wsSpeichern(); athlZeichnen(); };
@@ -1425,7 +1496,7 @@ function leistungZeichnen() {
   byId('lKl').innerHTML = namen.length ? namen.map((k) => `<option ${k === lst.klasse ? 'selected' : ''}>${esc(k)}</option>`).join('') : '<option value="">keine Klasse</option>';
   byId('lG').innerHTML = [['', 'alle'], ['m', 'Jungen'], ['w', 'Mädchen']].map(([v, t]) => `<button data-g="${v}" aria-pressed="${lst.g === v}">${t}</button>`).join('');
   byId('lG').querySelectorAll('button').forEach((b) => b.onclick = () => { lst.g = b.dataset.g; leistungZeichnen(); });
-  if (!namen.length) { byId('lListe').innerHTML = '<p class="hinweisleiste">Erst unter „Klassen“ eine Liste importieren.</p>'; return; }
+  if (!namen.length) { byId('lListe').innerHTML = '<p class="hinweisleiste">Noch keine Sportler – oben „＋ Sportler“ anlegen oder unter „Klassen &amp; Gruppen“ eine Liste importieren.</p>'; return; }
   const liste = [...(klassen[lst.klasse] || [])].filter((s) => !lst.g || s.g === lst.g).sort(sortSchueler);
   const zeile = (s) => {
     const alle = wsd.spruenge.filter((j) => j.sid === s.id && j[LST.feld] != null);
@@ -1488,7 +1559,7 @@ function klassenZeichnen() {
 }
 function klasseDetail() {
   const box = byId('klassenDetail');
-  if (!klasseAktiv || !klassen[klasseAktiv]) { box.innerHTML = `<p class="small">Klasse auswählen.</p>`; return; }
+  if (!klasseAktiv || !klassen[klasseAktiv]) { box.innerHTML = `<p class="small">Klasse oder Gruppe auswählen.</p>`; return; }
   const liste = [...klassen[klasseAktiv]].sort(sortSchueler);
   box.innerHTML = `
     <div class="row" style="justify-content:space-between;margin:0"><h2 style="margin:0">${esc(klasseAktiv)}</h2>
@@ -1530,7 +1601,7 @@ function klasseDetail() {
   };
 }
 byId('neueKlasse').onclick = () => {
-  const n = (prompt('Name der Klasse (z. B. 7a):') || '').trim(); if (!n) return;
+  const n = (prompt('Name der Klasse oder Trainingsgruppe (z. B. 7a oder Leichtathletik-AG):') || '').trim(); if (!n) return;
   if (!klassen[n]) klassen[n] = [];
   klasseAktiv = n; klSpeichern(); klassenZeichnen();
 };

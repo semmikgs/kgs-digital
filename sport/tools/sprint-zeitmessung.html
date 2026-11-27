@@ -145,6 +145,7 @@ body.vollbild .buehne .leise{display:none}
     <button data-v="auswertung">Auswertung</button>
     <button data-v="aufbau">Aufbau &amp; Einstellungen</button>
   </nav>
+  <span id="offl" style="font-size:12px;color:#6b7a8c"></span>
   <a class="zurueck" href="../">← Sport</a>
 </div>
 
@@ -1922,6 +1923,23 @@ if (!streckenListe().includes(daten.e.strecke)) daten.e.strecke = 50;
 schwelleZeigen();
 laufPanelZeichnen();
 buehneZeigen();
+/* ================= Offline (gemeinsamer Speicher für den Sport-Bereich: ../../offline-sw.js) ================= */
+let offlineOk = false, offlineInfo = null;
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  (async () => {
+    try {
+      for (const r of await navigator.serviceWorker.getRegistrations()) if (/\/sport\/tools\/$/.test(r.scope)) await r.unregister();   // alter Speicher nur für die Analyse-Tools
+      const reg = await navigator.serviceWorker.register('../../offline-sw.js').catch(() => navigator.serviceWorker.ready);   // offline: vorhandene Anmeldung nutzen
+      const frage = () => {
+        const w = reg.active || reg.waiting || reg.installing; if (!w) { setTimeout(frage, 1500); return; }
+        const ch = new MessageChannel();
+        ch.port1.onmessage = (e) => { offlineInfo = e.data || {}; offlineOk = !!offlineInfo.ok; document.getElementById('offl').textContent = offlineOk ? 'offline bereit ✓' : `Offline-Speicher lädt ${offlineInfo.n || 0}/${offlineInfo.total || '…'}`; if (!offlineOk) setTimeout(frage, 2000); };
+        w.postMessage('status', [ch.port2]);
+      };
+      frage();
+    } catch (e) {}
+  })();
+}
 </script>
 </body>
 </html>

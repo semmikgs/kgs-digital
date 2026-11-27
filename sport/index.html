@@ -12,6 +12,7 @@
   <div class="karte">
     <h1 class="kopf-titel"><span class="symbol">🏃</span> Sport</h1>
     <p class="kopf-untertitel">Leichtathletik, Messen und Auswerten (im Aufbau)</p>
+    <p id="offline" style="margin:6px 0 0;font-size:.9em;color:#5b6b7d"></p>
 
     <div class="buttonreihe">
       <a class="knopf zurueck" href="../">
@@ -64,5 +65,33 @@ const FACH = {
 };
 </script>
 <script src="../assets/kgs.js"></script>
+<script>
+/* Offline-Speicher für den Sport-Bereich (../offline-sw.js): Startseite, diese Übersicht und alle Sport-Tools.
+   Einmal mit Netz öffnen und warten, bis „Offline bereit“ erscheint – dann geht alles auf dem Sportplatz ohne Netz. */
+(function () {
+  const z = document.getElementById('offline');
+  const zeig = (t) => { z.textContent = t; };
+  if (!('serviceWorker' in navigator) || !(location.protocol === 'https:' || location.hostname === 'localhost')) {
+    zeig('⚠️ Offline-Nutzung ist in diesem Browser nicht möglich (z. B. in der IServ-App). Bitte in Safari öffnen.'); return;
+  }
+  (async () => {
+    try {
+      for (const r of await navigator.serviceWorker.getRegistrations()) if (/\/sport\/tools\/$/.test(r.scope)) await r.unregister();
+      const reg = await navigator.serviceWorker.register('../offline-sw.js').catch(() => navigator.serviceWorker.ready);   // offline: vorhandene Anmeldung nutzen
+      const frage = () => {
+        const w = reg.active || reg.waiting || reg.installing; if (!w) { setTimeout(frage, 1500); return; }
+        const ch = new MessageChannel();
+        ch.port1.onmessage = (e) => {
+          const d = e.data || {};
+          if (d.ok) zeig('✅ Offline bereit – Sport-Tools funktionieren auf dem Sportplatz ohne Netz. Tipp: in Safari über „Teilen → Zum Home-Bildschirm“ ablegen.');
+          else { zeig(`⏳ Offline-Speicher wird geladen … ${d.n || 0} von ${d.total || '…'} Dateien (ca. 25 MB) – Seite bitte offen lassen.`); setTimeout(frage, 2000); }
+        };
+        w.postMessage('status', [ch.port2]);
+      };
+      frage();
+    } catch (e) { zeig('⚠️ Offline-Speicher konnte nicht angelegt werden: ' + e.message); }
+  })();
+})();
+</script>
 </body>
 </html>

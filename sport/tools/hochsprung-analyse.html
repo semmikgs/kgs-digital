@@ -546,7 +546,7 @@ async function ensurePose() {
   work.width = 64; work.height = 64; wctx.fillRect(0, 0, 64, 64);
   await pose.send({ image: work }); // Initialisierung + Aufwärmen
   poseCx = cx; poseReady = true;
-  setStatus(offlineOk ? 'Modell bereit · offline bereit ✓' : 'Modell bereit');
+  setStatus(offlineOk ? 'Modell bereit · offline bereit ✓' : offlineInfo ? `Modell bereit · Offline-Speicher lädt ${offlineInfo.n || 0}/${offlineInfo.total || '…'}` : 'Modell bereit');
 }
 let lastRes = null;
 async function detect(img) { lastRes = null; await pose.send({ image: img }); return lastRes; }
@@ -1263,14 +1263,22 @@ $('#bSnap').onclick = async () => {
 };
 $('#cx').onchange = () => { poseCx = -1; };
 
-/* ================= Offline (Service Worker) ================= */
-let offlineOk = false;
+/* ================= Offline (gemeinsamer Speicher für den Sport-Bereich: ../../offline-sw.js) ================= */
+let offlineOk = false, offlineInfo = null;
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-  navigator.serviceWorker.register('weitsprung-sw.js').then(() => navigator.serviceWorker.ready).then(() => {
-    const ch = new MessageChannel();
-    ch.port1.onmessage = e => { offlineOk = !!e.data.ok; if (poseReady) setStatus(offlineOk ? 'Modell bereit · offline bereit ✓' : 'Modell bereit'); };
-    navigator.serviceWorker.controller ? navigator.serviceWorker.controller.postMessage('status', [ch.port2]) : navigator.serviceWorker.ready.then(r => r.active && r.active.postMessage('status', [ch.port2]));
-  }).catch(() => {});
+  (async () => {
+    try {
+      for (const r of await navigator.serviceWorker.getRegistrations()) if (/\/sport\/tools\/$/.test(r.scope)) await r.unregister();   // alter Speicher nur für die Analyse-Tools
+      const reg = await navigator.serviceWorker.register('../../offline-sw.js').catch(() => navigator.serviceWorker.ready);   // offline: vorhandene Anmeldung nutzen
+      const frage = () => {
+        const w = reg.active || reg.waiting || reg.installing; if (!w) { setTimeout(frage, 1500); return; }
+        const ch = new MessageChannel();
+        ch.port1.onmessage = (e) => { offlineInfo = e.data || {}; offlineOk = !!offlineInfo.ok; if (poseReady) setStatus(offlineOk ? 'Modell bereit · offline bereit ✓' : `Modell bereit · Offline-Speicher lädt ${offlineInfo.n || 0}/${offlineInfo.total || '…'}`); if (!offlineOk) setTimeout(frage, 2000); };
+        w.postMessage('status', [ch.port2]);
+      };
+      frage();
+    } catch (e) {}
+  })();
 }
 updateUI(); resize();
 ensurePose().catch(e => setStatus('Modell-Fehler: ' + e.message));

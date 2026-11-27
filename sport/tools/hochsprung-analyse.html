@@ -185,6 +185,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
       <button data-k="path" class="on">Hüftbahn</button>
       <button data-k="ref" class="on">Soll-Figur</button>
       <button data-k="korr" style="border-color:#7ef0ff">✏️ Korrektur</button>
+      <button id="bZoom" title="Lupe: 2× – 3× – aus, folgt dem Sportler">🔍 Lupe</button>
       <button id="bSnap">📷 Bild</button>
     </div>
     <canvas id="ref" width="170" height="210"></canvas><div id="phBadge"></div><div id="toast"></div>
@@ -857,12 +858,33 @@ function autoPhases() {
 }
 
 /* ================= Zeichnen ================= */
-let view = { k: 1, ox: 0, oy: 0 }, dpr = 1;
+let view = { k: 1, ox: 0, oy: 0 }, view0 = { k: 1, ox: 0, oy: 0, W: 16, H: 9, vw: 16, vh: 9 }, dpr = 1;
 function resize() {
   const r = $('#stage').getBoundingClientRect(); dpr = window.devicePixelRatio || 1;
   ov.width = Math.round(r.width * dpr); ov.height = Math.round(r.height * dpr);
   const vw = vid.videoWidth || 16, vh = vid.videoHeight || 9, k = Math.min(r.width / vw, r.height / vh);
-  view = { k, ox: (r.width - vw * k) / 2, oy: (r.height - vh * k) / 2 };
+  view0 = { k, ox: (r.width - vw * k) / 2, oy: (r.height - vh * k) / 2, W: r.width, H: r.height, vw, vh };
+  draw();
+}
+/* ---------- Lupe: Ansicht 2× / 3× vergrößert, folgt dem Sportler (Mitte zwischen Hüfte und Schulter) ---------- */
+const lupe = { z: 1, c: null };
+function lupeView() {
+  const b = view0;
+  if (lupe.z === 1 || !vid.videoWidth) view = { k: b.k, ox: b.ox, oy: b.oy };
+  else {
+    const fr = curFrame(); let t = null;
+    if (fr && fr.lm) { const s = skelFromLm(fr.lm); t = P(s.H.x + (s.S.x - s.H.x) * 0.3, s.H.y + (s.S.y - s.H.y) * 0.3); }
+    if (!t) t = lupe.c || P(b.vw / 2, b.vh / 2);
+    lupe.c = lupe.c && !vid.paused ? P(lupe.c.x + (t.x - lupe.c.x) * 0.35, lupe.c.y + (t.y - lupe.c.y) * 0.35) : t;   // beim Abspielen weich nachführen
+    const k = b.k * lupe.z;
+    const fit = (o, size, W) => size <= W ? (W - size) / 2 : Math.min(0, Math.max(W - size, o));   // nicht über den Bildrand hinaus
+    view = { k, ox: fit(b.W / 2 - lupe.c.x * k, b.vw * k, b.W), oy: fit(b.H / 2 - lupe.c.y * k, b.vh * k, b.H) };
+  }
+  if (vid.videoWidth) { const st = vid.style; st.inset = 'auto'; st.objectFit = 'fill'; st.left = view.ox + 'px'; st.top = view.oy + 'px'; st.width = b.vw * view.k + 'px'; st.height = b.vh * view.k + 'px'; }
+}
+function lupeSetzen(z) {
+  lupe.z = z; lupe.c = null;
+  const b = $('#bZoom'); b.textContent = z === 1 ? '🔍 Lupe' : '🔍 ' + z + '×'; b.classList.toggle('on', z > 1);
   draw();
 }
 window.addEventListener('resize', resize);
@@ -909,6 +931,7 @@ function drawRef() {
   x.fillStyle = 'rgba(255,255,255,.55)'; x.fillText((S.dir > 0 ? 'läuft nach rechts →' : '← läuft nach links') + '  (tippen ⇄)', 10, H - 3);
 }
 function draw() {
+  lupeView();
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, ov.width, ov.height);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   render(ctx, p => P(view.ox + p.x * view.k, view.oy + p.y * view.k), 1);
@@ -1221,11 +1244,16 @@ $('#kAnim').onclick = () => {
   const step = now => { const f = Math.min(1, (now - t0) / dur), e = f < .5 ? 2 * f * f : 1 - (-2 * f + 2) ** 2 / 2; setMix('all', Math.round(e * 100)); if (f < 1) requestAnimationFrame(step); };
   setMix('all', 0); requestAnimationFrame(step);
 };
+$('#bZoom').onclick = () => lupeSetzen(lupe.z === 1 ? 2 : lupe.z === 2 ? 3 : 1);
 $('#bSnap').onclick = async () => {
   if (!vid.videoWidth) return;
-  const c = document.createElement('canvas'); c.width = vid.videoWidth; c.height = vid.videoHeight;
-  const x = c.getContext('2d'); x.drawImage(vid, 0, 0);
-  render(x, p => p, Math.max(1, c.width / 900));
+  // mit Lupe: nur den sichtbaren Ausschnitt speichern
+  const b = view0, sx = Math.max(0, -view.ox / view.k), sy = Math.max(0, -view.oy / view.k);
+  const sw = Math.min(vid.videoWidth - sx, b.W / view.k), sh = Math.min(vid.videoHeight - sy, b.H / view.k);
+  const sc = lupe.z > 1 ? Math.max(1, 1280 / sw) : 1;
+  const c = document.createElement('canvas'); c.width = Math.round(sw * sc); c.height = Math.round(sh * sc);
+  const x = c.getContext('2d'); x.drawImage(vid, sx, sy, sw, sh, 0, 0, c.width, c.height);
+  render(x, p => P((p.x - sx) * sc, (p.y - sy) * sc), Math.max(1, c.width / 900));
   const ph = phaseObj(); const name = `${S.vidName}_${ph ? ph.id : 'bild'}.jpg`;
   c.toBlob(async blob => {
     const file = new File([blob], name, { type: 'image/jpeg' });

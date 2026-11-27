@@ -164,7 +164,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
   </select>
   </span>
   <span id="status">Lade Modell …</span>
-  <button id="bHelp" title="Hilfe · Version 2">?</button>
+  <button id="bHelp" title="Hilfe · Version 3">?</button>
 </header>
 
 <div id="mid">
@@ -186,6 +186,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
       <button data-k="path" class="on">Hüftbahn</button>
       <button data-k="ref" class="on">Soll-Figur</button>
       <button data-k="korr" style="border-color:#7ef0ff">✏️ Korrektur</button>
+      <button id="bZoom" title="Lupe: 2× – 3× – aus, folgt dem Sportler">🔍 Lupe</button>
       <button id="bSnap">📷 Bild</button>
     </div>
     <canvas id="ref" width="170" height="210"></canvas><div id="phBadge"></div><div id="toast"></div>
@@ -243,7 +244,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
       <button id="bLegA">auto</button><button id="bLegL">links</button><button id="bLegR">rechts</button></div>
     <div class="row"><span class="small">Laufrichtung:</span><span id="dirTxt" class="small">–</span><button id="bDir" style="padding:4px 9px">⇄</button></div>
     <div id="toa" class="met" style="display:none"></div>
-    <p class="small">Richtwerte für Speer- und Schlagballwurf (Kinder/Jugend, Rechts- und Linkshänder), angelehnt an gängige Leichtathletik-Fachliteratur und DLV-Lehrmaterial. Es sind Orientierungswerte, keine Normen – kleine Abweichungen sind normal.</p>
+    <p class="small">Soll-Werte nach der Lehrmeinung (Leichtathletik-Fachliteratur, DLV-Lehrmaterial) für Kinder/Jugend, Rechts- und Linkshänder – Orientierungswerte, keine Normen. Die Toleranzen berücksichtigen die Messungenauigkeit der Kamera-Erkennung (z. B. wird der Ellbogenwinkel eher zu klein gemessen).</p>
   </aside>
   </div>
 </div>
@@ -361,7 +362,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
 </div>
 
 <dialog id="help">
-  <h3>Kurzanleitung <span class="small" style="opacity:.6">· Version 2 · 27.11.</span></h3>
+  <h3>Kurzanleitung <span class="small" style="opacity:.6">· Version 3 · 27.11.</span></h3>
   <ol>
     <li><b>Disziplin</b> oben wählen: Speerwurf oder Schlagball. Daten, Vorlage und Richtwerte sind je Disziplin getrennt.</li>
     <li><b>Aufnehmen</b> oder Video laden: seitlich, auf der Seite des Wurfarms, Stativ, ganze Person im Bild (siehe „Aufbau“).</li>
@@ -396,23 +397,23 @@ const TEMPLATES = {
   toa: { ok: [28, 40], warn: [20, 48], soll: 34, tol: 6, note: 'Zugrichtung der Wurfhand kurz vor dem Abwurf' },
   phases: [
     { id:'rueck', name:'Rückführen', anchor:'hip',
-      seg:{stTh:20, stSh:-5, swTh:-15, swSh:-60, tr:-20, stUa:-72, stFa:-92, swUa:60, swFa:90},
+      seg:{stTh:20, stSh:-5, swTh:-15, swSh:-60, tr:-10, stUa:-95, stFa:-100, swUa:60, swFa:90},
       metrics:['armRueck','ellbogen','rumpf'],
-      cue:'Speer lang nach hinten führen: Wurfarm fast gestreckt, Hand etwa auf Schulterhöhe oder knapp darunter, Speerspitze neben dem Kopf. Schultern drehen sich in Wurfrichtung seitlich ein, Hüfte bleibt vorn.' },
+      cue:'Speer lang nach hinten führen: Wurfarm gestreckt, Hand etwa auf Schulterhöhe, Speerspitze neben dem Kopf. Schultern drehen sich in Wurfrichtung seitlich ein, Hüfte bleibt vorn.' },
     { id:'impuls', name:'Impulsschritt', anchor:'hip',
-      seg:{stTh:35, stSh:-15, swTh:15, swSh:12, tr:-24, stUa:-72, stFa:-92, swUa:70, swFa:90},
+      seg:{stTh:35, stSh:-15, swTh:15, swSh:12, tr:-20, stUa:-95, stFa:-100, swUa:70, swFa:90},
       metrics:['rumpf','armRueck','ellbogen'],
       cue:'Landung des Impulsschritts: Nach einem flachen, schnellen Kreuzschritt setzt das Impulsbein vor dem Körper auf, die Beine laufen dem Oberkörper davon – Rücklage. Das Stemmbein schwingt schon nach vorn, der Wurfarm bleibt lang hinten.' },
     { id:'stemm', name:'Stemmschritt', anchor:'ankle',
-      seg:{stTh:32, stSh:38, swTh:-25, swSh:-60, tr:-20, stUa:-75, stFa:-95, swUa:80, swFa:95},
+      seg:{stTh:30, stSh:35, swTh:-25, swSh:-60, tr:-22, stUa:-95, stFa:-100, swUa:80, swFa:95},
       metrics:['aufsatz','knieSt','rumpf','armRueck','ellbogen'],
       cue:'Stemmbein schnell und fast gestreckt weit vor dem Körper aufsetzen (Ferse zuerst). Oberkörper in Rücklage, Wurfarm lang hinten – Bogenspannung aufbauen.' },
     { id:'abwurf', name:'Abwurf', anchor:'ankle',
-      seg:{stTh:3, stSh:15, swTh:-40, swSh:-45, tr:15, stUa:145, stFa:130, swUa:-20, swFa:15},
+      seg:{stTh:5, stSh:8, swTh:-40, swSh:-45, tr:20, stUa:145, stFa:140, swUa:-20, swFa:15},
       metrics:['knieSt','rumpf','armVor','ellbogen'],
       cue:'Stemmbein bleibt gestreckt („blockt“), Hüfte und Brust schieben nach vorn, der Wurfarm kommt mit hohem Ellbogen über der Schulter nach vorn-oben. Gegenarm zieht an den Körper.' },
     { id:'abfang', name:'Abfangen', anchor:'hip',
-      seg:{stTh:-20, stSh:-30, swTh:35, swSh:10, tr:40, stUa:60, stFa:50, swUa:-30, swFa:0},
+      seg:{stTh:-20, stSh:-30, swTh:35, swSh:10, tr:30, stUa:60, stFa:50, swUa:-30, swFa:0},
       metrics:['rumpf'],
       cue:'Nach dem Abwurf das hintere Bein nach vorn bringen und abfangen, damit man nicht über den Abwurfbogen tritt.' }
   ],
@@ -423,19 +424,19 @@ const TEMPLATES = {
   toa: { ok: [32, 44], warn: [24, 52], soll: 38, tol: 6, note: 'Zugrichtung der Wurfhand kurz vor dem Abwurf' },
   phases: [
     { id:'rueck', name:'Rückführen', anchor:'hip',
-      seg:{stTh:20, stSh:-5, swTh:-15, swSh:-60, tr:-12, stUa:-105, stFa:-120, swUa:60, swFa:95},
+      seg:{stTh:20, stSh:-5, swTh:-15, swSh:-60, tr:-8, stUa:-115, stFa:-125, swUa:60, swFa:95},
       metrics:['armRueck','ellbogen','rumpf'],
       cue:'Ball lang nach hinten-oben führen: Wurfarm fast gestreckt, Hand über Schulterhöhe. Schultern drehen sich seitlich ein, der Gegenarm zeigt nach vorn.' },
     { id:'impuls', name:'Impulsschritt', anchor:'hip',
-      seg:{stTh:35, stSh:-15, swTh:15, swSh:12, tr:-15, stUa:-110, stFa:-122, swUa:70, swFa:95},
+      seg:{stTh:35, stSh:-15, swTh:15, swSh:12, tr:-15, stUa:-115, stFa:-125, swUa:70, swFa:95},
       metrics:['rumpf','armRueck','ellbogen'],
       cue:'Landung des Impulsschritts: Das Impulsbein setzt vor dem Körper auf, die Beine laufen dem Oberkörper davon – Rücklage. Das Stemmbein schwingt schon nach vorn, der Ball bleibt hinten-oben.' },
     { id:'stemm', name:'Stemmschritt', anchor:'ankle',
-      seg:{stTh:30, stSh:35, swTh:-25, swSh:-60, tr:-18, stUa:-100, stFa:-115, swUa:80, swFa:95},
+      seg:{stTh:28, stSh:32, swTh:-25, swSh:-60, tr:-18, stUa:-110, stFa:-120, swUa:80, swFa:95},
       metrics:['aufsatz','knieSt','rumpf','armRueck','ellbogen'],
       cue:'Stemmbein weit vor dem Körper aufsetzen, Oberkörper in Rücklage, Wurfarm lang hinten-oben – Bogenspannung („Bogen spannen“).' },
     { id:'abwurf', name:'Abwurf', anchor:'ankle',
-      seg:{stTh:3, stSh:15, swTh:-40, swSh:-45, tr:18, stUa:155, stFa:130, swUa:-20, swFa:15},
+      seg:{stTh:5, stSh:8, swTh:-40, swSh:-45, tr:22, stUa:150, stFa:155, swUa:-20, swFa:15},
       metrics:['knieSt','rumpf','armVor','ellbogen'],
       cue:'Peitschenwurf: Hüfte vor, Ellbogen hoch und zuerst nach vorn, dann schnellt der Unterarm nach. Abwurf vor und über dem Kopf, Stemmbein gestreckt.' },
     { id:'abfang', name:'Abfangen', anchor:'hip',
@@ -830,12 +831,33 @@ function autoPhases() {
 }
 
 /* ================= Zeichnen ================= */
-let view = { k: 1, ox: 0, oy: 0 }, dpr = 1;
+let view = { k: 1, ox: 0, oy: 0 }, view0 = { k: 1, ox: 0, oy: 0, W: 16, H: 9, vw: 16, vh: 9 }, dpr = 1;
 function resize() {
   const r = $('#stage').getBoundingClientRect(); dpr = window.devicePixelRatio || 1;
   ov.width = Math.round(r.width * dpr); ov.height = Math.round(r.height * dpr);
   const vw = vid.videoWidth || 16, vh = vid.videoHeight || 9, k = Math.min(r.width / vw, r.height / vh);
-  view = { k, ox: (r.width - vw * k) / 2, oy: (r.height - vh * k) / 2 };
+  view0 = { k, ox: (r.width - vw * k) / 2, oy: (r.height - vh * k) / 2, W: r.width, H: r.height, vw, vh };
+  draw();
+}
+/* ---------- Lupe: Ansicht 2× / 3× vergrößert, folgt dem Sportler (Mitte zwischen Hüfte und Schulter) ---------- */
+const lupe = { z: 1, c: null };
+function lupeView() {
+  const b = view0;
+  if (lupe.z === 1 || !vid.videoWidth) view = { k: b.k, ox: b.ox, oy: b.oy };
+  else {
+    const fr = curFrame(); let t = null;
+    if (fr && fr.lm) { const s = skelFromLm(fr.lm); t = P(s.H.x + (s.S.x - s.H.x) * 0.3, s.H.y + (s.S.y - s.H.y) * 0.3); }
+    if (!t) t = lupe.c || P(b.vw / 2, b.vh / 2);
+    lupe.c = lupe.c && !vid.paused ? P(lupe.c.x + (t.x - lupe.c.x) * 0.35, lupe.c.y + (t.y - lupe.c.y) * 0.35) : t;   // beim Abspielen weich nachführen
+    const k = b.k * lupe.z;
+    const fit = (o, size, W) => size <= W ? (W - size) / 2 : Math.min(0, Math.max(W - size, o));   // nicht über den Bildrand hinaus
+    view = { k, ox: fit(b.W / 2 - lupe.c.x * k, b.vw * k, b.W), oy: fit(b.H / 2 - lupe.c.y * k, b.vh * k, b.H) };
+  }
+  if (vid.videoWidth) { const st = vid.style; st.inset = 'auto'; st.objectFit = 'fill'; st.left = view.ox + 'px'; st.top = view.oy + 'px'; st.width = b.vw * view.k + 'px'; st.height = b.vh * view.k + 'px'; }
+}
+function lupeSetzen(z) {
+  lupe.z = z; lupe.c = null;
+  const b = $('#bZoom'); b.textContent = z === 1 ? '🔍 Lupe' : '🔍 ' + z + '×'; b.classList.toggle('on', z > 1);
   draw();
 }
 window.addEventListener('resize', resize);
@@ -882,6 +904,7 @@ function drawRef() {
   x.fillStyle = 'rgba(255,255,255,.55)'; x.fillText((S.dir > 0 ? 'läuft nach rechts →' : '← läuft nach links') + '  (tippen ⇄)', 10, H - 3);
 }
 function draw() {
+  lupeView();
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, ov.width, ov.height);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   render(ctx, p => P(view.ox + p.x * view.k, view.oy + p.y * view.k), 1);
@@ -1192,11 +1215,16 @@ $('#kAnim').onclick = () => {
   const step = now => { const f = Math.min(1, (now - t0) / dur), e = f < .5 ? 2 * f * f : 1 - (-2 * f + 2) ** 2 / 2; setMix('all', Math.round(e * 100)); if (f < 1) requestAnimationFrame(step); };
   setMix('all', 0); requestAnimationFrame(step);
 };
+$('#bZoom').onclick = () => lupeSetzen(lupe.z === 1 ? 2 : lupe.z === 2 ? 3 : 1);
 $('#bSnap').onclick = async () => {
   if (!vid.videoWidth) return;
-  const c = document.createElement('canvas'); c.width = vid.videoWidth; c.height = vid.videoHeight;
-  const x = c.getContext('2d'); x.drawImage(vid, 0, 0);
-  render(x, p => p, Math.max(1, c.width / 900));
+  // mit Lupe: nur den sichtbaren Ausschnitt speichern
+  const b = view0, sx = Math.max(0, -view.ox / view.k), sy = Math.max(0, -view.oy / view.k);
+  const sw = Math.min(vid.videoWidth - sx, b.W / view.k), sh = Math.min(vid.videoHeight - sy, b.H / view.k);
+  const sc = lupe.z > 1 ? Math.max(1, 1280 / sw) : 1;
+  const c = document.createElement('canvas'); c.width = Math.round(sw * sc); c.height = Math.round(sh * sc);
+  const x = c.getContext('2d'); x.drawImage(vid, sx, sy, sw, sh, 0, 0, c.width, c.height);
+  render(x, p => P((p.x - sx) * sc, (p.y - sy) * sc), Math.max(1, c.width / 900));
   const ph = phaseObj(); const name = `${S.vidName}_${ph ? ph.id : 'bild'}.jpg`;
   c.toBlob(async blob => {
     const file = new File([blob], name, { type: 'image/jpeg' });

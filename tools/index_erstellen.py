@@ -17,6 +17,7 @@ in dem die Datei liegt. Beispiel:
 Aufruf:  python3 tools/index_erstellen.py
 """
 
+import html
 import json
 import re
 import subprocess
@@ -59,7 +60,7 @@ def lies_kopf(datei: Path) -> dict:
 
     m = re.search(r"<title[^>]*>(.*?)</title>", text, re.I | re.S)
     if m:
-        titel = re.sub(r"\s+", " ", m.group(1)).strip()
+        titel = html.unescape(re.sub(r"\s+", " ", m.group(1)).strip())
         # ein evtl. angehängtes " · KGS - Digital" entfernen
         titel = re.split(r"\s+[·|–-]\s+KGS", titel)[0].strip()
         if titel:
@@ -73,7 +74,7 @@ def lies_kopf(datei: Path) -> dict:
             inhalt = re.search(
                 r"content\s*=\s*[\"'](.*?)[\"']", m.group(0), re.I | re.S)
             if inhalt:
-                wert = re.sub(r"\s+", " ", inhalt.group(1)).strip()
+                wert = html.unescape(re.sub(r"\s+", " ", inhalt.group(1)).strip())
                 if wert:
                     ergebnis[schluessel] = wert
 

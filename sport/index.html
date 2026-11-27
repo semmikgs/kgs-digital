@@ -70,9 +70,9 @@ const FACH = {
    Einmal mit Netz öffnen und warten, bis „Offline bereit“ erscheint – dann geht alles auf dem Sportplatz ohne Netz. */
 (function () {
   const z = document.getElementById('offline');
-  const zeig = (t) => { z.textContent = t; };
+  const zeig = (t, farbe) => { z.textContent = t; z.style.color = farbe || ''; z.style.fontWeight = farbe ? '700' : ''; };
   if (!('serviceWorker' in navigator) || !(location.protocol === 'https:' || location.hostname === 'localhost')) {
-    zeig('⚠️ Offline-Nutzung ist in diesem Browser nicht möglich (z. B. in der IServ-App). Bitte in Safari öffnen.'); return;
+    zeig('⚠️ Offline-Nutzung ist in diesem Browser nicht möglich. Bitte das Portal in Safari öffnen.', '#c0392b'); return;
   }
   (async () => {
     try {
@@ -83,13 +83,13 @@ const FACH = {
         const ch = new MessageChannel();
         ch.port1.onmessage = (e) => {
           const d = e.data || {};
-          if (d.ok) zeig('✅ Offline bereit – Sport-Tools funktionieren auf dem Sportplatz ohne Netz. Tipp: in Safari über „Teilen → Zum Home-Bildschirm“ ablegen.');
-          else { zeig(`⏳ Offline-Speicher wird geladen … ${d.n || 0} von ${d.total || '…'} Dateien (ca. 25 MB) – Seite bitte offen lassen.`); setTimeout(frage, 2000); }
+          if (d.ok) zeig('✅ Offline bereit – Sport-Tools funktionieren auf dem Sportplatz ohne Netz. Tipp: in Safari über „Teilen → Zum Home-Bildschirm“ ablegen.', '#1f9d55');
+          else { zeig(`⏳ Offline-Speicher wird geladen … ${d.n || 0} von ${d.total || '…'} Dateien (ca. 25 MB) – Seite bitte offen lassen.`, '#e07b00'); setTimeout(frage, 2000); }
         };
         w.postMessage('status', [ch.port2]);
       };
       frage();
-    } catch (e) { zeig('⚠️ Offline-Speicher konnte nicht angelegt werden: ' + e.message); }
+    } catch (e) { zeig('⚠️ Offline-Speicher konnte nicht angelegt werden: ' + e.message, '#c0392b'); }
   })();
 })();
 </script>

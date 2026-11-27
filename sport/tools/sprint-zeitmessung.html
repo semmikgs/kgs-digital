@@ -1933,7 +1933,7 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
       const frage = () => {
         const w = reg.active || reg.waiting || reg.installing; if (!w) { setTimeout(frage, 1500); return; }
         const ch = new MessageChannel();
-        ch.port1.onmessage = (e) => { offlineInfo = e.data || {}; offlineOk = !!offlineInfo.ok; document.getElementById('offl').textContent = offlineOk ? 'offline bereit ✓' : `Offline-Speicher lädt ${offlineInfo.n || 0}/${offlineInfo.total || '…'}`; if (!offlineOk) setTimeout(frage, 2000); };
+        ch.port1.onmessage = (e) => { offlineInfo = e.data || {}; offlineOk = !!offlineInfo.ok; { const o = document.getElementById('offl'); o.textContent = offlineOk ? 'offline bereit ✓' : `Offline-Speicher lädt ${offlineInfo.n || 0}/${offlineInfo.total || '…'}`; o.style.color = offlineOk ? '#1f9d55' : '#e07b00'; o.style.fontWeight = '700'; }; if (!offlineOk) setTimeout(frage, 2000); };
         w.postMessage('status', [ch.port2]);
       };
       frage();

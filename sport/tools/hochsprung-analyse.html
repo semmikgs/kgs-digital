@@ -546,7 +546,7 @@ async function ensurePose() {
   work.width = 64; work.height = 64; wctx.fillRect(0, 0, 64, 64);
   await pose.send({ image: work }); // Initialisierung + Aufwärmen
   poseCx = cx; poseReady = true;
-  setStatus(offlineOk ? 'Modell bereit · offline bereit ✓' : offlineInfo ? `Modell bereit · Offline-Speicher lädt ${offlineInfo.n || 0}/${offlineInfo.total || '…'}` : 'Modell bereit');
+  modellStatus();
 }
 let lastRes = null;
 async function detect(img) { lastRes = null; await pose.send({ image: img }); return lastRes; }
@@ -1135,7 +1135,9 @@ function gotoPhase(id) {
 function phT(id) { if (S.frames.length) return S.phase[id] != null && S.frames[S.phase[id]] ? S.frames[S.phase[id]].t : null; return S.pt[id] ?? null; }
 function nearIdx(t) { let b = 0; for (let i = 1; i < S.frames.length; i++) if (Math.abs(S.frames[i].t - t) < Math.abs(S.frames[b].t - t)) b = i; return b; }
 const fmtT = t => t.toFixed(2).replace('.', ',') + ' s';
-function setStatus(t) { $('#status').textContent = t; $('#status').title = t; }
+function setStatus(t, farbe) { const s = $('#status'); s.textContent = t; s.title = t; s.style.color = farbe || ''; }
+// Modell- und Offline-Stand: grün = offline bereit, orange = Speicher lädt noch
+function modellStatus() { setStatus(offlineOk ? 'Modell bereit · offline bereit ✓' : offlineInfo ? `Modell bereit · Offline-Speicher lädt ${offlineInfo.n || 0}/${offlineInfo.total || '…'}` : 'Modell bereit', offlineOk ? '#5dd39e' : offlineInfo ? '#ff8a00' : ''); }
 
 $('#seek').oninput = e => {
   if (S.frames.length) gotoIdx(+e.target.value);
@@ -1273,7 +1275,7 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
       const frage = () => {
         const w = reg.active || reg.waiting || reg.installing; if (!w) { setTimeout(frage, 1500); return; }
         const ch = new MessageChannel();
-        ch.port1.onmessage = (e) => { offlineInfo = e.data || {}; offlineOk = !!offlineInfo.ok; if (poseReady) setStatus(offlineOk ? 'Modell bereit · offline bereit ✓' : `Modell bereit · Offline-Speicher lädt ${offlineInfo.n || 0}/${offlineInfo.total || '…'}`); if (!offlineOk) setTimeout(frage, 2000); };
+        ch.port1.onmessage = (e) => { offlineInfo = e.data || {}; offlineOk = !!offlineInfo.ok; if (poseReady) modellStatus(); if (!offlineOk) setTimeout(frage, 2000); };
         w.postMessage('status', [ch.port2]);
       };
       frage();

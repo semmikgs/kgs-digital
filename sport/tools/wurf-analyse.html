@@ -164,7 +164,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
   </select>
   </span>
   <span id="status">Lade Modell …</span>
-  <button id="bHelp" title="Hilfe · Version 1">?</button>
+  <button id="bHelp" title="Hilfe · Version 2">?</button>
 </header>
 
 <div id="mid">
@@ -361,7 +361,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
 </div>
 
 <dialog id="help">
-  <h3>Kurzanleitung <span class="small" style="opacity:.6">· Version 1 · 26.11.</span></h3>
+  <h3>Kurzanleitung <span class="small" style="opacity:.6">· Version 2 · 27.11.</span></h3>
   <ol>
     <li><b>Disziplin</b> oben wählen: Speerwurf oder Schlagball. Daten, Vorlage und Richtwerte sind je Disziplin getrennt.</li>
     <li><b>Aufnehmen</b> oder Video laden: seitlich, auf der Seite des Wurfarms, Stativ, ganze Person im Bild (siehe „Aufbau“).</li>
@@ -393,54 +393,54 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
 const TEMPLATES = {
  speer: {
   name: 'Speerwurf (Kinder/Jugend)', kurz: 'Speerwurf',
-  toa: { ok: [28, 40], warn: [20, 48], soll: 34, tol: 6, note: 'Bahn der Wurfhand beim Abwurf' },
+  toa: { ok: [28, 40], warn: [20, 48], soll: 34, tol: 6, note: 'Zugrichtung der Wurfhand kurz vor dem Abwurf' },
   phases: [
     { id:'rueck', name:'Rückführen', anchor:'hip',
-      seg:{stTh:20, stSh:-5, swTh:-15, swSh:-60, tr:-8, stUa:-95, stFa:-100, swUa:60, swFa:90},
+      seg:{stTh:20, stSh:-5, swTh:-15, swSh:-60, tr:-20, stUa:-72, stFa:-92, swUa:60, swFa:90},
       metrics:['armRueck','ellbogen','rumpf'],
-      cue:'Speer lang nach hinten führen: Wurfarm gestreckt, Hand etwa auf Schulterhöhe, Speerspitze neben dem Kopf. Schultern drehen sich in Wurfrichtung seitlich ein, Hüfte bleibt vorn.' },
+      cue:'Speer lang nach hinten führen: Wurfarm fast gestreckt, Hand etwa auf Schulterhöhe oder knapp darunter, Speerspitze neben dem Kopf. Schultern drehen sich in Wurfrichtung seitlich ein, Hüfte bleibt vorn.' },
     { id:'impuls', name:'Impulsschritt', anchor:'hip',
-      seg:{stTh:-25, stSh:-45, swTh:45, swSh:10, tr:-18, stUa:-95, stFa:-100, swUa:70, swFa:90},
+      seg:{stTh:35, stSh:-15, swTh:15, swSh:12, tr:-24, stUa:-72, stFa:-92, swUa:70, swFa:90},
       metrics:['rumpf','armRueck','ellbogen'],
-      cue:'Flacher, schneller Kreuzschritt: Das hintere Bein überholt den Körper, die Beine laufen dem Oberkörper davon – Rücklage entsteht. Wurfarm bleibt lang hinten.' },
+      cue:'Landung des Impulsschritts: Nach einem flachen, schnellen Kreuzschritt setzt das Impulsbein vor dem Körper auf, die Beine laufen dem Oberkörper davon – Rücklage. Das Stemmbein schwingt schon nach vorn, der Wurfarm bleibt lang hinten.' },
     { id:'stemm', name:'Stemmschritt', anchor:'ankle',
-      seg:{stTh:30, stSh:35, swTh:-25, swSh:-60, tr:-22, stUa:-100, stFa:-105, swUa:80, swFa:95},
+      seg:{stTh:32, stSh:38, swTh:-25, swSh:-60, tr:-20, stUa:-75, stFa:-95, swUa:80, swFa:95},
       metrics:['aufsatz','knieSt','rumpf','armRueck','ellbogen'],
       cue:'Stemmbein schnell und fast gestreckt weit vor dem Körper aufsetzen (Ferse zuerst). Oberkörper in Rücklage, Wurfarm lang hinten – Bogenspannung aufbauen.' },
     { id:'abwurf', name:'Abwurf', anchor:'ankle',
-      seg:{stTh:5, stSh:8, swTh:-40, swSh:-45, tr:20, stUa:145, stFa:140, swUa:-20, swFa:15},
+      seg:{stTh:3, stSh:15, swTh:-40, swSh:-45, tr:15, stUa:145, stFa:130, swUa:-20, swFa:15},
       metrics:['knieSt','rumpf','armVor','ellbogen'],
       cue:'Stemmbein bleibt gestreckt („blockt“), Hüfte und Brust schieben nach vorn, der Wurfarm kommt mit hohem Ellbogen über der Schulter nach vorn-oben. Gegenarm zieht an den Körper.' },
     { id:'abfang', name:'Abfangen', anchor:'hip',
-      seg:{stTh:-20, stSh:-30, swTh:35, swSh:10, tr:30, stUa:60, stFa:50, swUa:-30, swFa:0},
-      metrics:['rumpf','knieSw'],
+      seg:{stTh:-20, stSh:-30, swTh:35, swSh:10, tr:40, stUa:60, stFa:50, swUa:-30, swFa:0},
+      metrics:['rumpf'],
       cue:'Nach dem Abwurf das hintere Bein nach vorn bringen und abfangen, damit man nicht über den Abwurfbogen tritt.' }
   ],
   tol:{ leg:12, tr:10, arm:25 }
  },
  ball: {
   name: 'Schlagballwurf (Kinder/Jugend)', kurz: 'Schlagball',
-  toa: { ok: [32, 44], warn: [24, 52], soll: 38, tol: 6, note: 'Bahn der Wurfhand beim Abwurf' },
+  toa: { ok: [32, 44], warn: [24, 52], soll: 38, tol: 6, note: 'Zugrichtung der Wurfhand kurz vor dem Abwurf' },
   phases: [
     { id:'rueck', name:'Rückführen', anchor:'hip',
-      seg:{stTh:20, stSh:-5, swTh:-15, swSh:-60, tr:-8, stUa:-115, stFa:-125, swUa:60, swFa:95},
+      seg:{stTh:20, stSh:-5, swTh:-15, swSh:-60, tr:-12, stUa:-105, stFa:-120, swUa:60, swFa:95},
       metrics:['armRueck','ellbogen','rumpf'],
       cue:'Ball lang nach hinten-oben führen: Wurfarm fast gestreckt, Hand über Schulterhöhe. Schultern drehen sich seitlich ein, der Gegenarm zeigt nach vorn.' },
     { id:'impuls', name:'Impulsschritt', anchor:'hip',
-      seg:{stTh:-25, stSh:-45, swTh:45, swSh:10, tr:-15, stUa:-115, stFa:-125, swUa:70, swFa:95},
+      seg:{stTh:35, stSh:-15, swTh:15, swSh:12, tr:-15, stUa:-110, stFa:-122, swUa:70, swFa:95},
       metrics:['rumpf','armRueck','ellbogen'],
-      cue:'Kreuzschritt: Das hintere Bein überholt den Körper, die Beine laufen dem Oberkörper davon – Rücklage. Ball bleibt hinten-oben.' },
+      cue:'Landung des Impulsschritts: Das Impulsbein setzt vor dem Körper auf, die Beine laufen dem Oberkörper davon – Rücklage. Das Stemmbein schwingt schon nach vorn, der Ball bleibt hinten-oben.' },
     { id:'stemm', name:'Stemmschritt', anchor:'ankle',
-      seg:{stTh:28, stSh:32, swTh:-25, swSh:-60, tr:-18, stUa:-110, stFa:-120, swUa:80, swFa:95},
+      seg:{stTh:30, stSh:35, swTh:-25, swSh:-60, tr:-18, stUa:-100, stFa:-115, swUa:80, swFa:95},
       metrics:['aufsatz','knieSt','rumpf','armRueck','ellbogen'],
       cue:'Stemmbein weit vor dem Körper aufsetzen, Oberkörper in Rücklage, Wurfarm lang hinten-oben – Bogenspannung („Bogen spannen“).' },
     { id:'abwurf', name:'Abwurf', anchor:'ankle',
-      seg:{stTh:5, stSh:8, swTh:-40, swSh:-45, tr:22, stUa:150, stFa:155, swUa:-20, swFa:15},
+      seg:{stTh:3, stSh:15, swTh:-40, swSh:-45, tr:18, stUa:155, stFa:130, swUa:-20, swFa:15},
       metrics:['knieSt','rumpf','armVor','ellbogen'],
       cue:'Peitschenwurf: Hüfte vor, Ellbogen hoch und zuerst nach vorn, dann schnellt der Unterarm nach. Abwurf vor und über dem Kopf, Stemmbein gestreckt.' },
     { id:'abfang', name:'Abfangen', anchor:'hip',
       seg:{stTh:-20, stSh:-30, swTh:35, swSh:10, tr:30, stUa:60, stFa:50, swUa:-30, swFa:0},
-      metrics:['rumpf','knieSw'],
+      metrics:['rumpf'],
       cue:'Hinteres Bein nach vorn bringen und abfangen – nicht über die Abwurflinie treten.' }
   ],
   tol:{ leg:12, tr:10, arm:25 }
@@ -451,13 +451,13 @@ const base = id => id;
 const pid = b => (TEMPLATE.phases.find(p => p.id === b) || {}).id;
 const armAng = (p, q) => { const a = segAng(p, q, false); return a < -90 ? a + 360 : a; };   // Arm oben ohne Wurf bei ±180
 const METRICS = {
-  knieSt:{ label:'Kniewinkel Stemmbein', unit:'°', tol:10, f:s=>joint(s.stH,s.stK,s.stA) },
+  knieSt:{ label:'Kniewinkel Stemmbein', unit:'°', tol:12, f:s=>joint(s.stH,s.stK,s.stA) },
   knieSw:{ label:'Kniewinkel hinteres Bein', unit:'°', tol:15, f:s=>joint(s.swH,s.swK,s.swA) },
   rumpf:{ label:'Rumpfneigung', unit:'°', tol:10, f:s=>segAng(s.H,s.S,true), fmt:v=>(v>=0?'+':'')+Math.round(v)+'°', note:'+ = nach vorn, − = Rücklage' },
   aufsatz:{ label:'Stemmbein vor Hüfte', unit:'°', tol:8, f:s=>segAng(s.stH,s.stA,false), note:'Winkel Hüfte→Fuß zur Senkrechten' },
   armRueck:{ label:'Wurfarm hinten (Oberarm)', unit:'°', tol:20, f:s=>segAng(s.S,s.stE,false), note:'−90° = waagerecht nach hinten, −180° = senkrecht oben' },
   armVor:{ label:'Wurfarm vorn (Oberarm)', unit:'°', tol:20, f:s=>armAng(s.S,s.stE), note:'90° = waagerecht vorn, 180° = senkrecht oben' },
-  ellbogen:{ label:'Ellbogenwinkel Wurfarm', unit:'°', tol:15, f:s=>joint(s.S,s.stE,s.stW), note:'180° = Arm gestreckt' }
+  ellbogen:{ label:'Ellbogenwinkel Wurfarm', unit:'°', tol:25, f:s=>joint(s.S,s.stE,s.stW), note:'180° = Arm gestreckt' }
 };
 const SEGS = [ // key, von, nach, aufwärts?, Toleranzgruppe
   ['stTh','stH','stK',false,'leg'],['stSh','stK','stA',false,'leg'],
@@ -491,9 +491,16 @@ function vec(a, up) { const r = rad(a); return up ? P(Math.sin(r) * S.dir, -Math
 const add = (a, v, l) => P(a.x + v.x * l, a.y + v.y * l);
 
 // Wurf-/hinteres Bein je Phase über die Lage bestimmen (Links/Rechts der Erkennung ist von der Seite oft vertauscht)
-function sideFor(lm, phId) {
-  const arm = S.stance === 'L' ? 'l' : 'r';        // S.stance = Wurfarm
-  return { st: arm === 'l' ? 'r' : 'l', arm };
+function sideFor(lm, phId) {   // S.stance = Wurfarm; bei "auto" je Phase über die Lage (Links/Rechts der Erkennung ist von der Seite oft vertauscht)
+  let arm = S.stance === 'L' ? 'l' : 'r', st = arm === 'l' ? 'r' : 'l';
+  if (!S.legAuto || !phId || !lm) return { st, arm };
+  const fx = (k) => (lm[I[k + 'a']][0] + lm[I[k + 'f']][0]) / 2 * S.dir;
+  const wx = (k) => lm[I[k + 'w']][0] * S.dir, wy = (k) => lm[I[k + 'w']][1];
+  if (phId === 'stemm' || phId === 'abwurf') st = fx('l') >= fx('r') ? 'l' : 'r';   // Stemmbein ist vorn
+  else if (phId === 'impuls') { const fy = (k) => Math.max(lm[I[k + 'a']][1], lm[I[k + 'f']][1]); st = fy('l') >= fy('r') ? 'r' : 'l'; }   // Impulsbein steht, Stemmbein schwingt
+  if (phId === 'abwurf') arm = wy('l') <= wy('r') ? 'l' : 'r';                       // Wurfhand ist oben
+  else if (phId !== 'abfang') arm = wx('l') <= wx('r') ? 'l' : 'r';                  // Wurfhand ist hinten
+  return { st, arm };
 }
 function skelFromLm(lm, phId) {
   if (!lm) return null;
@@ -783,34 +790,42 @@ function autoPhases() {
   const setPh = (b, i) => { const id = pid(b); if (id && i != null) S.phase[id] = Math.max(0, Math.min(n - 1, i)); };
   const P2 = (i, k) => F[i] && F[i].lm ? F[i].lm[I[k]] : null;
   // Vorwärtsgeschwindigkeit eines Handgelenks (Wurfrichtung = Laufrichtung)
-  const vF = (i, k) => { const a = P2(i - 1, k), b = P2(i + 1, k); return a && b ? (b[0] - a[0]) * S.dir : NaN; };
-  const peak = (k) => { let bi = -1, bv = -1e9; for (let i = 2; i < n - 2; i++) { const v = vF(i, k); if (v > bv) { bv = v; bi = i; } } return [bi, bv]; };
+  const w = Math.max(1, Math.round(0.05 * S.fps));
+  const vF = (i, k) => { const a = P2(i - w, k), b = P2(i + w, k); return a && b ? (b[0] - a[0]) * S.dir : NaN; };
+  const peak = (k) => { let bi = -1, bv = -1e9; for (let i = w; i < n - w; i++) { const v = vF(i, k); if (v > bv) { bv = v; bi = i; } } return [bi, bv]; };
   const [iL, vL] = peak('lw'), [iR, vR] = peak('rw');
   if (S.legAuto) S.stance = vL > vR ? 'L' : 'R';                // Wurfarm = schnellere Hand
-  const hand = S.stance === 'L' ? 'lw' : 'rw', iAb = S.stance === 'L' ? iL : iR;
-  if (iAb < 3) return;
+  const hand = S.stance === 'L' ? 'lw' : 'rw', iPk = S.stance === 'L' ? iL : iR;
+  if (iPk < 3) return;
+  // Abwurf = Arm am weitesten gestreckt kurz nach der höchsten Handgeschwindigkeit (max. 0,12 s später)
+  const sh = S.stance === 'L' ? 'ls' : 'rs', el = S.stance === 'L' ? 'le' : 're';
+  const ellb = i => { const A = P2(i, sh), B = P2(i, el), C = P2(i, hand); return A && B && C ? joint({ x: A[0], y: A[1] }, { x: B[0], y: B[1] }, { x: C[0], y: C[1] }) : -1; };
+  let iAb = iPk; for (let i = iPk; i <= Math.min(n - 1, iPk + Math.round(0.12 * S.fps)); i++) if (ellb(i) > ellb(iAb) + 2) iAb = i;
   setPh('abwurf', iAb);
-  // Stemmschritt: erster Bodenkontakt des Stemmfußes vor dem Abwurf
-  const stS = S.stance === 'L' ? 'r' : 'l', swS = stS === 'l' ? 'r' : 'l';
-  const footY = (i, sd) => F[i] && F[i].lm ? Math.max(...['a', 'f', 'he'].map(k => F[i].lm[I[sd + k]][1])) : NaN;
-  const gLoc = footY(iAb, stS);
-  let cs = iAb; const minI = Math.max(0, iAb - Math.round(0.4 * S.fps));
-  while (cs - 1 >= minI && !(gLoc - footY(cs - 1, stS) > thr * 0.5)) cs--;
-  if (cs === iAb) cs = Math.max(minI, iAb - Math.round(0.1 * S.fps));
+  // Füße ohne Links/Rechts-Zuordnung (die Erkennung vertauscht die Beine von der Seite oft): vorderer und hinterer Fuß,
+  // mit gleitendem Median geglättet, damit einzelne Fehlerkennungen nicht stören
+  const fxA = (i, sd) => F[i] && F[i].lm ? (F[i].lm[I[sd + 'a']][0] + F[i].lm[I[sd + 'f']][0]) / 2 * S.dir : NaN;
+  const med = (arr) => arr.map((_, i) => { const v = arr.slice(Math.max(0, i - 2 * w), i + 2 * w + 1).filter(isFinite).sort((a, b) => a - b); return v.length ? v[v.length >> 1] : NaN; });
+  const vorn = med(F.map((_, i) => Math.max(fxA(i, 'l'), fxA(i, 'r')))), hinten = med(F.map((_, i) => Math.min(fxA(i, 'l'), fxA(i, 'r'))));
+  // Stemmschritt: Aufsetzen des vorderen Fußes, der beim Abwurf steht
+  let cs = iAb; const X0 = vorn[iAb];
+  while (cs - 1 >= Math.max(0, iAb - Math.round(0.8 * S.fps)) && Math.abs(vorn[cs - 1] - X0) < 0.12 * leg) cs--;
+  if (cs === iAb) cs = Math.max(0, iAb - Math.round(0.15 * S.fps));
   setPh('stemm', cs);
-  // Impulsschritt: höchster Punkt beider Füße (flache Flugphase) kurz vor dem Stemmschritt
-  let ip = cs - 1, best = 1e9;
-  for (let i = Math.max(0, cs - Math.round(0.35 * S.fps)); i < cs; i++) { const y = Math.max(footY(i, 'l'), footY(i, 'r')); if (y < best) { best = y; ip = i; } }
+  // Impulsschritt: Landung des hinteren Fußes (Impulsbein) vor dem Stemmschritt – rückwärts, solange er (fast) still steht
+  let ip = cs;
+  while (ip - 1 - w >= Math.max(0, cs - Math.round(0.7 * S.fps)) && Math.abs(hinten[ip - 1] - hinten[ip - 1 - w]) < 0.06 * leg) ip--;
+  if (ip >= cs - 1) ip = Math.max(0, cs - Math.round(0.25 * S.fps));
   ip = Math.max(0, ip); setPh('impuls', ip);
   // Rückführen: Wurfhand am weitesten hinter der Hüfte (vor dem Impulsschritt)
   const hx = i => (F[i].lm[I.lh][0] + F[i].lm[I.rh][0]) / 2;
   let rk = Math.max(0, ip - Math.round(0.15 * S.fps)), rv = 1e9;
-  for (let i = Math.max(0, ip - Math.round(0.6 * S.fps)); i < ip; i++) if (F[i].lm) { const v = (F[i].lm[I[hand]][0] - hx(i)) * S.dir; if (v < rv) { rv = v; rk = i; } }
+  for (let i = Math.max(0, ip - Math.round(0.6 * S.fps)); i < ip - Math.round(0.12 * S.fps); i++) if (F[i].lm) { const v = (F[i].lm[I[hand]][0] - hx(i)) * S.dir; if (v < rv) { rv = v; rk = i; } }
   if (rk < ip) setPh('rueck', rk);
   // Abfangen
   if (iAb + 3 < n) setPh('abfang', iAb + Math.round(0.3 * S.fps));
-  // Abwurfwinkel: Bewegungsrichtung der Wurfhand beim Abwurf
-  const a = P2(iAb - 2, hand), b = P2(iAb + 1, hand);
+  // Abwurfwinkel: Zugrichtung der Wurfhand in den 0,1 s vor der höchsten Handgeschwindigkeit
+  const a = P2(Math.max(0, iPk - Math.round(0.1 * S.fps)), hand), b = P2(iPk, hand);
   if (a && b) { const ang = deg(Math.atan2(-(b[1] - a[1]), (b[0] - a[0]) * S.dir)); if (ang > -20 && ang < 80) S.toa = ang; }
 }
 
@@ -1644,7 +1659,7 @@ const MG_BASIS = [
   { id: 'score', name: 'Technik-Score', einh: '%', art: 'max' },
   { id: 'weite', name: 'Weite', einh: 'm', art: 'max' }
 ];
-const metrikName = (mid) => mid === 'steig' ? 'Abwurfwinkel (Wurfhand)' : METRICS[mid].label;
+const metrikName = (mid) => mid === 'steig' ? 'Abwurfwinkel (Zugrichtung Hand)' : METRICS[mid].label;
 const metrikenVon = (ph) => ph.id === 'abwurf' ? [...ph.metrics, 'steig'] : ph.metrics;
 function mgListe() {
   const keys = new Set(); wsd.spruenge.forEach((j) => Object.keys(j.werte || {}).forEach((k) => keys.add(k)));
